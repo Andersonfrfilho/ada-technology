@@ -1,0 +1,2504 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ada Technology — Tecnologia que conecta pessoas</title>
+  <meta name="description" content="Ada Technology transforma a maneira como empresas se comunicam com seus clientes, unindo automação inteligente e atendimento humano." />
+  <link rel="icon" href="ada-icon.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:     #0d1b3e;
+      --blue:     #1a4fd6;
+      --cyan:     #06b6d4;
+      --bg:       #f5f8ff;
+      --white:    #ffffff;
+      --text:     #1e2a4a;
+      --muted:    #64748b;
+      --border:   #e2e8f0;
+      --radius:   12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+      background: var(--white);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── REVEAL ANIMATIONS ─────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.65s cubic-bezier(.22,.68,0,1.2), transform 0.65s cubic-bezier(.22,.68,0,1.2);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-left  { opacity: 0; transform: translateX(-40px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal-right { opacity: 0; transform: translateX(40px);  transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal-left.visible, .reveal-right.visible { opacity: 1; transform: translateX(0); }
+
+    .delay-1 { transition-delay: 0.1s; }
+    .delay-2 { transition-delay: 0.2s; }
+    .delay-3 { transition-delay: 0.3s; }
+    .delay-4 { transition-delay: 0.4s; }
+    .delay-5 { transition-delay: 0.5s; }
+    .delay-6 { transition-delay: 0.6s; }
+
+    /* ── NAV ──────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      background: rgba(255, 255, 255, 0);
+      backdrop-filter: blur(0px);
+      padding: 0 6%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+      transition: background 0.4s, backdrop-filter 0.4s, box-shadow 0.4s;
+    }
+
+    nav.scrolled {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 1px 0 var(--border);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      text-decoration: none;
+    }
+
+    .nav-logo img { height: 26px; width: auto; transition: filter 0.3s; }
+    nav:not(.scrolled) .nav-logo img { filter: brightness(0) invert(1); }
+
+    .nav-brand-name {
+      font-size: 0.95rem;
+      font-weight: 400;
+      color: var(--navy);
+      letter-spacing: -0.01em;
+      transition: color 0.3s;
+    }
+    nav:not(.scrolled) .nav-brand-name { color: rgba(255,255,255,0.9); }
+    .nav-brand-name strong { font-weight: 700; }
+
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+      align-items: center;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+    nav:not(.scrolled) .nav-links a { color: rgba(255,255,255,0.7); }
+    nav:not(.scrolled) .nav-links a:hover { color: rgba(255,255,255,1); }
+    .nav-links a:hover { color: var(--blue); }
+
+    .nav-cta {
+      background: var(--cyan) !important;
+      color: var(--navy) !important;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-weight: 700 !important;
+      font-size: 0.85rem !important;
+      transition: transform 0.2s, box-shadow 0.2s !important;
+    }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(6,182,212,0.4) !important; }
+
+    .nav-social { display: flex; align-items: center; gap: 6px; }
+
+    .nav-social-link {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none;
+      color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    nav.scrolled .nav-social-link {
+      color: var(--muted);
+      border-color: var(--border);
+    }
+    .nav-social-link:hover { background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.4); }
+    nav.scrolled .nav-social-link:hover { background: var(--bg); color: var(--blue); border-color: var(--blue); }
+    .nav-social-link svg { width: 14px; height: 14px; fill: currentColor; }
+
+    /* ── HERO ──────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #08112a 0%, #0d1e4a 45%, #0a2d6e 100%);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Animated grid background */
+    .hero-grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridMove 20s linear infinite;
+    }
+
+    @keyframes gridMove {
+      0%   { background-position: 0 0; }
+      100% { background-position: 60px 60px; }
+    }
+
+    .hero-glow-1 {
+      position: absolute;
+      width: 700px; height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 65%);
+      top: -200px; right: -100px;
+      animation: floatGlow1 8s ease-in-out infinite alternate;
+    }
+
+    .hero-glow-2 {
+      position: absolute;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(26,79,214,0.18) 0%, transparent 65%);
+      bottom: -150px; left: -100px;
+      animation: floatGlow2 10s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatGlow1 {
+      from { transform: scale(0.9) translate(0, 0); }
+      to   { transform: scale(1.1) translate(-40px, 40px); }
+    }
+    @keyframes floatGlow2 {
+      from { transform: scale(1) translate(0, 0); }
+      to   { transform: scale(1.15) translate(30px, -30px); }
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 120px 6% 80px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .hero-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(6,182,212,0.12);
+      border: 1px solid rgba(6,182,212,0.3);
+      color: #67e8f9;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 100px;
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.2s forwards;
+    }
+
+    .hero-label::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #06b6d4;
+      animation: blink 1.8s infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .hero h1 {
+      font-size: clamp(2.4rem, 4.5vw, 3.6rem);
+      font-weight: 700;
+      line-height: 1.12;
+      letter-spacing: -0.035em;
+      margin-bottom: 22px;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.35s forwards;
+    }
+
+    .hero h1 span { color: #67e8f9; }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.68);
+      max-width: 460px;
+      line-height: 1.72;
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.5s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.65s forwards;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--cyan);
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 14px 28px;
+      border-radius: 10px;
+      text-decoration: none;
+      letter-spacing: -0.01em;
+      transition: transform 0.25s, box-shadow 0.25s;
+      box-shadow: 0 4px 20px rgba(6,182,212,0.35);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 32px rgba(6,182,212,0.5);
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      color: rgba(255,255,255,0.82);
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 14px 26px;
+      border-radius: 10px;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.22);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.07); }
+
+    /* Hero visual — orbiting rings */
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      animation: fadeIn 1s 0.8s forwards;
+    }
+
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    .orbit-container {
+      position: relative;
+      width: 340px;
+      height: 340px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .orbit-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid;
+      animation: spin linear infinite;
+    }
+
+    .orbit-ring-1 {
+      width: 320px; height: 320px;
+      border-color: rgba(6,182,212,0.15);
+      animation-duration: 24s;
+    }
+    .orbit-ring-2 {
+      width: 230px; height: 230px;
+      border-color: rgba(26,79,214,0.2);
+      animation-duration: 16s;
+      animation-direction: reverse;
+    }
+    .orbit-ring-3 {
+      width: 145px; height: 145px;
+      border-color: rgba(6,182,212,0.25);
+      animation-duration: 10s;
+    }
+
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+    .orbit-dot {
+      position: absolute;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 10px rgba(6,182,212,0.8);
+    }
+
+    .orbit-ring-1 .orbit-dot { top: -4px; left: 50%; transform: translateX(-50%); }
+    .orbit-ring-2 .orbit-dot { top: -4px; left: 50%; transform: translateX(-50%); background: #818cf8; box-shadow: 0 0 10px rgba(129,140,248,0.8); }
+
+    .orbit-icon {
+      position: relative;
+      z-index: 2;
+      width: 90px; height: 90px;
+      background: linear-gradient(135deg, rgba(6,182,212,0.15), rgba(26,79,214,0.15));
+      border: 1px solid rgba(6,182,212,0.25);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: iconPulse 4s ease-in-out infinite;
+    }
+
+    @keyframes iconPulse {
+      0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(6,182,212,0); }
+      50%      { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(6,182,212,0.08); }
+    }
+
+    .orbit-icon img { width: 52px; filter: brightness(0) invert(1); opacity: 0.9; }
+
+    /* Floating badges */
+    .orbit-badge {
+      position: absolute;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.8);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      animation: float linear infinite;
+    }
+
+    .badge-1 { top: 14px; right: -28px; animation-duration: 4s; animation-delay: 0s; }
+    .badge-2 { bottom: 40px; left: -30px; animation-duration: 5s; animation-delay: 1s; }
+    .badge-3 { top: 50%; right: -40px; transform: translateY(-50%); animation-duration: 6s; animation-delay: 0.5s; }
+
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+    .badge-3 { animation: floatMid 5s ease-in-out 0.5s infinite; }
+    @keyframes floatMid {
+      0%,100% { transform: translateY(-50%); }
+      50%      { transform: translateY(calc(-50% - 8px)); }
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #34d399;
+      animation: blink 2s infinite;
+    }
+
+    /* ── TRUST BAR ────────────────────────────────── */
+    .trust-bar {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 22px 6%;
+      text-align: center;
+    }
+
+    .trust-bar p {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .trust-logos {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 44px;
+      flex-wrap: wrap;
+    }
+
+    .trust-chip {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      opacity: 0.65;
+      transition: opacity 0.2s;
+    }
+    .trust-chip:hover { opacity: 1; }
+    .trust-chip svg { width: 16px; height: 16px; }
+
+    /* ── SECTIONS ─────────────────────────────────── */
+    section { padding: 96px 6%; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+
+    .section-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::before {
+      content: '';
+      width: 20px; height: 2px;
+      background: var(--blue);
+      border-radius: 2px;
+    }
+
+    .section-title {
+      font-size: clamp(1.9rem, 3vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.18;
+      color: var(--navy);
+      margin-bottom: 14px;
+    }
+
+    .section-sub {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.72;
+    }
+
+    /* ── ABOUT ────────────────────────────────────── */
+    .about { background: var(--white); }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .about-text .section-sub { max-width: 100%; margin-bottom: 36px; }
+
+    .about-stat-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .about-stat {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 18px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .about-stat:hover { border-color: var(--blue); box-shadow: 0 4px 20px rgba(26,79,214,0.08); }
+
+    .about-stat-number {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--navy);
+    }
+    .about-stat-number span { color: var(--cyan); }
+    .about-stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    .about-visual {
+      background: linear-gradient(135deg, #e8f0fe 0%, #e0f7fa 100%);
+      border-radius: 24px;
+      padding: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .about-visual-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(26,79,214,0.12);
+      animation: breathe 4s ease-in-out infinite alternate;
+    }
+    .avr1 { width: 80%; height: 80%; animation-delay: 0s; }
+    .avr2 { width: 60%; height: 60%; animation-delay: 0.5s; border-color: rgba(6,182,212,0.18); }
+    .avr3 { width: 40%; height: 40%; animation-delay: 1s; }
+
+    @keyframes breathe {
+      from { transform: scale(0.96); opacity: 0.6; }
+      to   { transform: scale(1.04); opacity: 1; }
+    }
+
+    .about-visual img {
+      width: 90px;
+      height: auto;
+      position: relative;
+      z-index: 2;
+      filter: drop-shadow(0 10px 28px rgba(26,79,214,0.3));
+      animation: iconPulse 5s ease-in-out infinite;
+    }
+
+    /* ── STATS BANNER ─────────────────────────────── */
+    .stats-section {
+      background: var(--navy);
+      padding: 72px 6%;
+    }
+
+    .stats-grid {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 40px 20px;
+      position: relative;
+    }
+
+    .stat-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: 0; top: 25%; bottom: 25%;
+      width: 1px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .stat-number {
+      font-size: 3rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .stat-number span { color: var(--cyan); }
+
+    .stat-label {
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.5);
+      font-weight: 500;
+    }
+
+    /* ── SOLUTIONS ────────────────────────────────── */
+    .solutions { background: var(--bg); }
+
+    .solutions-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 56px;
+    }
+
+    .solutions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    .solution-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 34px 30px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(.22,.68,0,1.3), box-shadow 0.3s;
+    }
+
+    .solution-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--cyan));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.35s ease;
+    }
+
+    .solution-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(26,79,214,0.12); }
+    .solution-card:hover::before { transform: scaleX(1); }
+
+    .solution-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 22px;
+      font-size: 1.5rem;
+      transition: transform 0.3s;
+    }
+    .solution-card:hover .solution-icon { transform: scale(1.12) rotate(-3deg); }
+    .icon-blue  { background: #eff6ff; }
+    .icon-cyan  { background: #ecfeff; }
+    .icon-green { background: #f0fdf4; }
+
+    .solution-title {
+      font-size: 1.08rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--navy);
+      margin-bottom: 10px;
+    }
+
+    .solution-desc {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.68;
+      margin-bottom: 22px;
+    }
+
+    .solution-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 100px;
+      background: var(--bg);
+      color: var(--blue);
+      border: 1px solid var(--border);
+      letter-spacing: 0.02em;
+    }
+
+    /* ── HOW IT WORKS ─────────────────────────────── */
+    .how { background: var(--white); }
+
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 56px;
+      position: relative;
+    }
+
+    .how-grid::before {
+      content: '';
+      position: absolute;
+      top: 31px;
+      left: calc(12.5% + 16px);
+      right: calc(12.5% + 16px);
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      z-index: 0;
+    }
+
+    .step {
+      text-align: center;
+      padding: 0 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-num {
+      width: 62px; height: 62px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0 auto 22px;
+      background: var(--white);
+      border: 2px solid var(--border);
+      color: var(--muted);
+      letter-spacing: -0.02em;
+      transition: border-color 0.4s, color 0.4s, background 0.4s, transform 0.4s;
+    }
+
+    .step.active .step-num {
+      border-color: var(--blue);
+      color: var(--white);
+      background: var(--blue);
+      transform: scale(1.1);
+    }
+
+    .step-title {
+      font-size: 0.94rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .step-desc { font-size: 0.83rem; color: var(--muted); line-height: 1.62; }
+
+    /* ── FEATURED ─────────────────────────────────── */
+    .featured {
+      background: linear-gradient(145deg, #0a1530 0%, #0d1e4e 100%);
+      color: var(--white);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .featured::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%);
+      right: -200px; top: -200px;
+    }
+
+    .featured .section-label { color: #67e8f9; }
+    .featured .section-title { color: var(--white); }
+    .featured .section-sub   { color: rgba(255,255,255,0.6); }
+
+    .featured-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 72px;
+      align-items: center;
+    }
+
+    .featured-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .featured-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.93rem;
+      color: rgba(255,255,255,0.78);
+      line-height: 1.5;
+      opacity: 0;
+      transform: translateX(-16px);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+
+    .featured-list li.item-visible { opacity: 1; transform: translateX(0); }
+
+    .featured-list li::before {
+      content: '✓';
+      min-width: 20px; height: 20px;
+      background: rgba(6,182,212,0.15);
+      border: 1px solid rgba(6,182,212,0.35);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: var(--cyan);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .featured-action { margin-top: 38px; }
+
+    /* Chat mockup */
+    .chat-mockup {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 22px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      margin-bottom: 4px;
+    }
+
+    .chat-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #06b6d4, #1a4fd6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .chat-name   { font-size: 0.9rem; font-weight: 600; color: white; }
+    .chat-status { font-size: 0.72rem; color: #34d399; display: flex; align-items: center; gap: 5px; }
+    .chat-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #34d399; animation: blink 2s infinite; }
+
+    .chat-msg {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+    .chat-msg.right { flex-direction: row-reverse; }
+    .chat-msg.msg-visible { opacity: 1; transform: translateY(0); }
+
+    .bubble {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 0.83rem;
+      line-height: 1.5;
+    }
+
+    .chat-msg:not(.right) .bubble {
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.82);
+      border-bottom-left-radius: 3px;
+    }
+
+    .chat-msg.right .bubble {
+      background: #1a4fd6;
+      color: white;
+      border-bottom-right-radius: 3px;
+    }
+
+    .msg-meta { font-size: 0.68rem; color: rgba(255,255,255,0.28); white-space: nowrap; padding-bottom: 2px; }
+
+    .typing-indicator {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .typing-indicator.visible { opacity: 1; }
+
+    .typing-bubble {
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      border-bottom-left-radius: 3px;
+      padding: 12px 16px;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .typing-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.4);
+      animation: typingBounce 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typingBounce {
+      0%,60%,100% { transform: translateY(0); }
+      30%          { transform: translateY(-5px); }
+    }
+
+    /* ── CAPABILITIES / BENTO ────────────────────── */
+    .capabilities { background: var(--bg); }
+
+    .capabilities-header { margin-bottom: 52px; }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 18px;
+    }
+
+    .bento-mobile { grid-column: 1; grid-row: 1; }
+    .bento-web    { grid-column: 2 / 4; grid-row: 1; }
+    .bento-small  { grid-column: span 1; grid-row: 2; }
+
+    .bento-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: transform 0.3s cubic-bezier(.22,.68,0,1.3), box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bento-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at top left, rgba(26,79,214,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .bento-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 16px 48px rgba(26,79,214,0.1);
+    }
+
+    .bento-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .bento-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .bento-icon svg { width: 24px; height: 24px; }
+
+    .bento-icon-sm { width: 44px; height: 44px; border-radius: 12px; }
+    .bento-icon-sm svg { width: 20px; height: 20px; }
+
+    .bento-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 100px;
+    }
+
+    .bento-title {
+      font-size: 1.18rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--navy);
+      line-height: 1.25;
+    }
+
+    .bento-desc {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.68;
+    }
+
+    .bento-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .bento-list li {
+      font-size: 0.86rem;
+      color: var(--text);
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      line-height: 1.45;
+    }
+
+    .bento-list li::before {
+      content: '';
+      min-width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--cyan);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .bento-list-sm {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .bento-list-sm li {
+      font-size: 0.83rem;
+      color: var(--text);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.4;
+    }
+
+    .bento-list-sm li::before {
+      content: '→';
+      color: var(--cyan);
+      font-size: 0.75rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .bento-tech {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .bento-tech span {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 100px;
+      background: var(--bg);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      letter-spacing: 0.02em;
+    }
+
+    /* ── TESTIMONIALS ─────────────────────────────── */
+    .testimonials { background: var(--bg); }
+
+    .testimonials-header { margin-bottom: 52px; }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    .testimonial-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 30px;
+      position: relative;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .testimonial-card:hover { transform: translateY(-4px); box-shadow: 0 12px 36px rgba(26,79,214,0.1); }
+
+    .testimonial-stars {
+      display: flex;
+      gap: 3px;
+      margin-bottom: 16px;
+    }
+    .testimonial-stars span { color: #f59e0b; font-size: 0.9rem; }
+
+    .testimonial-text {
+      font-size: 0.92rem;
+      color: var(--text);
+      line-height: 1.7;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .author-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .av1 { background: linear-gradient(135deg, #06b6d4, #1a4fd6); }
+    .av2 { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
+    .av3 { background: linear-gradient(135deg, #10b981, #059669); }
+
+    .author-name  { font-size: 0.88rem; font-weight: 700; color: var(--navy); }
+    .author-role  { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── CTA ──────────────────────────────────────── */
+    .cta {
+      background: linear-gradient(135deg, #1a4fd6 0%, #0891b2 100%);
+      color: var(--white);
+      text-align: center;
+      padding: 100px 6%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    .cta-inner { position: relative; z-index: 1; }
+    .cta .section-label { color: rgba(255,255,255,0.5); justify-content: center; }
+    .cta .section-title { color: white; max-width: 640px; margin: 0 auto 14px; }
+    .cta .section-sub { color: rgba(255,255,255,0.7); max-width: 460px; margin: 0 auto 44px; }
+
+    .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    .btn-white {
+      background: white;
+      color: var(--blue);
+      font-weight: 700;
+      padding: 14px 30px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 0.95rem;
+      transition: transform 0.25s, box-shadow 0.25s;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .btn-white:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(0,0,0,0.28); }
+
+    .btn-outline-white {
+      background: transparent;
+      color: rgba(255,255,255,0.88);
+      font-weight: 600;
+      padding: 14px 28px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 0.95rem;
+      border: 1px solid rgba(255,255,255,0.28);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-outline-white:hover { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.08); }
+
+    /* ── FOOTER ───────────────────────────────────── */
+    footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.55);
+      padding: 56px 6% 32px;
+    }
+
+    .footer-grid {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-brand img { height: 28px; margin-bottom: 6px; filter: brightness(0) invert(1); opacity: 0.8; }
+    .footer-brand-name {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+    .footer-brand p { font-size: 0.86rem; line-height: 1.65; max-width: 250px; }
+
+    .footer-col h4 {
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 18px;
+    }
+
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 11px; }
+
+    .footer-col ul li a {
+      text-decoration: none;
+      font-size: 0.87rem;
+      color: rgba(255,255,255,0.5);
+      transition: color 0.2s;
+    }
+    .footer-col ul li a:hover { color: rgba(255,255,255,0.9); }
+
+    .footer-bottom {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding-top: 28px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.28);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    /* ── SOCIAL ───────────────────────────────────── */
+    .social-links { display: flex; gap: 8px; }
+
+    .social-link {
+      width: 36px; height: 36px;
+      border-radius: 9px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none;
+      color: rgba(255,255,255,0.45);
+      transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    .social-link:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.22);
+      color: rgba(255,255,255,0.92);
+      transform: translateY(-2px);
+    }
+    .social-link svg { width: 15px; height: 15px; fill: currentColor; }
+
+    /* ── RESPONSIVE ───────────────────────────────── */
+    @media (max-width: 960px) {
+      .hero-inner        { grid-template-columns: 1fr; text-align: center; }
+      .hero p            { margin-left: auto; margin-right: auto; }
+      .hero-actions      { justify-content: center; }
+      .hero-visual       { display: none; }
+      .about-grid        { grid-template-columns: 1fr; }
+      .about-visual      { display: none; }
+      .solutions-grid    { grid-template-columns: 1fr 1fr; }
+      .solutions-header  { flex-direction: column; gap: 16px; align-items: flex-start; }
+      .how-grid          { grid-template-columns: 1fr 1fr; }
+      .how-grid::before  { display: none; }
+      .featured-grid     { grid-template-columns: 1fr; }
+      .bento-grid        { grid-template-columns: 1fr 1fr; }
+      .bento-mobile      { grid-column: 1; grid-row: auto; }
+      .bento-web         { grid-column: 2; grid-row: auto; }
+      .bento-small       { grid-column: span 1; }
+      .testimonials-grid { grid-template-columns: 1fr; }
+      .stats-grid        { grid-template-columns: 1fr 1fr; }
+      .footer-grid       { grid-template-columns: 1fr 1fr; }
+      .nav-links         { display: none; }
+      nav                { padding: 0 5%; }
+    }
+
+    @media (max-width: 560px) {
+      .solutions-grid    { grid-template-columns: 1fr; }
+      .about-stat-row    { grid-template-columns: 1fr; }
+      .how-grid          { grid-template-columns: 1fr; }
+      .bento-grid        { grid-template-columns: 1fr; }
+      .bento-mobile, .bento-web, .bento-small { grid-column: 1; }
+      .stats-grid        { grid-template-columns: 1fr 1fr; }
+      .footer-grid       { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <a href="#" class="nav-logo">
+      <img src="ada-icon.png" alt="Ada Technology" />
+      <span class="nav-brand-name">Ada <strong>Technology</strong></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#sobre">Sobre</a></li>
+      <li><a href="#solucoes">Soluções</a></li>
+      <li><a href="#produto">WhatsApp</a></li>
+      <li><a href="#capacidades">Serviços</a></li>
+      <li><a href="#depoimentos">Depoimentos</a></li>
+      <li><a href="#contato" class="nav-cta">Fale com a gente</a></li>
+    </ul>
+    <div class="nav-social">
+      <a href="https://instagram.com/adatechnology" class="nav-social-link" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      </a>
+      <a href="https://linkedin.com/company/adatechnology" class="nav-social-link" target="_blank" rel="noopener" aria-label="LinkedIn">
+        <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      </a>
+      <a href="https://wa.me/5511999999999" class="nav-social-link" target="_blank" rel="noopener" aria-label="WhatsApp">
+        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </a>
+      <a href="https://github.com/adatechnology" class="nav-social-link" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid-bg"></div>
+    <div class="hero-glow-1"></div>
+    <div class="hero-glow-2"></div>
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="hero-label">Tecnologia de ponta</div>
+        <h1>Conecte sua empresa<br/>aos clientes que <span>realmente importam</span></h1>
+        <p>Automação inteligente, atendimento humanizado e dados que guiam decisões. A Ada transforma como sua empresa cresce.</p>
+        <div class="hero-actions">
+          <a href="#contato" class="btn-primary">Começar agora &rarr;</a>
+          <a href="#solucoes" class="btn-outline">Ver soluções</a>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="orbit-container">
+          <div class="orbit-ring orbit-ring-1">
+            <div class="orbit-dot"></div>
+          </div>
+          <div class="orbit-ring orbit-ring-2">
+            <div class="orbit-dot"></div>
+          </div>
+          <div class="orbit-ring orbit-ring-3"></div>
+          <div class="orbit-icon">
+            <img src="ada-icon.png" alt="Ada Technology" />
+          </div>
+
+          <div class="orbit-badge badge-1">
+            <div class="badge-dot"></div>
+            Bot ativo 24/7
+          </div>
+          <div class="orbit-badge badge-2">
+            <div class="badge-dot" style="background:#818cf8;box-shadow:0 0 8px rgba(129,140,248,0.8)"></div>
+            +80% automatizado
+          </div>
+          <div class="orbit-badge badge-3">
+            <div class="badge-dot" style="background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,0.8)"></div>
+            WhatsApp API
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRUST BAR -->
+  <div class="trust-bar">
+    <p>Tecnologias que utilizamos</p>
+    <div class="trust-logos">
+      <div class="trust-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        Meta Business API
+      </div>
+      <div class="trust-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        TypeScript
+      </div>
+      <div class="trust-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Cloud Infrastructure
+      </div>
+      <div class="trust-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Monitoramento 24/7
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <section class="about" id="sobre">
+    <div class="section-inner">
+      <div class="about-grid">
+        <div class="about-text">
+          <div class="section-label reveal">Sobre a Ada</div>
+          <h2 class="section-title reveal delay-1">Software que resolve problemas reais de negócio</h2>
+          <p class="section-sub reveal delay-2">A Ada Technology nasce com uma missão clara: entregar tecnologia que funciona de verdade no dia a dia das empresas brasileiras — sem a complexidade desnecessária que afasta quem mais precisa.</p>
+          <p class="section-sub reveal delay-3" style="margin-top:14px;">Combinamos arquitetura robusta, UX pensada para o usuário final e integração com as plataformas que sua equipe já usa.</p>
+
+          <div class="about-stat-row">
+            <div class="about-stat reveal delay-2">
+              <div class="about-stat-number"><span class="counter" data-target="99">0</span><span>%</span></div>
+              <div class="about-stat-label">SLA de disponibilidade</div>
+            </div>
+            <div class="about-stat reveal delay-3">
+              <div class="about-stat-number"><span class="counter" data-target="24">0</span><span>/7</span></div>
+              <div class="about-stat-label">Monitoramento contínuo</div>
+            </div>
+            <div class="about-stat reveal delay-4">
+              <div class="about-stat-number"><span class="counter" data-target="10">0</span><span>+</span></div>
+              <div class="about-stat-label">Anos de experiência</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="about-visual reveal-right">
+          <div class="about-visual-ring avr1"></div>
+          <div class="about-visual-ring avr2"></div>
+          <div class="about-visual-ring avr3"></div>
+          <img src="ada-icon.png" alt="Ada Technology" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-item reveal delay-1">
+        <div class="stat-number"><span class="counter" data-target="500">0</span><span>+</span></div>
+        <div class="stat-label">Conversas diárias automatizadas</div>
+      </div>
+      <div class="stat-item reveal delay-2">
+        <div class="stat-number"><span class="counter" data-target="80">0</span><span>%</span></div>
+        <div class="stat-label">Taxa de automação média</div>
+      </div>
+      <div class="stat-item reveal delay-3">
+        <div class="stat-number"><span class="counter" data-target="15">0</span><span>d</span></div>
+        <div class="stat-label">Da contratação ao go-live</div>
+      </div>
+      <div class="stat-item reveal delay-4">
+        <div class="stat-number"><span class="counter" data-target="99">0</span><span>.9%</span></div>
+        <div class="stat-label">Uptime garantido</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOLUTIONS -->
+  <section class="solutions" id="solucoes">
+    <div class="section-inner">
+      <div class="solutions-header">
+        <div>
+          <div class="section-label reveal">O que fazemos</div>
+          <h2 class="section-title reveal delay-1">Soluções que crescem<br/>com seu negócio</h2>
+        </div>
+        <p class="section-sub reveal delay-2" style="max-width:320px; text-align:right;">Cada solução é pensada para gerar resultado mensurável, não apenas modernizar processos.</p>
+      </div>
+
+      <div class="solutions-grid">
+        <div class="solution-card reveal delay-1">
+          <div class="solution-icon icon-blue">💬</div>
+          <div class="solution-title">Plataforma de Atendimento WhatsApp</div>
+          <p class="solution-desc">Bot inteligente + atendentes humanos em uma plataforma unificada. Automatize até 80% dos atendimentos sem perder qualidade.</p>
+          <div class="solution-tags">
+            <span class="tag">WhatsApp API</span>
+            <span class="tag">Bot + IA</span>
+            <span class="tag">Multi-atendente</span>
+          </div>
+        </div>
+
+        <div class="solution-card reveal delay-2">
+          <div class="solution-icon icon-cyan">📊</div>
+          <div class="solution-title">Dashboards e Inteligência de Dados</div>
+          <p class="solution-desc">Transforme os dados da operação em decisões claras. Painéis personalizados com os indicadores que realmente importam.</p>
+          <div class="solution-tags">
+            <span class="tag">Data Lake</span>
+            <span class="tag">Relatórios</span>
+            <span class="tag">Alertas</span>
+          </div>
+        </div>
+
+        <div class="solution-card reveal delay-3">
+          <div class="solution-icon icon-green">⚙️</div>
+          <div class="solution-title">Automações e Integrações</div>
+          <p class="solution-desc">Conecte seus sistemas e elimine trabalho manual repetitivo. Do CRM ao ERP, construímos pontes que economizam horas por semana.</p>
+          <div class="solution-tags">
+            <span class="tag">API REST</span>
+            <span class="tag">Webhooks</span>
+            <span class="tag">CRM</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how">
+    <div class="section-inner">
+      <div class="section-label reveal">Como funciona</div>
+      <h2 class="section-title reveal delay-1">Da ideia ao go-live em semanas</h2>
+
+      <div class="how-grid">
+        <div class="step reveal delay-1">
+          <div class="step-num">01</div>
+          <div class="step-title">Briefing</div>
+          <p class="step-desc">Entendemos sua operação, mapeamos os fluxos e definimos o que será automatizado.</p>
+        </div>
+        <div class="step reveal delay-2">
+          <div class="step-num">02</div>
+          <div class="step-title">Configuração</div>
+          <p class="step-desc">Construímos a solução e configuramos o ambiente. Nada vai ao ar sem testes.</p>
+        </div>
+        <div class="step reveal delay-3">
+          <div class="step-num">03</div>
+          <div class="step-title">Validação</div>
+          <p class="step-desc">Você testa em homologação e aprovamos juntos antes de ir para produção.</p>
+        </div>
+        <div class="step reveal delay-4">
+          <div class="step-num">04</div>
+          <div class="step-title">Go-live</div>
+          <p class="step-desc">Plataforma em produção com monitoramento contínuo e suporte da equipe Ada.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED PRODUCT -->
+  <section class="featured" id="produto">
+    <div class="section-inner">
+      <div class="featured-grid">
+        <div>
+          <div class="section-label reveal">Produto em destaque</div>
+          <h2 class="section-title reveal delay-1">Atendimento via WhatsApp que converte</h2>
+          <p class="section-sub reveal delay-2">Sua empresa atendendo 24h por dia, qualificando clientes automaticamente e transferindo para o humano apenas quando necessário.</p>
+
+          <ul class="featured-list" id="featuredList">
+            <li>Bot configurado com o fluxo real do seu negócio</li>
+            <li>Múltiplos atendentes na mesma linha oficial</li>
+            <li>Dashboard com histórico completo de conversas</li>
+            <li>Templates aprovados pela Meta para mensagens ativas</li>
+            <li>Backup diário e monitoramento de disponibilidade</li>
+            <li>Aprovação junto à Meta — cuidamos de tudo</li>
+          </ul>
+
+          <div class="featured-action reveal">
+            <a href="#contato" class="btn-primary">Quero conhecer os planos &rarr;</a>
+          </div>
+        </div>
+
+        <!-- Chat with animated messages -->
+        <div class="chat-mockup reveal-right" id="chatMockup">
+          <div class="chat-header">
+            <div class="chat-avatar">A</div>
+            <div>
+              <div class="chat-name">Ada Bot — Sua empresa</div>
+              <div class="chat-status">Online agora</div>
+            </div>
+          </div>
+
+          <div class="chat-msg" id="msg1">
+            <div>
+              <div class="bubble">Olá! Bem-vindo ao atendimento. Como posso ajudar?</div>
+            </div>
+            <div class="msg-meta">Ada Bot · agora</div>
+          </div>
+
+          <div class="typing-indicator" id="typing1">
+            <div class="typing-bubble">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          </div>
+
+          <div class="chat-msg right" id="msg2">
+            <div class="bubble">Quero saber sobre os planos</div>
+            <div class="msg-meta">você</div>
+          </div>
+
+          <div class="chat-msg" id="msg3">
+            <div>
+              <div class="bubble">Ótimo! Temos planos a partir de R$&nbsp;497/mês. Posso conectar você com um especialista agora. Qual seu nome?</div>
+            </div>
+            <div class="msg-meta">Ada Bot</div>
+          </div>
+
+          <div class="chat-msg right" id="msg4">
+            <div class="bubble">Anderson</div>
+            <div class="msg-meta">você</div>
+          </div>
+
+          <div class="chat-msg" id="msg5">
+            <div>
+              <div class="bubble">Perfeito, Anderson! Conectando com nossa equipe agora 🤝</div>
+            </div>
+            <div class="msg-meta">Ada Bot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CAPABILITIES -->
+  <section class="capabilities" id="capacidades">
+    <div class="section-inner">
+      <div class="capabilities-header">
+        <div class="section-label reveal">O que construímos</div>
+        <h2 class="section-title reveal delay-1">Desenvolvemos para qualquer segmento</h2>
+        <p class="section-sub reveal delay-2">Da startup ao enterprise — entregamos software completo: mobile, web, integrações, segurança e performance como parte do mesmo processo.</p>
+      </div>
+
+      <div class="bento-grid">
+
+        <!-- MOBILE -->
+        <div class="bento-card bento-mobile reveal delay-1">
+          <div class="bento-top">
+            <div class="bento-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="18" r="1" fill="white"/></svg>
+            </div>
+            <div class="bento-badge">iOS · Android · Cross-platform</div>
+          </div>
+          <h3 class="bento-title">Aplicações Móveis</h3>
+          <p class="bento-desc">Apps nativos e híbridos para qualquer verticais de negócio — do MVP ao produto escalável. Experiência em apps de atendimento, delivery, fintech, saúde e varejo.</p>
+          <ul class="bento-list">
+            <li>React Native (iOS + Android com um único código)</li>
+            <li>Integração com hardware: POS, impressoras, scanners</li>
+            <li>Notificações push, biometria e câmera nativa</li>
+            <li>Offline-first com sincronização automática</li>
+            <li>Publicação na App Store e Google Play</li>
+          </ul>
+          <div class="bento-tech">
+            <span>React Native</span><span>Expo</span><span>Swift</span><span>Kotlin</span><span>Hermes</span>
+          </div>
+        </div>
+
+        <!-- WEB -->
+        <div class="bento-card bento-web reveal delay-2">
+          <div class="bento-top">
+            <div class="bento-icon" style="background:linear-gradient(135deg,#0891b2,#06b6d4)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            </div>
+            <div class="bento-badge">SaaS · Dashboards · E-commerce</div>
+          </div>
+          <h3 class="bento-title">Aplicações Web</h3>
+          <p class="bento-desc">Plataformas web de alta performance com UX pensada para conversão. Painéis de gestão, portais B2B, lojas e sistemas internos que sua equipe vai querer usar.</p>
+          <ul class="bento-list">
+            <li>SPAs e SSR com React, Next.js e Vite</li>
+            <li>Dashboards com gráficos em tempo real</li>
+            <li>Design system próprio ou integrado ao Figma</li>
+            <li>Acessibilidade WCAG 2.1 e SEO técnico</li>
+            <li>PWA com suporte offline e instalação na home</li>
+          </ul>
+          <div class="bento-tech">
+            <span>React</span><span>Next.js</span><span>TypeScript</span><span>TanStack</span><span>Tailwind</span>
+          </div>
+        </div>
+
+        <!-- INTEGRAÇÕES -->
+        <div class="bento-card bento-small reveal delay-1">
+          <div class="bento-top">
+            <div class="bento-icon bento-icon-sm" style="background:linear-gradient(135deg,#f59e0b,#f97316)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            </div>
+          </div>
+          <h3 class="bento-title">Integrações</h3>
+          <p class="bento-desc">Conectamos qualquer sistema. APIs REST, GraphQL, webhooks, ERPs, CRMs, meios de pagamento e automações via n8n.</p>
+          <ul class="bento-list-sm">
+            <li>WhatsApp · Stripe · Pagar.me · Getnet</li>
+            <li>HubSpot · Salesforce · TOTVS · SAP</li>
+            <li>PIX · Boleto · Cartão · Assinatura</li>
+            <li>n8n · Zapier · Make (automação sem código)</li>
+          </ul>
+          <div class="bento-tech">
+            <span>REST</span><span>GraphQL</span><span>n8n</span><span>Webhooks</span>
+          </div>
+        </div>
+
+        <!-- SEGURANÇA -->
+        <div class="bento-card bento-small reveal delay-2">
+          <div class="bento-top">
+            <div class="bento-icon bento-icon-sm" style="background:linear-gradient(135deg,#dc2626,#ef4444)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+          </div>
+          <h3 class="bento-title">Segurança</h3>
+          <p class="bento-desc">Desde a autenticação até a conformidade com a LGPD — arquitetamos sistemas que protegem dados e resistem a ataques.</p>
+          <ul class="bento-list-sm">
+            <li>OAuth 2.0 / OIDC com Keycloak</li>
+            <li>LGPD: consentimento, anonimização, DPO</li>
+            <li>Rate limiting, WAF e proteção contra DDoS</li>
+            <li>Revisão de código e hardening de APIs</li>
+          </ul>
+          <div class="bento-tech">
+            <span>Keycloak</span><span>JWT</span><span>OWASP</span><span>LGPD</span>
+          </div>
+        </div>
+
+        <!-- PERFORMANCE -->
+        <div class="bento-card bento-small reveal delay-3">
+          <div class="bento-top">
+            <div class="bento-icon bento-icon-sm" style="background:linear-gradient(135deg,#059669,#10b981)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+          </div>
+          <h3 class="bento-title">Performance</h3>
+          <p class="bento-desc">Infraestrutura e código otimizados para zero downtime, sub-100ms de latência e escala horizontal sem atrito.</p>
+          <ul class="bento-list-sm">
+            <li>Kubernetes com HPA e escala automática</li>
+            <li>CDN, cache Redis e query optimization</li>
+            <li>Load testing com k6 e Artillery</li>
+            <li>Monitoramento: Prometheus + Grafana + alertas</li>
+          </ul>
+          <div class="bento-tech">
+            <span>K8s</span><span>Redis</span><span>Prometheus</span><span>k6</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="testimonials" id="depoimentos">
+    <div class="section-inner">
+      <div class="testimonials-header">
+        <div class="section-label reveal">Depoimentos</div>
+        <h2 class="section-title reveal delay-1">O que nossos clientes dizem</h2>
+      </div>
+
+      <div class="testimonials-grid">
+        <div class="testimonial-card reveal delay-1">
+          <div class="testimonial-stars">
+            <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+          </div>
+          <p class="testimonial-text">"A plataforma da Ada transformou nosso atendimento. Antes levávamos horas para responder clientes, agora o bot resolve a maioria na hora — e só escalona para nós quando realmente precisa."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar av1">MR</div>
+            <div>
+              <div class="author-name">Marcos Rocha</div>
+              <div class="author-role">Diretor Comercial · Construtora Alpha</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card reveal delay-2">
+          <div class="testimonial-stars">
+            <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+          </div>
+          <p class="testimonial-text">"Implementação rápida e sem dor de cabeça. Em 12 dias estávamos em produção, com o número oficial aprovado pela Meta e o bot já atendendo clientes. Superou nossas expectativas."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar av2">JP</div>
+            <div>
+              <div class="author-name">Julia Pereira</div>
+              <div class="author-role">CEO · Clínica Bem Viver</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card reveal delay-3">
+          <div class="testimonial-stars">
+            <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+          </div>
+          <p class="testimonial-text">"O dashboard nos deu uma visão que nunca tivemos: tempo médio de resposta, conversões por atendente, horários de pico. Hoje tomamos decisões com dados de verdade."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar av3">FS</div>
+            <div>
+              <div class="author-name">Felipe Santos</div>
+              <div class="author-role">Gerente de Ops · Fintech Nexus</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta" id="contato">
+    <div class="cta-inner">
+      <div class="section-label reveal">Pronto para começar?</div>
+      <h2 class="section-title reveal delay-1">Vamos construir algo juntos</h2>
+      <p class="section-sub reveal delay-2">Entre em contato e descubra como a Ada Technology pode transformar a comunicação e os resultados da sua empresa.</p>
+      <div class="cta-actions reveal delay-3">
+        <a href="https://wa.me/5511999999999?text=Olá,%20quero%20saber%20mais%20sobre%20a%20Ada%20Technology" class="btn-white" target="_blank" rel="noopener">Falar pelo WhatsApp</a>
+        <a href="mailto:contato@adatechnology.com.br" class="btn-outline-white">Enviar e-mail</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="ada-icon.png" alt="Ada Technology" />
+        <div class="footer-brand-name">Ada Technology</div>
+        <p>Tecnologia que conecta empresas e pessoas. Software robusto, atendimento humano, resultados reais.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Soluções</h4>
+        <ul>
+          <li><a href="#produto">WhatsApp Platform</a></li>
+          <li><a href="#solucoes">Automações</a></li>
+          <li><a href="#solucoes">Data & Analytics</a></li>
+          <li><a href="#solucoes">Integrações</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Empresa</h4>
+        <ul>
+          <li><a href="#sobre">Sobre nós</a></li>
+          <li><a href="#depoimentos">Depoimentos</a></li>
+          <li><a href="#contato">Contato</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Termos de uso</a></li>
+          <li><a href="#">Privacidade</a></li>
+          <li><a href="#">Segurança</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 Ada Technology. Todos os direitos reservados.</span>
+      <div class="social-links">
+        <a href="https://instagram.com/adatechnology" class="social-link" target="_blank" rel="noopener" aria-label="Instagram">
+          <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        </a>
+        <a href="https://linkedin.com/company/adatechnology" class="social-link" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        </a>
+        <a href="https://wa.me/5511999999999" class="social-link" target="_blank" rel="noopener" aria-label="WhatsApp">
+          <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        </a>
+        <a href="https://github.com/adatechnology" class="social-link" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </a>
+      </div>
+      <span>Construído com dedicação no Brasil 🇧🇷</span>
+    </div>
+  </footer>
+
+  <!-- EASTER EGG: Ada Defender Modal -->
+  <div id="easterEggModal" style="
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(4,10,30,0.97); backdrop-filter:blur(8px);
+    align-items:center; justify-content:center; flex-direction:column;
+    font-family:'Space Grotesk',sans-serif;
+  ">
+    <div style="text-align:center; margin-bottom:16px; color:white;">
+      <div style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:#06b6d4;margin-bottom:8px;">Easter Egg Descoberto 🎉</div>
+      <div style="font-size:1.4rem;font-weight:700;letter-spacing:-0.02em;">Ada Defender</div>
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.4);margin-top:6px;">Setas / WASD = mover &nbsp;·&nbsp; Espaço = atirar &nbsp;·&nbsp; R = reiniciar &nbsp;·&nbsp; ESC = fechar</div>
+    </div>
+    <canvas id="snakeCanvas" width="440" height="440" style="
+      border:1px solid rgba(6,182,212,0.25);
+      border-radius:12px;
+      background:#000814;
+    "></canvas>
+    <div style="margin-top:14px;display:flex;gap:20px;align-items:center;">
+      <div style="color:rgba(255,255,255,0.4);font-size:0.82rem;">Pontos: <span id="snakeScore" style="color:#67e8f9;font-weight:700;">0</span></div>
+      <button onclick="restartGame()" style="
+        background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.3);
+        color:#67e8f9;padding:6px 16px;border-radius:8px;cursor:pointer;
+        font-family:inherit;font-size:0.82rem;font-weight:600;
+      ">Reiniciar</button>
+      <button onclick="closeEasterEgg()" style="
+        background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+        color:rgba(255,255,255,0.5);padding:6px 16px;border-radius:8px;cursor:pointer;
+        font-family:inherit;font-size:0.82rem;
+      ">Fechar (ESC)</button>
+    </div>
+  </div>
+
+  <script>
+    // ── Nav scroll effect ─────────────────────────
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 40);
+    }, { passive: true });
+
+    // ── Scroll reveal ─────────────────────────────
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach(el => {
+      revealObserver.observe(el);
+    });
+
+    // ── Step highlight on scroll ──────────────────
+    const steps = document.querySelectorAll('.step');
+    const stepObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('active');
+        else entry.target.classList.remove('active');
+      });
+    }, { threshold: 0.6 });
+    steps.forEach(s => stepObserver.observe(s));
+
+    // ── Counter animation ─────────────────────────
+    function animateCounter(element, target, duration = 1800) {
+      const start = performance.now();
+      const update = (now) => {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        element.textContent = Math.round(eased * target);
+        if (progress < 1) requestAnimationFrame(update);
+      };
+      requestAnimationFrame(update);
+    }
+
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const target = parseInt(entry.target.dataset.target);
+          animateCounter(entry.target, target);
+          counterObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.counter').forEach(el => counterObserver.observe(el));
+
+    // ── Featured list stagger ─────────────────────
+    const listObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const items = entry.target.querySelectorAll('li');
+          items.forEach((item, index) => {
+            setTimeout(() => item.classList.add('item-visible'), index * 120);
+          });
+          listObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    const featuredList = document.getElementById('featuredList');
+    if (featuredList) listObserver.observe(featuredList);
+
+    // ── Chat animation sequence ───────────────────
+    function runChatAnimation() {
+      const messages = [
+        { id: 'msg1',    delay: 0 },
+        { id: 'typing1', delay: 700,  hide: 1400 },
+        { id: 'msg2',    delay: 1500 },
+        { id: 'msg3',    delay: 2400 },
+        { id: 'msg4',    delay: 3600 },
+        { id: 'msg5',    delay: 4600 },
+      ];
+
+      messages.forEach(({ id, delay, hide }) => {
+        setTimeout(() => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add('msg-visible', 'visible');
+          if (hide) {
+            setTimeout(() => {
+              el.classList.remove('msg-visible', 'visible');
+            }, hide - delay);
+          }
+        }, delay);
+      });
+    }
+
+    const chatObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          runChatAnimation();
+          chatObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+
+    const chat = document.getElementById('chatMockup');
+    if (chat) chatObserver.observe(chat);
+    // ── Easter Egg: Snake via Konami Code ────────
+    const konamiSequence = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+    let konamiIndex = 0;
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === konamiSequence[konamiIndex]) {
+        konamiIndex++;
+        if (konamiIndex === konamiSequence.length) {
+          konamiIndex = 0;
+          openEasterEgg();
+        }
+      } else {
+        konamiIndex = e.key === konamiSequence[0] ? 1 : 0;
+      }
+    });
+
+    // Triple-click on nav logo also triggers it (mobile friendly)
+    let logoClickCount = 0, logoClickTimer;
+    document.querySelector('.nav-logo').addEventListener('click', (e) => {
+      e.preventDefault();
+      logoClickCount++;
+      clearTimeout(logoClickTimer);
+      logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 600);
+      if (logoClickCount >= 5) { logoClickCount = 0; openEasterEgg(); }
+    });
+
+    function openEasterEgg() {
+      const modal = document.getElementById('easterEggModal');
+      modal.style.display = 'flex';
+      startAdaDefender();
+    }
+
+    function closeEasterEgg() {
+      document.getElementById('easterEggModal').style.display = 'none';
+      stopGame();
+      if (window._gameCleanup) { window._gameCleanup(); window._gameCleanup = null; }
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEasterEgg(); });
+
+    // ── Ada Defender (Asteroids) ──────────────────
+    let gameAnimId, gameKeys = {}, gameState;
+
+    function restartGame() { stopGame(); startAdaDefender(); }
+    function stopGame() {
+      cancelAnimationFrame(gameAnimId);
+      gameKeys = {};
+    }
+
+    function startAdaDefender() {
+      const canvas = document.getElementById('snakeCanvas');
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      let frame = 0;
+
+      document.getElementById('snakeScore').textContent = '0';
+
+      // ── helpers ──
+      function wrap(v, max) { return ((v % max) + max) % max; }
+
+      function makeAsteroidVerts(radius) {
+        const n = 8 + Math.floor(Math.random() * 5);
+        return Array.from({ length: n }, (_, i) => {
+          const a = (i / n) * Math.PI * 2;
+          const r = radius * (0.65 + Math.random() * 0.35);
+          return { x: Math.cos(a) * r, y: Math.sin(a) * r };
+        });
+      }
+
+      function spawnAsteroids(count, level) {
+        const speed = 0.55 + level * 0.12;
+        for (let i = 0; i < count; i++) {
+          let x, y;
+          do { x = Math.random() * W; y = Math.random() * H; }
+          while (Math.hypot(x - W / 2, y - H / 2) < 90);
+          const a = Math.random() * Math.PI * 2;
+          gameState.asteroids.push({
+            x, y,
+            vx: Math.cos(a) * (speed + Math.random() * 0.5),
+            vy: Math.sin(a) * (speed + Math.random() * 0.5),
+            size: 3, radius: 52,
+            rot: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.04,
+            verts: makeAsteroidVerts(52),
+          });
+        }
+      }
+
+      // ── initial state ──
+      gameState = {
+        ship: { x: W / 2, y: H / 2, vx: 0, vy: 0, angle: -Math.PI / 2, invul: 150, alive: true },
+        bullets: [], asteroids: [], particles: [], score: 0, lives: 3, level: 1,
+        over: false, cooldown: 0, thrust: false,
+        stars: Array.from({ length: 90 }, () => ({
+          x: Math.random() * W, y: Math.random() * H,
+          r: Math.random() * 1.4 + 0.3, b: Math.random(),
+        })),
+      };
+      spawnAsteroids(5, 1);
+
+      // ── draw ship (Ada pyramid) ──
+      function drawShip(ship) {
+        if (ship.invul > 0 && Math.floor(ship.invul / 5) % 2) return;
+        ctx.save();
+        ctx.translate(ship.x, ship.y);
+        ctx.rotate(ship.angle + Math.PI / 2);
+
+        const sz = 22;
+
+        // Outer glow when thrusting
+        if (ship.thrust) {
+          ctx.shadowColor = '#06b6d4';
+          ctx.shadowBlur = 18;
+        }
+
+        // Body gradient
+        const bg = ctx.createLinearGradient(0, -sz, 0, sz);
+        bg.addColorStop(0, '#2563eb');
+        bg.addColorStop(1, '#0d1b3e');
+        ctx.beginPath();
+        ctx.moveTo(0, -sz);
+        ctx.lineTo(-sz * 0.82, sz * 0.82);
+        ctx.lineTo(sz * 0.82, sz * 0.82);
+        ctx.closePath();
+        ctx.fillStyle = bg;
+        ctx.fill();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Eye iris glow
+        const eyeY = sz * 0.08;
+        const er = sz * 0.27;
+        const pulse = 0.5 + 0.5 * Math.sin(frame * 0.07);
+        const eg = ctx.createRadialGradient(0, eyeY, 0, 0, eyeY, er * 2.2);
+        eg.addColorStop(0, `rgba(6,182,212,${0.35 + pulse * 0.25})`);
+        eg.addColorStop(1, 'rgba(6,182,212,0)');
+        ctx.beginPath();
+        ctx.arc(0, eyeY, er * 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = eg;
+        ctx.fill();
+
+        // Eye white
+        ctx.beginPath();
+        ctx.ellipse(0, eyeY, er, er * 0.62, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(240,248,255,0.92)';
+        ctx.fill();
+
+        // Pupil
+        ctx.beginPath();
+        ctx.arc(0, eyeY, er * 0.44, 0, Math.PI * 2);
+        ctx.fillStyle = '#050d1e';
+        ctx.fill();
+
+        // Iris
+        ctx.beginPath();
+        ctx.arc(0, eyeY, er * 0.26, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(6,182,212,${0.75 + pulse * 0.25})`;
+        ctx.fill();
+
+        // Eyelid lines
+        ctx.beginPath();
+        ctx.ellipse(0, eyeY, er, er * 0.62, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(147,197,253,0.5)';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        // Thrust flame
+        if (ship.thrust) {
+          const fl = 14 + Math.random() * 10;
+          const fg = ctx.createLinearGradient(0, sz * 0.82, 0, sz * 0.82 + fl);
+          fg.addColorStop(0, 'rgba(34,211,238,0.95)');
+          fg.addColorStop(0.5, 'rgba(251,146,60,0.7)');
+          fg.addColorStop(1, 'rgba(239,68,68,0)');
+          ctx.beginPath();
+          ctx.moveTo(-sz * 0.22, sz * 0.82);
+          ctx.lineTo(0, sz * 0.82 + fl);
+          ctx.lineTo(sz * 0.22, sz * 0.82);
+          ctx.fillStyle = fg;
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      // ── draw asteroid ──
+      function drawAsteroid(ast) {
+        ctx.save();
+        ctx.translate(ast.x, ast.y);
+        ctx.rotate(ast.rot);
+        ctx.beginPath();
+        ctx.moveTo(ast.verts[0].x, ast.verts[0].y);
+        ast.verts.slice(1).forEach(v => ctx.lineTo(v.x, v.y));
+        ctx.closePath();
+        const col = ast.size === 3 ? '#1e3a6e' : ast.size === 2 ? '#1e4d8c' : '#1a6090';
+        ctx.fillStyle = col;
+        ctx.fill();
+        ctx.strokeStyle = ast.size === 3 ? '#3b82f6' : ast.size === 2 ? '#60a5fa' : '#7dd3fc';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // ── draw bullet ──
+      function drawBullet(b) {
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 9);
+        g.addColorStop(0, 'rgba(6,182,212,0.7)');
+        g.addColorStop(1, 'rgba(6,182,212,0)');
+        ctx.beginPath();
+        ctx.arc(0, 0, 9, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#e0f2fe';
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // ── mini pyramid (HUD lives) ──
+      function drawMiniPyramid(x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.beginPath();
+        ctx.moveTo(0, -9); ctx.lineTo(-8, 7); ctx.lineTo(8, 7);
+        ctx.closePath();
+        ctx.fillStyle = '#1a4fd6';
+        ctx.fill();
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        // tiny eye
+        ctx.beginPath();
+        ctx.arc(0, 2, 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // ── split asteroid ──
+      function splitAsteroid(ast, level) {
+        if (ast.size <= 1) return [];
+        const newSize = ast.size - 1;
+        const newRadius = newSize * 18;
+        const spd = 1.2 + Math.random() + level * 0.12;
+        return [0, 1].map(() => {
+          const a = Math.random() * Math.PI * 2;
+          return {
+            x: ast.x + Math.cos(a) * 12,
+            y: ast.y + Math.sin(a) * 12,
+            vx: Math.cos(a) * spd,
+            vy: Math.sin(a) * spd,
+            size: newSize, radius: newRadius,
+            rot: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.07,
+            verts: makeAsteroidVerts(newRadius),
+          };
+        });
+      }
+
+      // ── burst particles ──
+      function burst(x, y, count, colors) {
+        for (let i = 0; i < count; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const spd = 1 + Math.random() * 3.5;
+          gameState.particles.push({
+            x, y,
+            vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+            life: 35 + Math.random() * 25, maxLife: 60,
+            color: colors[Math.floor(Math.random() * colors.length)],
+          });
+        }
+      }
+
+      // ── main loop ──
+      function loop() {
+        frame++;
+        const gs = gameState;
+        const ship = gs.ship;
+
+        // Clear
+        ctx.fillStyle = '#000814';
+        ctx.fillRect(0, 0, W, H);
+
+        // Stars
+        gs.stars.forEach(star => {
+          const tw = 0.35 + 0.65 * Math.sin(frame * 0.04 + star.b * 12);
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(200,220,255,${tw * star.b * 0.85})`;
+          ctx.fill();
+        });
+
+        if (!gs.over) {
+          const TURN = 0.058, THRUST = 0.16, FRICTION = 0.988, MAX_SPD = 7;
+
+          // Ship controls
+          if (gameKeys['ArrowLeft'] || gameKeys['a'] || gameKeys['A']) ship.angle -= TURN;
+          if (gameKeys['ArrowRight'] || gameKeys['d'] || gameKeys['D']) ship.angle += TURN;
+
+          ship.thrust = !!(gameKeys['ArrowUp'] || gameKeys['w'] || gameKeys['W']);
+          if (ship.thrust) {
+            ship.vx += Math.cos(ship.angle) * THRUST;
+            ship.vy += Math.sin(ship.angle) * THRUST;
+          }
+
+          const spd = Math.hypot(ship.vx, ship.vy);
+          if (spd > MAX_SPD) { ship.vx *= MAX_SPD / spd; ship.vy *= MAX_SPD / spd; }
+          ship.vx *= FRICTION; ship.vy *= FRICTION;
+          ship.x = wrap(ship.x + ship.vx, W);
+          ship.y = wrap(ship.y + ship.vy, H);
+          if (ship.invul > 0) ship.invul--;
+
+          // Shoot
+          if (gameKeys[' '] && gs.cooldown <= 0) {
+            gs.bullets.push({
+              x: ship.x + Math.cos(ship.angle) * 25,
+              y: ship.y + Math.sin(ship.angle) * 25,
+              vx: Math.cos(ship.angle) * 10 + ship.vx * 0.25,
+              vy: Math.sin(ship.angle) * 10 + ship.vy * 0.25,
+              life: 52,
+            });
+            gs.cooldown = 11;
+          }
+          if (gs.cooldown > 0) gs.cooldown--;
+
+          // Move bullets
+          gs.bullets = gs.bullets.filter(b => {
+            b.x = wrap(b.x + b.vx, W);
+            b.y = wrap(b.y + b.vy, H);
+            return --b.life > 0;
+          });
+
+          // Move asteroids
+          gs.asteroids.forEach(ast => {
+            ast.x = wrap(ast.x + ast.vx, W);
+            ast.y = wrap(ast.y + ast.vy, H);
+            ast.rot += ast.rotSpeed;
+          });
+
+          // Bullet-asteroid collisions
+          const survivingBullets = [];
+          gs.bullets.forEach(b => {
+            let hit = false;
+            gs.asteroids = gs.asteroids.flatMap(ast => {
+              if (!hit && Math.hypot(b.x - ast.x, b.y - ast.y) < ast.radius) {
+                hit = true;
+                burst(ast.x, ast.y, 10, ['#38bdf8', '#60a5fa', '#93c5fd']);
+                const pts = ast.size === 3 ? 20 : ast.size === 2 ? 50 : 100;
+                gs.score += pts;
+                document.getElementById('snakeScore').textContent = gs.score;
+                return splitAsteroid(ast, gs.level);
+              }
+              return [ast];
+            });
+            if (!hit) survivingBullets.push(b);
+          });
+          gs.bullets = survivingBullets;
+
+          // Ship-asteroid collision
+          if (ship.invul <= 0) {
+            for (const ast of gs.asteroids) {
+              if (Math.hypot(ship.x - ast.x, ship.y - ast.y) < ast.radius + 13) {
+                burst(ship.x, ship.y, 22, ['#06b6d4', '#1a4fd6', '#38bdf8', '#fbbf24']);
+                gs.lives--;
+                ship.x = W / 2; ship.y = H / 2;
+                ship.vx = 0; ship.vy = 0;
+                ship.invul = 180;
+                if (gs.lives <= 0) gs.over = true;
+                break;
+              }
+            }
+          }
+
+          // Next level
+          if (gs.asteroids.length === 0) {
+            gs.level++;
+            spawnAsteroids(4 + gs.level, gs.level);
+          }
+        }
+
+        // Particles
+        gs.particles = gs.particles.filter(p => {
+          p.x += p.vx; p.y += p.vy;
+          p.vx *= 0.94; p.vy *= 0.94;
+          p.life--;
+          if (p.life <= 0) return false;
+          const alpha = p.life / p.maxLife;
+          const rgb = p.color === '#38bdf8' ? '56,189,248'
+                    : p.color === '#60a5fa' ? '96,165,250'
+                    : p.color === '#93c5fd' ? '147,197,253'
+                    : p.color === '#1a4fd6' ? '26,79,214'
+                    : p.color === '#fbbf24' ? '251,191,36'
+                    : '6,182,212';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${rgb},${alpha})`;
+          ctx.fill();
+          return true;
+        });
+
+        // Draw world
+        gs.asteroids.forEach(drawAsteroid);
+        gs.bullets.forEach(drawBullet);
+        if (ship.alive) drawShip(ship);
+
+        // HUD — lives as mini pyramids
+        for (let i = 0; i < gs.lives; i++) drawMiniPyramid(18 + i * 24, H - 18);
+
+        // HUD — level
+        ctx.fillStyle = 'rgba(56,189,248,0.55)';
+        ctx.font = '11px Space Grotesk, monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(`LVL ${gs.level}`, W - 10, H - 10);
+        ctx.textAlign = 'left';
+
+        // Game over screen
+        if (gs.over) {
+          ctx.fillStyle = 'rgba(0,8,20,0.75)';
+          ctx.fillRect(0, 0, W, H);
+
+          // Ada pyramid logo watermark
+          ctx.save();
+          ctx.translate(W / 2, H / 2 - 64);
+          const sz = 36;
+          const bg = ctx.createLinearGradient(0, -sz, 0, sz);
+          bg.addColorStop(0, '#2563eb');
+          bg.addColorStop(1, '#0d1b3e');
+          ctx.beginPath();
+          ctx.moveTo(0, -sz); ctx.lineTo(-sz * 0.82, sz * 0.82); ctx.lineTo(sz * 0.82, sz * 0.82);
+          ctx.closePath();
+          ctx.fillStyle = bg;
+          ctx.fill();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.ellipse(0, sz * 0.1, sz * 0.27, sz * 0.17, 0, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(240,248,255,0.9)';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(0, sz * 0.1, sz * 0.1, 0, Math.PI * 2);
+          ctx.fillStyle = '#06b6d4';
+          ctx.fill();
+          ctx.restore();
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 26px Space Grotesk, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('GAME OVER', W / 2, H / 2 + 14);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '15px Space Grotesk, monospace';
+          ctx.fillText(`Pontuação: ${gs.score}`, W / 2, H / 2 + 42);
+          ctx.fillStyle = 'rgba(255,255,255,0.45)';
+          ctx.font = '12px Space Grotesk, monospace';
+          ctx.fillText('Pressione R para tentar novamente', W / 2, H / 2 + 68);
+          ctx.textAlign = 'left';
+          return;
+        }
+
+        gameAnimId = requestAnimationFrame(loop);
+      }
+
+      // Key listeners (scoped to game)
+      function onKeyDown(e) {
+        gameKeys[e.key] = true;
+        if (e.key === ' ') e.preventDefault();
+        if ((e.key === 'r' || e.key === 'R') && gameState && gameState.over) restartGame();
+      }
+      function onKeyUp(e) { gameKeys[e.key] = false; }
+      document.addEventListener('keydown', onKeyDown);
+      document.addEventListener('keyup', onKeyUp);
+      window._gameCleanup = () => {
+        document.removeEventListener('keydown', onKeyDown);
+        document.removeEventListener('keyup', onKeyUp);
+      };
+
+      gameAnimId = requestAnimationFrame(loop);
+    }
+  </script>
+
+</body>
+</html>
