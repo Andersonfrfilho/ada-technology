@@ -1,0 +1,25 @@
+{
+  "name": "ada-technology",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "bun run typecheck:scripts && bun run typecheck:api && bun run typecheck:panel && bun run typecheck:widget && bun run typecheck:site",
+    "typecheck:scripts": "tsc --noEmit -p scripts",
+    "typecheck:api": "cd apps/api-ada && bun run typecheck",
+    "typecheck:panel": "cd apps/frontend-panel && bun run typecheck",
+    "typecheck:widget": "cd packages/chat-widget && bun run typecheck",
+    "typecheck:site": "cd apps/frontend-site && bun run typecheck",
+    "test": "bun run test:scripts && bun run test:api",
+    "test:scripts": "bun test scripts",
+    "test:api": "cd apps/api-ada && bun run test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^5.7.3"
+  }
+}

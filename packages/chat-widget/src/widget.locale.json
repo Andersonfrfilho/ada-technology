@@ -1,0 +1,20 @@
+{
+  "launcher": {
+    "open": "Falar com a Ada",
+    "close": "Fechar conversa"
+  },
+  "header": {
+    "title": "Ada Technology",
+    "subtitle": "Atendimento"
+  },
+  "composer": {
+    "placeholder": "Escreva sua mensagem",
+    "send": "Enviar"
+  },
+  "status": {
+    "starting": "Abrindo conversa…",
+    "startFailed": "Não foi possível abrir a conversa. Tente de novo em instantes.",
+    "sendFailed": "Sua mensagem não foi enviada. Tente de novo.",
+    "handedOff": "Um atendente foi chamado e responde por aqui."
+  }
+}

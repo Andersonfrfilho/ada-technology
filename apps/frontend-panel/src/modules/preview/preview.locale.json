@@ -1,0 +1,15 @@
+{
+  "title": "Preview do painel",
+  "subtitle": "Dado falso, sem backend — para avaliar a interface e testar transicoes de atendimento.",
+  "warning": "Nada aqui toca o banco. Conversas, mensagens e midias sao fixtures do SDK.",
+  "tabs": {
+    "atendimento": "Atendimento",
+    "midia": "Tipos de midia"
+  },
+  "script": {
+    "start": "Iniciar roteiro",
+    "stop": "Parar roteiro",
+    "runningHint": "Roteiro rodando: fila enchendo, pedido de humano e devolucao ao bot, em ciclo."
+  },
+  "agentName": "Atendente do preview"
+}

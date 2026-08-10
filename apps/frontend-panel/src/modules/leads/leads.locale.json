@@ -1,0 +1,35 @@
+{
+  "title": "Clientes",
+  "subtitle": "Quem o bot atendeu e deixou contato",
+  "searchLabel": "Buscar por nome ou interesse",
+  "searchPlaceholder": "Nome ou interesse",
+  "channelFilter": "Canal",
+  "clearFilters": "Limpar filtros",
+  "loading": "Carregando clientes...",
+  "loadError": "Nao foi possivel carregar os clientes.",
+  "empty": "Nenhum cliente encontrado.",
+  "columns": {
+    "name": "Nome",
+    "contact": "Contato",
+    "interest": "Interesse",
+    "channel": "Canal",
+    "firstContactAt": "Primeiro contato",
+    "lastActivityAt": "Ultima atividade",
+    "conversation": "Conversa"
+  },
+  "channels": {
+    "webchat": "Site",
+    "whatsapp": "WhatsApp"
+  },
+  "waitingHuman": "Aguardando atendente",
+  "openConversation": "Abrir conversa",
+  "noValue": "—",
+  "pagination": {
+    "show": "Mostrar",
+    "perPage": "por pagina",
+    "previous": "Anterior",
+    "next": "Proxima",
+    "total": "{count} clientes",
+    "page": "Pagina {current} de {last}"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "nav": {
+    "brand": "Ada Technology",
+    "title": "Painel de atendimento",
+    "openMenu": "Abrir menu",
+    "closeMenu": "Fechar menu",
+    "signOut": "Sair",
+    "sections": {
+      "conversas": "Conversas",
+      "fluxos": "Fluxos",
+      "mensagens": "Mensagens",
+      "templates": "Templates",
+      "documentos": "Documentos",
+      "clientes": "Clientes"
+    }
+  }
+}

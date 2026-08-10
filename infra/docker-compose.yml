@@ -1,0 +1,48 @@
+name: ${PROJECT_NAME:-ada}-${ENV:-dev}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ${PROJECT_NAME:-ada}-${ENV:-dev}-postgres
+    environment:
+      POSTGRES_USER: ada
+      POSTGRES_PASSWORD: ada
+      POSTGRES_DB: ada_dev
+    ports:
+      - '5434:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ada -d ada_dev']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ${PROJECT_NAME:-ada}-${ENV:-dev}-redis
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6381:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Mock da Graph API da Meta — o WhatsApp Cloud API nao tem sandbox estavel.
+  wiremock:
+    image: wiremock/wiremock:3.9.1
+    container_name: ${PROJECT_NAME:-ada}-${ENV:-dev}-wiremock
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./wiremock:/home/wiremock:ro
+    command: ['--global-response-templating', '--verbose']
+
+volumes:
+  postgres-data:
+  redis-data:

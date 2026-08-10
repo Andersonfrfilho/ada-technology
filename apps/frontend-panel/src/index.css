@@ -1,0 +1,46 @@
+@import 'tailwindcss';
+@import '@adatechnology/conversations-ui/styles.css';
+
+/**
+ * O `styles.css` do SDK traz so as classes `.cv-*` escritas a mao; o resto dos componentes usa
+ * utilitario Tailwind, que precisa ser compilado aqui. O Tailwind v4 pula `node_modules` por
+ * padrao, entao sem este `@source` o balao de mensagem sai sem estilo nenhum.
+ */
+@source '../node_modules/@adatechnology/conversations-ui/dist';
+
+/**
+ * Tokens do painel.
+ *
+ * Ficam aqui, e nao num arquivo TypeScript, porque componente nao usa estilo inline: declarados no
+ * `@theme` eles viram utilitario (`bg-brand-600`, `p-4`) e o valor cru some do JSX. A escala de
+ * espacamento e a base 4px padrao do Tailwind, que e a mesma da regra de `scale()`.
+ */
+@theme {
+  --color-brand-50: #f5f8ff;
+  --color-brand-100: #e2e8f0;
+  --color-brand-500: #1a4fd6;
+  --color-brand-600: #163fae;
+  --color-brand-900: #0d1b3e;
+  --color-accent-500: #06b6d4;
+  --color-ink-500: #64748b;
+  --color-ink-900: #1e2a4a;
+  --radius-panel: 0.75rem;
+
+  /* Os nomes da regra de frontend, para que `min-width` seja lido como intencao e nao como numero. */
+  --breakpoint-tablet: 40rem;
+  --breakpoint-desktop: 64rem;
+  --breakpoint-wide: 80rem;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-brand-50);
+  color: var(--color-ink-900);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}

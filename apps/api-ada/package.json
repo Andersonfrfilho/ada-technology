@@ -1,0 +1,33 @@
+{
+  "name": "@ada/api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun run src/infra/database/migrate.ts",
+    "db:seed": "bun run src/infra/database/seeds/index.ts",
+    "test": "bun test --env-file=../../envs/env.test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.10",
+    "@adatechnology/meta-whatsapp-module": "0.2.0-rc.19",
+    "@adatechnology/meta-whatsapp-provider": "0.2.0-rc.3",
+    "@adatechnology/module-http": "0.1.0-rc.1",
+    "@adatechnology/notification-contracts": "0.1.0-rc.2",
+    "drizzle-orm": "0.45.2",
+    "ioredis": "5.11.1",
+    "jose": "^6.2.8",
+    "pg": "^8.13.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.27.2",
+    "typescript": "^5.7.3"
+  }
+}

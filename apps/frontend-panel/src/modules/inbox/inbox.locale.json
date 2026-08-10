@@ -1,0 +1,15 @@
+{
+  "workspace": {
+    "brand": "Ada Technology",
+    "title": "Painel de atendimento",
+    "signOut": "Sair"
+  },
+  "labels": {
+    "title": "Conversas",
+    "search": "Buscar por nome ou estado do fluxo...",
+    "emptyList": "Nenhuma conversa ainda. Fale com o bot pelo site para ver a primeira aparecer.",
+    "emptyDetail": "Escolha uma conversa para ler o historico.",
+    "composerPlaceholder": "Responder como atendente...",
+    "takeoverToReply": "Assuma o atendimento para responder diretamente ao cliente."
+  }
+}

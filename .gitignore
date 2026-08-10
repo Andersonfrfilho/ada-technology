@@ -1,3 +1,14 @@
+node_modules/
+dist/
 .DS_Store
-Thumbs.db
+
+# env.*.local carrega segredo real e nunca entra no repositorio
+envs/*.local
+.env
+.env.*
+!.env.example
+
 *.log
+.vite/
+coverage/
+.omc/

@@ -1,0 +1,15 @@
+{
+  "messages": {
+    "title": "Mensagens do bot",
+    "subtitle": "Textos que o bot envia ao abrir e ao encerrar um atendimento.",
+    "loading": "Carregando mensagens…",
+    "loadError": "Não foi possível carregar as mensagens do bot."
+  },
+  "templates": {
+    "title": "Templates do WhatsApp",
+    "subtitle": "Template aprovado na Meta para reabrir a janela de 24 horas com o cliente.",
+    "loadError": "Não foi possível carregar as configurações de template.",
+    "createFailed": "Não foi possível enviar o template para aprovação.",
+    "createSucceeded": "Template enviado para aprovação da Meta."
+  }
+}

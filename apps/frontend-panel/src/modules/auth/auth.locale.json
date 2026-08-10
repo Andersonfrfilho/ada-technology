@@ -1,0 +1,20 @@
+{
+  "signIn": {
+    "brand": "Ada Technology",
+    "title": "Painel de atendimento",
+    "subtitle": "Entre para assumir conversas e responder aos clientes.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "voce@adatechnology.com.br",
+    "passwordLabel": "Senha",
+    "passwordPlaceholder": "Sua senha",
+    "submit": "Entrar",
+    "submitting": "Entrando...",
+    "invalidCredentials": "E-mail ou senha incorretos.",
+    "networkUnreachable": "Nao foi possivel falar com o servidor. Verifique se a API esta no ar.",
+    "unexpected": "Nao foi possivel entrar agora. Tente de novo em instantes."
+  },
+  "session": {
+    "restoring": "Abrindo o painel...",
+    "signOut": "Sair"
+  }
+}
