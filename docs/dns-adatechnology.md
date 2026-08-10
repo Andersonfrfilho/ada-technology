@@ -76,12 +76,15 @@ importador correto rejeita. Ele e adicionado a mao no painel do provedor com fla
 
 | Registro | Situacao | Acao |
 |---|---|---|
-| `A @ 75.2.60.5` | resquicio do Netlify; o projeto de la ja foi removido | remover — e o que faz o Chrome mostrar `ERR_CERT_COMMON_NAME_INVALID`, porque a borda do Netlify responde com o certificado `*.netlify.app` |
-| `TXT @ "zoho-verification=... \" v=spf1 include:zohomail.com"` | dois valores colados num campo, com aspa escapada no meio | substituir pelo valor exato de verificacao |
-| `MX` | so `mx.zoho.com` | somar `mx2` (20) e `mx3` (50); sem eles, indisponibilidade do primario adia ou devolve e-mail |
+| `A @ 75.2.60.5` | resquicio do Netlify; o projeto de la ja foi removido | remover — e o que faz o Chrome mostrar `ERR_CERT_COMMON_NAME_INVALID`, porque a borda do Netlify responde com o certificado `*.netlify.app`. Sozinha, a remocao apenas troca o sintoma por "site nao encontrado": o apex depende do provedor de DNS |
 
-O SPF **nao** esta duplicado apesar da aparencia: pelo RFC 7208 §4.5, registro que nao comeca com
-`v=spf1` e descartado, e o malformado comeca com `zoho-verification=`. O SPF em vigor e um so.
+Dois itens ja foram corrigidos na zona e viraram o estado declarado acima: o `TXT` de verificacao do
+Zoho, que tinha dois valores colados num campo com aspa escapada no meio, e os `MX` secundarios
+`mx2` (20) e `mx3` (50), que nao existiam — sem eles, indisponibilidade do primario adia ou devolve
+e-mail em vez de cair no proximo.
+
+Nunca houve SPF duplicado, apesar da aparencia: pelo RFC 7208 §4.5, registro que nao comeca com
+`v=spf1` e descartado, e o malformado comecava com `zoho-verification=`.
 
 ## Se a zona for para a Cloudflare
 
