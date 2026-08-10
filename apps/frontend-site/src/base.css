@@ -14,25 +14,212 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/*
+ * Canais separados (`8 17 42`) em vez de hexadecimal onde a cor precisa de alfa variavel. A landing
+ * tem mais de cem veus de branco sobre as secoes escuras, cada um com a sua opacidade; `rgb(var(--x)
+ * / 0.68)` mantem a cor com fonte unica e deixa o alfa como decisao de cada uso, que e o que ele e.
+ */
 :root {
-  --navy:     #0d1b3e;
-  --blue:     #1a4fd6;
-  --cyan:     #06b6d4;
-  --bg:       #f5f8ff;
-  --white:    #ffffff;
-  --text:     #1e2a4a;
-  --muted:    #64748b;
-  --border:   #e2e8f0;
-  --radius:   12px;
+  /* ── Marca — nao muda com o tema ─────────────── */
+  --brand-navy-rgb:    13 27 62;
+  --brand-blue-rgb:    26 79 214;
+  --brand-cyan-rgb:     6 182 212;
+  --brand-navy:        rgb(var(--brand-navy-rgb));
+  --brand-blue:        rgb(var(--brand-blue-rgb));
+  --brand-cyan:        rgb(var(--brand-cyan-rgb));
+  --brand-cyan-soft:   #67e8f9;
+
+  /* Apelidos historicos: o HTML e o widget ja falam nesses nomes. */
+  --navy: var(--brand-navy);
+  --blue: var(--brand-blue);
+  --cyan: var(--brand-cyan);
+
+  /* ── Acentos decorativos (avatares, icones do bento) ── */
+  --accent-indigo-rgb:  99 102 241;
+  --accent-emerald-rgb: 16 185 129;
+  --accent-periwinkle-rgb: 129 140 248;
+  --accent-amber-rgb:      245 158 11;
+  --accent-indigo:      rgb(var(--accent-indigo-rgb));
+  --accent-periwinkle:  rgb(var(--accent-periwinkle-rgb));
+  --accent-violet:      #8b5cf6;
+  --accent-pink:        #ec4899;
+  --accent-emerald:     rgb(var(--accent-emerald-rgb));
+  --accent-emerald-deep:#059669;
+  --accent-mint:        #34d399;
+  --accent-amber:       rgb(var(--accent-amber-rgb));
+  --accent-orange:      #f97316;
+  --accent-red:         #ef4444;
+  --accent-red-deep:    #dc2626;
+  --accent-cyan-deep:   #0891b2;
+
+  /*
+   * ── Tinta: secoes que sao escuras nos dois temas ──
+   * Hero, secao do WhatsApp, faixa de numeros, rodape e menu mobile nasceram escuros por desenho,
+   * nao por tema. Ficam iguais no claro e no escuro; o que muda em volta e a pagina.
+   */
+  --ink-1-rgb:     8 17 42;
+  --ink-deep-rgb:  4 10 30;
+  --ink-1:         rgb(var(--ink-1-rgb));
+  --ink-2:         #0d1e4a;
+  --ink-3:         #0a2d6e;
+  --ink-feature-1: #0a1530;
+  --ink-feature-2: #0d1e4e;
+  --ink-canvas:    #000814;
+
+  /* Texto e veus sobre tinta — o alfa fica no uso, a cor fica aqui. */
+  --on-dark-rgb: 255 255 255;
+  --on-dark:     rgb(var(--on-dark-rgb));
+  --on-cyan:     var(--brand-navy);
+
+  /* ── Superficie da pagina — isto sim vira no tema ── */
+  --bg-rgb:      245 248 255;
+  --surface-rgb: 255 255 255;
+  --bg:          rgb(var(--bg-rgb));
+  --surface:     rgb(var(--surface-rgb));
+  --fill:        #f5f8ff;
+  --border:      #e2e8f0;
+  --text:        #1e2a4a;
+  --muted:       #64748b;
+  --heading:     var(--brand-navy);
+  --band-dark:   var(--brand-navy);
+
+  /* Fundos pastel que existem so no claro: no escuro viram acento translucido. */
+  --tint-blue:  #eff6ff;
+  --tint-cyan:  #ecfeff;
+  --tint-green: #f0fdf4;
+  --panel-a:    #e8f0fe;
+  --panel-b:    #e0f7fa;
+
+  --shadow-rgb: var(--brand-blue-rgb);
+
+  /* Logo e monocromatico escuro: sobre superficie clara vai como esta, sobre escura inverte. */
+  --logo-filter: none;
+
+  --white:  var(--surface);
+  --radius: 12px;
+
+  /* Sem isto a barra de rolagem e os controles nativos continuam claros num tema escuro. */
+  color-scheme: light;
+}
+
+/*
+ * O tema explicito e `:root:not([data-theme="light"])` tem a mesma especificidade (0,2,0), entao os
+ * dois blocos abaixo nunca se contradizem: quando ambos casam, pedem o mesmo valor. O `:not` e o que
+ * faz a escolha manual de tema claro ganhar de um sistema em modo escuro.
+ */
+:root[data-theme="dark"] {
+  --bg-rgb:      5 8 15;
+  --surface-rgb: 15 24 48;
+  --fill:        #19244a;
+  --border:      #25314f;
+  --text:        #dde5f5;
+  --muted:       #93a2c0;
+  --heading:     #f0f5ff;
+  --band-dark:   #0a1226;
+
+  --tint-blue:  rgb(var(--brand-blue-rgb) / 0.18);
+  --tint-cyan:  rgb(var(--brand-cyan-rgb) / 0.16);
+  --tint-green: rgb(var(--accent-emerald-rgb) / 0.16);
+  --panel-a:    rgb(var(--brand-blue-rgb) / 0.14);
+  --panel-b:    rgb(var(--brand-cyan-rgb) / 0.12);
+
+  --shadow-rgb: 0 0 0;
+  --logo-filter: brightness(0) invert(1);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-rgb:      5 8 15;
+    --surface-rgb: 15 24 48;
+    --fill:        #19244a;
+    --border:      #25314f;
+    --text:        #dde5f5;
+    --muted:       #93a2c0;
+    --heading:     #f0f5ff;
+    --band-dark:   #0a1226;
+
+    --tint-blue:  rgb(var(--brand-blue-rgb) / 0.18);
+    --tint-cyan:  rgb(var(--brand-cyan-rgb) / 0.16);
+    --tint-green: rgb(var(--accent-emerald-rgb) / 0.16);
+    --panel-a:    rgb(var(--brand-blue-rgb) / 0.14);
+    --panel-b:    rgb(var(--brand-cyan-rgb) / 0.12);
+
+    --shadow-rgb: 0 0 0;
+    --logo-filter: brightness(0) invert(1);
+    color-scheme: dark;
+  }
 }
 
 html { scroll-behavior: smooth; }
 
 body {
   font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
-  background: var(--white);
+  background: var(--surface);
   color: var(--text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+/* ── BOTAO DE TEMA ────────────────────────────── */
+/*
+ * Presente na nav das duas paginas, por isso mora aqui. A troca de icone e puro CSS espelhando a
+ * mesma cascata da paleta: sem isso o botao mostraria sol num tema escuro ate o modulo carregar,
+ * porque o tema do sistema e resolvido pelo navegador e o JS chega depois.
+ */
+.theme-toggle {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* O quadrado visual e 34px, mas o dedo precisa de 44px (web.md §10) — a area extra vem daqui, sem
+ * mexer no desenho nem empurrar o burger ao lado. */
+.theme-toggle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.theme-toggle:hover {
+  background: var(--fill);
+  color: var(--brand-blue);
+  border-color: var(--brand-blue);
+}
+
+.theme-toggle svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme-toggle .icon-sun { display: none; }
+
+:root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+:root[data-theme="dark"] .theme-toggle .icon-sun  { display: block; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: none; }
+  :root:not([data-theme="light"]) .theme-toggle .icon-sun  { display: block; }
 }

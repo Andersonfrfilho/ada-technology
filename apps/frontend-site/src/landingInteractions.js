@@ -20,6 +20,10 @@
 // e o que permite o CSP de producao dispensar `'unsafe-inline'` em `style-src`.
 import './landing.css';
 
+import { mountThemeToggle } from './theme';
+
+mountThemeToggle();
+
 // ── Mobile menu ───────────────────────────────
 const burger = document.getElementById('navBurger');
 const mobileMenu = document.getElementById('mobileMenu');

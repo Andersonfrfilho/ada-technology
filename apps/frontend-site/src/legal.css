@@ -23,7 +23,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 14px 6%;
-  background: rgba(255, 255, 255, 0.94);
+  background: rgb(var(--surface-rgb) / 0.94);
   backdrop-filter: blur(14px);
   box-shadow: 0 1px 0 var(--border);
 }
@@ -33,12 +33,20 @@
   align-items: center;
   gap: 9px;
   text-decoration: none;
-  color: var(--navy);
+  color: var(--heading);
   font-size: 1.05rem;
 }
 
-.legal-logo img { height: 30px; width: auto; }
+/* Logo monocromatico escuro: sobre fundo escuro precisa inverter para nao virar um borrao. */
+.legal-logo img { height: 30px; width: auto; filter: var(--logo-filter); }
 .legal-logo strong { font-weight: 700; }
+
+/* O voltar e o botao de tema ocupam juntos o segundo lado do `space-between` da nav. */
+.legal-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
 .legal-back {
   color: var(--blue);
@@ -69,7 +77,7 @@
 .legal h1 {
   font-size: clamp(1.9rem, 5vw, 2.6rem);
   line-height: 1.2;
-  color: var(--navy);
+  color: var(--heading);
   letter-spacing: -0.02em;
 }
 
@@ -89,7 +97,7 @@
 
 .legal h2 {
   font-size: 1.28rem;
-  color: var(--navy);
+  color: var(--heading);
   letter-spacing: -0.01em;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
@@ -98,7 +106,7 @@
 
 .legal h3 {
   font-size: 1rem;
-  color: var(--navy);
+  color: var(--heading);
   margin-top: 26px;
   margin-bottom: 10px;
 }
@@ -113,7 +121,7 @@
 .legal code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.88em;
-  background: var(--bg);
+  background: var(--fill);
   border: 1px solid var(--border);
   border-radius: 5px;
   padding: 1px 5px;
@@ -123,7 +131,7 @@
 .legal-toc {
   margin-top: 30px;
   padding: 22px 26px;
-  background: var(--bg);
+  background: var(--fill);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
@@ -138,7 +146,7 @@
 
 .legal-contact li, .legal-vendors li, .legal-steps li {
   padding: 12px 16px;
-  background: var(--bg);
+  background: var(--fill);
   border-left: 3px solid var(--cyan);
   border-radius: 0 8px 8px 0;
   margin-bottom: 10px;
@@ -172,13 +180,13 @@
 }
 
 .legal-table thead th {
-  background: var(--bg);
-  color: var(--navy);
+  background: var(--fill);
+  color: var(--heading);
   font-weight: 600;
   white-space: nowrap;
 }
 
-.legal-table tbody tr:nth-child(even) { background: rgba(245, 248, 255, 0.6); }
+.legal-table tbody tr:nth-child(even) { background: rgb(var(--bg-rgb) / 0.6); }
 
 /* ── RODAPE ───────────────────────────────────── */
 .legal-footer {

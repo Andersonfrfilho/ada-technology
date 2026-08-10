@@ -7,11 +7,14 @@
  */
 
 /**
- * Entrada das paginas legais. Existe so para a folha entrar pelo bundle.
+ * Entrada das paginas legais: a folha e o botao de tema.
  *
- * A alternativa seria um `<link rel="stylesheet">` no HTML, mas ai o arquivo nao ganharia hash no
- * nome e o `Cache-Control: immutable` de `/assets/*` serviria a versao velha depois de um deploy.
- * Nao ha interacao nesta pagina: o indice e ancora HTML pura.
+ * A folha entra pelo bundle em vez de por um `<link rel="stylesheet">` no HTML porque assim ganha
+ * hash no nome — sem isso o `Cache-Control: immutable` de `/assets/*` serviria a versao velha depois
+ * de um deploy. O indice continua sendo ancora HTML pura, sem JS.
  */
 
 import './legal.css';
+import { mountThemeToggle } from './theme';
+
+mountThemeToggle();
