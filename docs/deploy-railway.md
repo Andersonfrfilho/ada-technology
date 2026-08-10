@@ -243,15 +243,31 @@ deploy com `DATABASE_URL` errada nao substitui a versao boa.
 
 ## 8. WhatsApp
 
-Depois que o servico `api` tiver dominio:
+Numero de producao: `+55 16 99170 7267`, `WHATSAPP_PHONE_NUMBER_ID=1129051206965973`,
+`WHATSAPP_BUSINESS_ACCOUNT_ID=1331187315501590`. Nenhum dos dois e segredo — sao identificadores, e
+por isso vivem no `railway-provision.sh`.
 
-- Webhook na Meta: `https://<api do ambiente>/v1/whatsapp/webhook`.
-- Verify token: o mesmo valor de `WHATSAPP_WEBHOOK_VERIFY_TOKEN`.
+- Webhook na Meta: `https://api.adatechnology.com.br/v1/whatsapp/webhook`, campo `messages` assinado.
+- Verify token: o valor de `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, gerado por
+  `./scripts/railway-secrets.sh production whatsapp` e copiado do painel do Railway para a Meta.
 - A assinatura `X-Hub-Signature-256` e conferida sobre o **rawBody**, com janela de timestamp e
   nonce em Redis contra replay. Por isso o Redis nao e opcional quando o canal esta ligado.
 
+**Ordem importa.** `WHATSAPP_ENABLED=true` com token ou app secret vazio derruba o boot (o `refine`
+do zod exige os quatro), entao ligue por ultimo:
+
+1. `WHATSAPP_ACCESS_TOKEN` e `WHATSAPP_APP_SECRET` no painel do Railway.
+2. `./scripts/railway-provision.sh production custom` (e ele que escreve `WHATSAPP_ENABLED=true`).
+3. `./scripts/railway-redeploy.py production api`.
+
+O token da tela de teste da Meta **vale 24 horas**. Integracao que precisa sobreviver ao dia
+seguinte usa token de System User (Configuracoes do Negocio -> Usuarios do sistema), com
+`whatsapp_business_messaging` e `whatsapp_business_management`.
+
 Um numero de teste da Meta aponta para o webhook de `staging`; o numero de producao, para o de
-`production`. Compartilhar o numero entre os dois faz mensagem de cliente cair no ambiente errado.
+`production`. Compartilhar o numero entre os dois faz mensagem de cliente cair no ambiente errado —
+a Meta entrega o webhook de um numero para um unico callback por app. Por isso `staging` fica com
+`WHATSAPP_ENABLED=false` ate ter numero proprio.
 
 ## 9. Cabecalhos e CSP dos frontends
 

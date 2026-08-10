@@ -26,7 +26,10 @@
 # O que ele NAO faz, de proposito:
 #   - `PANEL_JWT_SECRET`: gerado por `railway-secrets.sh`, que le de /dev/urandom e escreve por
 #     stdin. Segredo que aparece no terminal e segredo queimado (`security.md` §4).
-#   - Credenciais do WhatsApp: sao da Meta, entram no painel do Railway quando existirem.
+#   - `WHATSAPP_ACCESS_TOKEN` e `WHATSAPP_APP_SECRET`: nascem na Meta, entram pelo painel do
+#     Railway. O `WHATSAPP_WEBHOOK_VERIFY_TOKEN` e nosso e sai de `railway-secrets.sh whatsapp`.
+#     Com `WHATSAPP_ENABLED=true` e qualquer um deles vazio a API nao sobe (fail-closed no zod), e o
+#     healthcheck mantem a versao antiga no ar em vez de publicar a quebrada.
 #   - Conectar o repositorio do GitHub ao servico: exige o GitHub App do Railway autorizado na
 #     conta, que e um passo de OAuth no navegador. Depois disso, `railway-connect-repo.sh`.
 
@@ -51,16 +54,26 @@ APP_SERVICES=(api panel site)
 
 # Dominios proprios de cada ambiente. Criar o dominio no Railway e trabalho de
 # `railway-domains.py`; aqui eles so entram nas variaveis.
+#
+# O numero do WhatsApp e da producao e so dela: a Meta entrega webhook de um numero para um unico
+# callback por app, entao apontar o mesmo numero para os dois ambientes faria o staging roubar as
+# mensagens do cliente. Staging fica desligado ate ter numero de teste proprio.
 if [[ "$ENVIRONMENT_NAME" == "production" ]]; then
   CUSTOM_API="https://api.adatechnology.com.br"
   CUSTOM_PANEL="https://painel.adatechnology.com.br"
   CUSTOM_SITE="https://adatechnology.com.br"
   CUSTOM_SITE_ALTERNATE="https://www.adatechnology.com.br"
+  WHATSAPP_ENABLED="true"
+  WHATSAPP_PHONE_NUMBER_ID="1129051206965973"
+  WHATSAPP_BUSINESS_ACCOUNT_ID="1331187315501590"
 else
   CUSTOM_API="https://api.staging.adatechnology.com.br"
   CUSTOM_PANEL="https://painel.staging.adatechnology.com.br"
   CUSTOM_SITE="https://staging.adatechnology.com.br"
   CUSTOM_SITE_ALTERNATE=""
+  WHATSAPP_ENABLED="false"
+  WHATSAPP_PHONE_NUMBER_ID=""
+  WHATSAPP_BUSINESS_ACCOUNT_ID=""
 fi
 
 echo "==> ambiente $ENVIRONMENT_NAME"
@@ -151,7 +164,9 @@ set_variables api \
   "CORS_ALLOWED_ORIGINS=$CORS_ORIGINS" \
   "WIDGET_ALLOWED_ORIGINS=$WIDGET_ORIGINS" \
   "PANEL_ACCESS_TOKEN_TTL_MINUTES=15" \
-  "WHATSAPP_ENABLED=false" \
+  "WHATSAPP_ENABLED=$WHATSAPP_ENABLED" \
+  "WHATSAPP_PHONE_NUMBER_ID=$WHATSAPP_PHONE_NUMBER_ID" \
+  "WHATSAPP_BUSINESS_ACCOUNT_ID=$WHATSAPP_BUSINESS_ACCOUNT_ID" \
   "WHATSAPP_GRAPH_BASE_URL=https://graph.facebook.com" \
   "INTENT_CLASSIFIER_ENABLED=false" \
   "GROQ_MODEL=llama-3.3-70b-versatile"
