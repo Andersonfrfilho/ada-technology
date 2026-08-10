@@ -77,7 +77,26 @@ Duplicar um ambiente (`railway environment create <novo> --duplicate production`
 tres campos junto**, entao criar um ambiente novo a partir de um ja configurado dispensa refazer
 o passo. Foi assim que o `staging` nasceu.
 
-## 2. Variaveis do servico `api`
+## 2. Portao de CI
+
+O deploy e disparado pelo push, mas nao comeca antes do CI passar: os gatilhos estao com
+`checkSuites` ligado (o "Wait for CI" do painel), entao o Railway espera o resultado do check
+suite daquele commit. CI vermelho, deploy nenhum — nem em `staging`, nem em `main`.
+
+`.github/workflows/ci.yml` roda em push para `main` e `staging` e em todo pull request:
+`bun install --frozen-lockfile`, `bun run typecheck`, `bun run test` e a build dos dois frontends.
+
+Duas coisas que parecem detalhe e nao sao:
+
+- **Sem filtro de path no workflow.** Gatilho que espera por um check suite que nunca roda fica
+  parado para sempre. Quem decide o que rebuilda sao os watch patterns do Railway, nao o CI.
+- **A versao do Bun no runner e a mesma do runtime.** Divergir esconde exatamente o erro que so
+  aparece no deploy.
+
+Para religar ou desligar o portao, o campo e `checkSuites` no `deploymentTriggerUpdate` — nao ha
+comando na CLI.
+
+## 3. Variaveis do servico `api`
 
 O `environment.ts` valida tudo no boot com zod e **falha em vez de subir degradado**. Nao existe
 default silencioso para segredo.
@@ -113,7 +132,7 @@ webhook publico sem `APP_SECRET` aceitaria payload forjado.
 `railway-secrets.sh` existe: o valor sai do `/dev/urandom` direto para o `stdin` do Railway e nao
 e visto por ninguem. Se preferir, o gerador do painel do Railway faz o mesmo papel.
 
-## 3. Variaveis dos servicos `panel` e `site`
+## 4. Variaveis dos servicos `panel` e `site`
 
 `VITE_API_BASE_URL` e **build arg**, nao variavel de runtime: o Vite inlina o literal no bundle.
 No Railway, variaveis do servico ja sao passadas como `--build-arg` para o Dockerfile, entao
@@ -135,7 +154,7 @@ cada ambiente tem o seu build, e nao se promove imagem de staging para producao.
 
 Nenhum segredo com prefixo `VITE_` — o prefixo e publico por definicao.
 
-## 4. Dominios proprios
+## 5. Dominios proprios
 
 `./scripts/railway-domains.py` cria os dominios nos dois ambientes e imprime o estado de cada
 registro. A zona `adatechnology.com.br` vive no HostGator (`dns3`/`dns4.hostgator.com.br`) e so
@@ -173,7 +192,7 @@ o corte e um passo separado, depois que `railway-domains.py` mostrar o certifica
 
 Isso forca rebuild dos frontends, que e o esperado: `VITE_API_BASE_URL` esta no bundle.
 
-## 5. Migrations
+## 6. Migrations
 
 O `railway.json` da API declara `preDeployCommand: ["bun run db:migrate"]`. O comando roda no
 mesmo container do release, antes de trocar a versao no ar, com o `WORKDIR` ja em
@@ -195,13 +214,13 @@ bun run db:seed-flow
 
 A senha do admin entra por stdin justamente para nao virar argumento de comando.
 
-## 6. Healthcheck
+## 7. Healthcheck
 
 `GET /health/ready` responde `200` com `{"status":"ready"}` e `503` com `degraded` quando o
 Postgres nao responde. E ele que o Railway consulta antes de considerar a versao viva, entao um
 deploy com `DATABASE_URL` errada nao substitui a versao boa.
 
-## 7. WhatsApp
+## 8. WhatsApp
 
 Depois que o servico `api` tiver dominio:
 
@@ -213,7 +232,7 @@ Depois que o servico `api` tiver dominio:
 Um numero de teste da Meta aponta para o webhook de `staging`; o numero de producao, para o de
 `production`. Compartilhar o numero entre os dois faz mensagem de cliente cair no ambiente errado.
 
-## 8. Cabecalhos e CSP dos frontends
+## 9. Cabecalhos e CSP dos frontends
 
 Painel e landing sao servidos por `caddy:2.10-alpine` com `Caddyfile` versionado ao lado do
 Dockerfile. De la saem `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`,
@@ -233,7 +252,7 @@ atributo nao tem hash sem `'unsafe-hashes'`.
 O risco residual e menor que o de `script-src`, mas continua sendo divergencia do
 `security.md` §3 e esta registrada em `docs/SECURITY.md`.
 
-## 9. Verificacao pos-deploy
+## 10. Verificacao pos-deploy
 
 ```bash
 curl -sS  https://<api do ambiente>/health/ready
