@@ -1,7 +1,16 @@
 # Deploy no Railway
 
-Cinco recursos num projeto Railway: dois plugins gerenciados (Postgres e Redis) e tres servicos
-buildados por Dockerfile a partir deste repositorio.
+Um projeto (`ada-technology`) com **dois ambientes**. Cada ambiente tem os seus proprios cinco
+recursos: dois plugins gerenciados (Postgres e Redis) e tres servicos buildados por Dockerfile a
+partir deste repositorio.
+
+| Ambiente | Branch | Banco e Redis | Segredos |
+|---|---|---|---|
+| `production` | `main` | proprios | proprios |
+| `staging` | `staging` | proprios | proprios |
+
+Nada e compartilhado entre os dois — nem volume, nem `PANEL_JWT_SECRET`. Ambiente de teste que
+divide banco ou segredo com producao e producao com outro nome.
 
 | Servico | Dockerfile | Config as code | Publico |
 |---|---|---|---|
@@ -15,53 +24,89 @@ buildados por Dockerfile a partir deste repositorio.
 > ha gateway na frente. Se o produto migrar para o cluster, o que muda e a borda — a aplicacao
 > nao depende do Railway em lugar nenhum do codigo.
 
-## 1. Ordem de criacao
+## 1. Provisionamento por script
 
-1. **Postgres** (plugin). Anote a `DATABASE_URL` da aba *Variables*.
-2. **Redis** (plugin). Anote a `REDIS_URL`.
-3. **api** — servico a partir do repositorio.
-4. **panel** e **site** — servicos a partir do mesmo repositorio.
+Tres scripts em `scripts/`, todos idempotentes. Rodar de novo reconcilia em vez de duplicar — o
+`railway add` sozinho **nao** faz isso: chamado duas vezes ele cria `Postgres` e `Postgres-bg59`,
+cada um com o seu volume.
 
-Em cada um dos tres servicos, nas *Settings*:
+```bash
+railway login                                # uma vez por maquina
 
-- **Root Directory:** deixe na raiz (`/`). O build precisa do `bun.lock` e dos outros workspaces;
-  apontar para `apps/<app>` quebra o install.
-- **Config-as-code path:** `apps/<app>/railway.json`. E de la que sai o `dockerfilePath`, o
-  healthcheck e o pre-deploy.
+./scripts/railway-provision.sh production    # bancos, servicos, dominios e variaveis nao secretas
+./scripts/railway-secrets.sh   production    # PANEL_JWT_SECRET, gerado sem passar pelo terminal
+./scripts/railway-connect-repo.py            # liga os servicos ao GitHub e amarra branch->ambiente
+
+./scripts/railway-provision.sh staging
+./scripts/railway-secrets.sh   staging
+```
+
+O que cada um faz e por que existe:
+
+- **`railway-provision.sh <ambiente>`** — garante Postgres, Redis e os servicos `api`, `panel` e
+  `site`; gera o dominio de cada um; e deriva as variaveis **dos dominios recem-criados**, para
+  que `CORS_ALLOWED_ORIGINS`, `WIDGET_ALLOWED_ORIGINS`, `VITE_API_BASE_URL` e `API_ORIGIN` nunca
+  fiquem apontando para o ambiente errado.
+- **`railway-secrets.sh <ambiente>`** — le 48 bytes de `/dev/urandom` e escreve em
+  `railway variable set --stdin`. O valor nunca vira argumento de linha de comando (visivel no
+  `ps`), nunca e ecoado, nunca entra no historico do shell. Rodar de novo **rotaciona**: os tokens
+  em circulacao caem e todo mundo faz login outra vez.
+- **`railway-connect-repo.py`** — GraphQL, nao CLI: `railway` so conecta repositorio no momento da
+  criacao do servico (`railway add --service --repo`) e nao expoe branch por ambiente. Alem disso
+  `serviceConnect` cria gatilho identico nos dois ambientes, ambos em `main` — o script corrige o
+  do staging para `staging`.
+
+### Ajustes que so a API GraphQL faz
+
+`Root Directory` e `Config-as-code path` **nao tem comando na CLI**. Ficaram assim, por servico e
+por ambiente:
+
+- **Root Directory `/`** — o build precisa do `bun.lock` e dos outros workspaces; apontar para
+  `apps/<app>` quebra o `bun install --frozen-lockfile`.
+- **Config-as-code `apps/<app>/railway.json`** — de la sai o `dockerfilePath`, o healthcheck e o
+  pre-deploy. Com root em `/` e um `railway.json` por app, o caminho precisa ser explicito.
+- **Watch patterns** — `apps/<app>/**`, `packages/**`, `package.json`, `bun.lock`,
+  `tsconfig.json`. Sem isso um commit so na landing rebuilda os tres servicos.
+
+Duplicar um ambiente (`railway environment create <novo> --duplicate production`) **carrega esses
+tres campos junto**, entao criar um ambiente novo a partir de um ja configurado dispensa refazer
+o passo. Foi assim que o `staging` nasceu.
 
 ## 2. Variaveis do servico `api`
 
 O `environment.ts` valida tudo no boot com zod e **falha em vez de subir degradado**. Nao existe
 default silencioso para segredo.
 
-| Variavel | Valor em producao | Nota |
-|---|---|---|
-| `PROJECT_NAME` | `ada` | prefixo de recurso |
-| `ENV` | `production` | `dev` \| `test` \| `staging` \| `production` |
-| `NODE_ENV` | `production` | |
-| `APP_NAME` | `api-ada` | entra na mascara de log |
-| `PORT` | `8080` | o Railway roteia para ela |
-| `API_PORT` | `8080` | e a que o `Bun.serve` le; mantenha igual a `PORT` |
-| `API_PUBLIC_URL` | `https://api.<dominio>` | URL publica da propria API |
-| `LOG_LEVEL` | `info` | `debug` em producao vaza volume, nao PII (o logger redige) |
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | referencia ao plugin |
-| `REDIS_URL` | `${{Redis.REDIS_URL}}` | referencia ao plugin |
-| `ADA_COMPANY_ID` | UUID da empresa | o mesmo que o seed usa |
-| `CORS_ALLOWED_ORIGINS` | `https://<painel>,https://<site>` | lista, sem espaco |
-| `WIDGET_ALLOWED_ORIGINS` | `https://<site>` | so a landing; o widget e publico e nao autentica |
-| `PANEL_JWT_SECRET` | segredo novo, ≥32 chars | **gere no Railway, nunca no terminal** |
-| `PANEL_ACCESS_TOKEN_TTL_MINUTES` | `15` | teto do schema |
-| `WHATSAPP_ENABLED` | `false` ate ter as credenciais | |
-| `WHATSAPP_GRAPH_BASE_URL` | `https://graph.facebook.com` | em dev aponta para o mock |
-| `INTENT_CLASSIFIER_ENABLED` | `false` | ligado exige `GROQ_API_KEY` |
+| Variavel | `production` | `staging` | Nota |
+|---|---|---|---|
+| `PROJECT_NAME` | `ada` | `ada` | prefixo de recurso |
+| `ENV` | `production` | `staging` | `dev` \| `test` \| `staging` \| `production` |
+| `NODE_ENV` | `production` | `production` | o schema so aceita `development`/`test`/`production` |
+| `APP_NAME` | `api-ada` | `api-ada` | entra na mascara de log |
+| `PORT` | `8080` | `8080` | o Railway roteia para ela |
+| `API_PORT` | `8080` | `8080` | e a que o `Bun.serve` le; mantenha igual a `PORT` |
+| `API_PUBLIC_URL` | dominio da api do ambiente | idem | URL publica da propria API |
+| `LOG_LEVEL` | `info` | `info` | `debug` vaza volume, nao PII (o logger redige) |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | idem | referencia; resolve no plugin **do ambiente** |
+| `REDIS_URL` | `${{Redis.REDIS_URL}}` | idem | idem |
+| `ADA_COMPANY_ID` | UUID da empresa | mesmo UUID | bases sao separadas; repetir o id so facilita o seed |
+| `CORS_ALLOWED_ORIGINS` | `<painel>,<site>` do ambiente | idem | lista, sem espaco |
+| `WIDGET_ALLOWED_ORIGINS` | `<site>` do ambiente | idem | so a landing; o widget e publico e nao autentica |
+| `PANEL_JWT_SECRET` | proprio, ≥32 chars | **outro**, proprio | `railway-secrets.sh` |
+| `PANEL_ACCESS_TOKEN_TTL_MINUTES` | `15` | `15` | teto do schema |
+| `WHATSAPP_ENABLED` | `false` ate ter credencial | `false` | |
+| `WHATSAPP_GRAPH_BASE_URL` | `https://graph.facebook.com` | idem | em dev aponta para o mock |
+| `INTENT_CLASSIFIER_ENABLED` | `false` | `false` | ligado exige `GROQ_API_KEY` |
+| `GROQ_MODEL` | `llama-3.3-70b-versatile` | idem | so importa com o classificador ligado |
 
 Com `WHATSAPP_ENABLED=true` o schema passa a exigir `WHATSAPP_PHONE_NUMBER_ID`,
 `WHATSAPP_BUSINESS_ACCOUNT_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` e
 `WHATSAPP_APP_SECRET`. Sem qualquer um deles o processo nao sobe — fail-closed de proposito: um
 webhook publico sem `APP_SECRET` aceitaria payload forjado.
 
-`PANEL_JWT_SECRET` gerado e colado num terminal e segredo queimado (`security.md` §4). Use o
-gerador do proprio painel do Railway e nunca o imprima.
+`PANEL_JWT_SECRET` gerado e colado num terminal e segredo queimado (`security.md` §4). Por isso o
+`railway-secrets.sh` existe: o valor sai do `/dev/urandom` direto para o `stdin` do Railway e nao
+e visto por ninguem. Se preferir, o gerador do painel do Railway faz o mesmo papel.
 
 ## 3. Variaveis dos servicos `panel` e `site`
 
@@ -71,14 +116,17 @@ basta declarar:
 
 | Servico | Variavel | Valor |
 |---|---|---|
-| `panel` | `VITE_API_BASE_URL` | `https://api.<dominio>` |
-| `panel` | `API_ORIGIN` | `https://api.<dominio>` (runtime, entra no CSP) |
-| `site` | `VITE_API_BASE_URL` | `https://api.<dominio>` |
-| `site` | `API_ORIGIN` | `https://api.<dominio>` (runtime, entra no CSP) |
+| `panel` | `PORT` | `8080` (o Caddy le `{$PORT:8080}`) |
+| `panel` | `VITE_API_BASE_URL` | dominio da api **do mesmo ambiente** |
+| `panel` | `API_ORIGIN` | mesmo valor (runtime, entra no CSP) |
+| `site` | `PORT` | `8080` |
+| `site` | `VITE_API_BASE_URL` | dominio da api **do mesmo ambiente** |
+| `site` | `API_ORIGIN` | mesmo valor (runtime, entra no CSP) |
 
-`API_ORIGIN` aparece duas vezes de proposito: uma vira parte do bundle (o front chama a API), a
+A origem da API aparece duas vezes de proposito: uma vira parte do bundle (o front chama a API), a
 outra e lida pelo Caddy quando carrega a config (o CSP precisa autorizar a mesma origem em
-`connect-src`). Trocar o dominio da API exige **rebuild** dos dois frontends.
+`connect-src`). Trocar o dominio da API exige **rebuild** dos dois frontends — e por isso que
+cada ambiente tem o seu build, e nao se promove imagem de staging para producao.
 
 Nenhum segredo com prefixo `VITE_` — o prefixo e publico por definicao.
 
@@ -92,7 +140,17 @@ schema proprio do modulo) e depois as versionadas da Ada, em `apps/api-ada/drizz
 `drizzle-kit push` nao entra em nenhum ambiente que nao seja local descartavel.
 
 O seed (`bun run db:seed`) e do fluxo (`make seed-flow`) **nao** roda automaticamente. Rode uma
-vez, manualmente, pelo shell do servico, depois do primeiro deploy.
+vez por ambiente, manualmente, depois do primeiro deploy:
+
+```bash
+railway link --environment staging
+railway ssh --service api
+# dentro do container:
+bun run db:seed --email <e-mail> --name "<nome>" < senha.txt
+bun run db:seed-flow
+```
+
+A senha do admin entra por stdin justamente para nao virar argumento de comando.
 
 ## 5. Healthcheck
 
@@ -104,10 +162,13 @@ deploy com `DATABASE_URL` errada nao substitui a versao boa.
 
 Depois que o servico `api` tiver dominio:
 
-- Webhook na Meta: `https://api.<dominio>/v1/whatsapp/webhook`.
+- Webhook na Meta: `https://<api do ambiente>/v1/whatsapp/webhook`.
 - Verify token: o mesmo valor de `WHATSAPP_WEBHOOK_VERIFY_TOKEN`.
 - A assinatura `X-Hub-Signature-256` e conferida sobre o **rawBody**, com janela de timestamp e
   nonce em Redis contra replay. Por isso o Redis nao e opcional quando o canal esta ligado.
+
+Um numero de teste da Meta aponta para o webhook de `staging`; o numero de producao, para o de
+`production`. Compartilhar o numero entre os dois faz mensagem de cliente cair no ambiente errado.
 
 ## 7. Cabecalhos e CSP dos frontends
 
@@ -132,10 +193,13 @@ O risco residual e menor que o de `script-src`, mas continua sendo divergencia d
 ## 8. Verificacao pos-deploy
 
 ```bash
-curl -sS https://api.<dominio>/health/ready
-curl -sSI https://<site> | grep -i content-security-policy
-curl -sSI https://<painel> | grep -i strict-transport-security
+curl -sS  https://<api do ambiente>/health/ready
+curl -sSI https://<site do ambiente>  | grep -i content-security-policy
+curl -sSI https://<painel do ambiente> | grep -i strict-transport-security
 ```
 
 E, no painel: login, abrir uma conversa, assumir o atendimento. Se o SSE nao conectar, o suspeito
 numero um e `CORS_ALLOWED_ORIGINS`/`WIDGET_ALLOWED_ORIGINS` sem o dominio novo.
+
+Confira tambem que o CSP do painel de `staging` cita a API de `staging`, e nao a de producao — e
+o sintoma classico de um `API_ORIGIN` copiado junto com o ambiente duplicado.
