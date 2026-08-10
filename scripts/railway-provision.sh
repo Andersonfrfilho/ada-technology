@@ -55,25 +55,36 @@ APP_SERVICES=(api panel site)
 # Dominios proprios de cada ambiente. Criar o dominio no Railway e trabalho de
 # `railway-domains.py`; aqui eles so entram nas variaveis.
 #
-# O numero do WhatsApp e da producao e so dela: a Meta entrega webhook de um numero para um unico
-# callback por app, entao apontar o mesmo numero para os dois ambientes faria o staging roubar as
-# mensagens do cliente. Staging fica desligado ate ter numero de teste proprio.
+# Cada ambiente tem o seu numero, e nao por preciosismo: `WHATSAPP_PHONE_NUMBER_ID` e o
+# REMETENTE. Repetir o numero de producao aqui faria um teste no staging responder pelo numero
+# real, na conversa real do cliente — o webhook nao filtra por `phone_number_id`, entao quem
+# recebe processa tudo o que a Meta entregar.
 if [[ "$ENVIRONMENT_NAME" == "production" ]]; then
   CUSTOM_API="https://api.adatechnology.com.br"
   CUSTOM_PANEL="https://painel.adatechnology.com.br"
   CUSTOM_SITE="https://adatechnology.com.br"
   CUSTOM_SITE_ALTERNATE="https://www.adatechnology.com.br"
-  WHATSAPP_ENABLED="true"
   WHATSAPP_PHONE_NUMBER_ID="1129051206965973"
-  WHATSAPP_BUSINESS_ACCOUNT_ID="1331187315501590"
 else
   CUSTOM_API="https://api.staging.adatechnology.com.br"
   CUSTOM_PANEL="https://painel.staging.adatechnology.com.br"
   CUSTOM_SITE="https://staging.adatechnology.com.br"
   CUSTOM_SITE_ALTERNATE=""
-  WHATSAPP_ENABLED="false"
+  # Numero de teste da Meta (WhatsApp -> Configuracao da API -> seletor "De"). Preencher aqui e o
+  # unico passo que liga o canal no staging.
   WHATSAPP_PHONE_NUMBER_ID=""
-  WHATSAPP_BUSINESS_ACCOUNT_ID=""
+fi
+
+# Os 4 numeros vivem na mesma conta de negocio, entao a WABA e a mesma nos dois ambientes.
+WHATSAPP_BUSINESS_ACCOUNT_ID="1331187315501590"
+
+# O canal liga por consequencia de existir numero, nunca por um `true` escrito a mao: com
+# `WHATSAPP_ENABLED=true` e `WHATSAPP_PHONE_NUMBER_ID` vazio o zod recusa subir a API
+# (`environment.ts`), e um deploy que nao sobe e pior do que um canal desligado.
+if [[ -n "$WHATSAPP_PHONE_NUMBER_ID" ]]; then
+  WHATSAPP_ENABLED="true"
+else
+  WHATSAPP_ENABLED="false"
 fi
 
 echo "==> ambiente $ENVIRONMENT_NAME"

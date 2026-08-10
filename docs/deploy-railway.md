@@ -253,21 +253,39 @@ por isso vivem no `railway-provision.sh`.
 - A assinatura `X-Hub-Signature-256` e conferida sobre o **rawBody**, com janela de timestamp e
   nonce em Redis contra replay. Por isso o Redis nao e opcional quando o canal esta ligado.
 
-**Ordem importa.** `WHATSAPP_ENABLED=true` com token ou app secret vazio derruba o boot (o `refine`
-do zod exige os quatro), entao ligue por ultimo:
+**Ordem importa, e ela e circular.** A Meta valida o callback na hora de salvar, mas a rota so
+existe com o canal ligado: com `WHATSAPP_ENABLED=false` as rotas de webhook **nao sao registradas**
+(`whatsapp.controller.ts`), e `GET /v1/whatsapp/webhook` responde `404 ROUTE_NOT_FOUND` — foi
+exatamente esse 404 que a Meta reportou como "nao foi possivel validar a URL de callback ou o token
+de verificacao". Ligar primeiro, salvar na Meta depois:
 
 1. `WHATSAPP_ACCESS_TOKEN` e `WHATSAPP_APP_SECRET` no painel do Railway.
-2. `./scripts/railway-provision.sh production custom` (e ele que escreve `WHATSAPP_ENABLED=true`).
-3. `./scripts/railway-redeploy.py production api`.
+2. `./scripts/railway-provision.sh <ambiente> custom` (e ele que escreve `WHATSAPP_ENABLED=true`).
+3. `./scripts/railway-redeploy.py <ambiente> api`.
+4. Webhook na Meta, com o verify token copiado do painel do Railway.
+
+O canal **nao** liga por um `true` escrito a mao no script: ele e derivado de
+`WHATSAPP_PHONE_NUMBER_ID` estar preenchido, porque `true` com o numero vazio derruba o boot (o
+`refine` do zod exige os quatro) e deploy que nao sobe e pior do que canal desligado.
 
 O token da tela de teste da Meta **vale 24 horas**. Integracao que precisa sobreviver ao dia
 seguinte usa token de System User (Configuracoes do Negocio -> Usuarios do sistema), com
 `whatsapp_business_messaging` e `whatsapp_business_management`.
 
-Um numero de teste da Meta aponta para o webhook de `staging`; o numero de producao, para o de
-`production`. Compartilhar o numero entre os dois faz mensagem de cliente cair no ambiente errado —
-a Meta entrega o webhook de um numero para um unico callback por app. Por isso `staging` fica com
-`WHATSAPP_ENABLED=false` ate ter numero proprio.
+### Por que staging precisa do numero de teste, e nao do de producao
+
+`WHATSAPP_PHONE_NUMBER_ID` e o **remetente**. Repetir o numero de producao no staging faz um teste
+responder pelo numero real, na conversa real do cliente — e nada barra isso no meio do caminho,
+porque o webhook nao filtra por `phone_number_id`: quem recebe processa tudo o que a Meta entregar.
+Por isso o staging fica desligado ate ter o ID do numero de teste (WhatsApp -> Configuracao da API
+-> seletor "De"), que entra no bloco `else` do `railway-provision.sh`.
+
+**Um app entrega para um unico callback.** Os dois ambientes ligados nao se dividem por numero: a
+URL configurada recebe os quatro numeros, e o outro ambiente nao recebe nada. Ter os dois recebendo
+de verdade exige **um segundo app da Meta, com WABA propria** — dois apps assinando a mesma WABA
+recebem tudo em duplicado e os dois respondem ao cliente. Com um app so, o staging serve para
+validar o webhook e exercitar o fluxo apontando o callback para ele por um intervalo, e depois
+devolvendo para producao.
 
 ## 9. Cabecalhos e CSP dos frontends
 
