@@ -216,18 +216,24 @@ schema proprio do modulo) e depois as versionadas da Ada, em `apps/api-ada/drizz
 
 `drizzle-kit push` nao entra em nenhum ambiente que nao seja local descartavel.
 
-O seed (`bun run db:seed`) e do fluxo (`make seed-flow`) **nao** roda automaticamente. Rode uma
-vez por ambiente, manualmente, depois do primeiro deploy:
+O seed do admin e o do fluxo **nao** rodam automaticamente. Rode uma vez por ambiente, depois do
+primeiro deploy. O caminho do arquivo entra completo: a imagem so tem os scripts do
+`package.json` da API, e nem `make` nem o alvo `seed-flow` existem dentro dela.
 
 ```bash
-railway link --environment staging
-railway ssh --service api
-# dentro do container:
-bun run db:seed --email <e-mail> --name "<nome>" < senha.txt
-bun run db:seed-flow
+railway environment staging
+railway ssh --service api "bun run src/infra/database/seeds/index.ts --email <e-mail> --name \"<nome>\"" < senha.txt
+railway ssh --service api "bun run src/infra/database/seeds/flow.ts"
+rm senha.txt
 ```
 
-A senha do admin entra por stdin justamente para nao virar argumento de comando.
+A senha do admin entra por stdin justamente para nao virar argumento de comando — argumento
+aparece em `ps`, no historico do shell e no log do executor de deploy. O `railway ssh` encaminha
+stdin, entao o `< senha.txt` do lado de fora chega ao processo do lado de dentro sem que o valor
+passe por argumento nem por arquivo dentro do container.
+
+Senha diferente por ambiente. O seed e idempotente pelo e-mail: se a conta ja existe ele registra e
+sai, ou seja, **nao corrige senha errada** — para isso, apague a conta antes ou troque pelo painel.
 
 ## 7. Healthcheck
 
