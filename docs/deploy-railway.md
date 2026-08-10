@@ -172,6 +172,13 @@ muda por la — o script nao toca em DNS.
 
 Os valores mudam a cada dominio criado; rode o script para ver os atuais.
 
+**Cada dominio precisa tambem de um TXT `_railway-verify`**, impresso na segunda tabela do script.
+O CNAME apontando certo prova roteamento, nao propriedade do nome — sem o TXT o certificado fica
+preso em `validating_ownership` e a borda continua servindo o certificado curinga
+`*.up.railway.app`, o que quebra o HTTPS com `subjectAltName does not match host name`. O TXT do
+apex e `_railway-verify` sem sufixo; os demais seguem o host (`_railway-verify.api`,
+`_railway-verify.painel.staging`).
+
 **O apex e o unico que nao fecha no HostGator.** O Railway exige CNAME tambem na raiz, e uma zona
 cPanel comum nao aceita CNAME convivendo com o SOA — e proibido pelo RFC, nao e limitacao do
 painel. Duas saidas:

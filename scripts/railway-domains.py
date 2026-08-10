@@ -88,6 +88,9 @@ def list_custom_domains(environment: str, service: str) -> list:
               domain
               status {
                 certificateStatus
+                verified
+                verificationDnsHost
+                verificationToken
                 dnsRecords { hostlabel recordType requiredValue currentValue status }
               }
             }
@@ -125,8 +128,23 @@ def short(value: str) -> str:
     return value.rsplit("_", 1)[-1].lower()
 
 
+def print_table(header: tuple, rows: list) -> None:
+    if not rows:
+        return
+    widths = [
+        max([len(row[column]) for row in rows] + [len(header[column])])
+        for column in range(len(header))
+    ]
+    print()
+    print("  ".join(header[column].ljust(widths[column]) for column in range(len(header))))
+    print("  ".join("-" * widths[column] for column in range(len(header))))
+    for row in rows:
+        print("  ".join(row[column].ljust(widths[column]) for column in range(len(header))))
+
+
 def main() -> None:
-    rows = []
+    routing_rows = []
+    verification_rows = []
 
     for environment, service, domain in DOMAINS:
         existing = {item["domain"]: item for item in list_custom_domains(environment, service)}
@@ -137,7 +155,7 @@ def main() -> None:
 
         status = existing[domain]["status"]
         for record in status["dnsRecords"]:
-            rows.append(
+            routing_rows.append(
                 (
                     record["hostlabel"] or "@",
                     short(record["recordType"]),
@@ -147,18 +165,18 @@ def main() -> None:
                 )
             )
 
-    widths = [max(len(row[column]) for row in rows) for column in range(5)]
-    header = ("host", "tipo", "valor", "dns", "certificado")
-    widths = [max(widths[column], len(header[column])) for column in range(5)]
+        # Sem o TXT de posse o certificado fica preso em `validating_ownership` para sempre: o CNAME
+        # apontando certo prova roteamento, nao propriedade do nome.
+        if not status["verified"]:
+            verification_rows.append(
+                (status["verificationDnsHost"], "txt", status["verificationToken"])
+            )
 
-    print()
-    print("  ".join(header[column].ljust(widths[column]) for column in range(5)))
-    print("  ".join("-" * widths[column] for column in range(5)))
-    for row in rows:
-        print("  ".join(row[column].ljust(widths[column]) for column in range(5)))
+    print_table(("host", "tipo", "valor", "dns", "certificado"), routing_rows)
+    print_table(("host", "tipo", "valor"), verification_rows)
 
     print("\ncrie estes registros na zona adatechnology.com.br (HostGator).")
-    print("com o DNS resolvendo, rode ./scripts/railway-provision.sh <ambiente> custom")
+    print("com o certificado emitido, rode ./scripts/railway-provision.sh <ambiente> custom")
 
 
 if __name__ == "__main__":
