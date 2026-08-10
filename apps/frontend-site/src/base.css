@@ -1,0 +1,38 @@
+/*
+ * Copyright (c) 2026 Ada Technology. All rights reserved.
+ *
+ * This source code is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written permission from Ada Technology.
+ */
+
+/*
+ * Reset, tokens da marca e tipografia base. Vive separado desde que a landing deixou de ser a
+ * unica pagina: token duplicado em dois arquivos e como duas fontes da verdade — a segunda so e
+ * descoberta quando a cor da marca muda em uma pagina e nao na outra.
+ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:     #0d1b3e;
+  --blue:     #1a4fd6;
+  --cyan:     #06b6d4;
+  --bg:       #f5f8ff;
+  --white:    #ffffff;
+  --text:     #1e2a4a;
+  --muted:    #64748b;
+  --border:   #e2e8f0;
+  --radius:   12px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  background: var(--white);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}

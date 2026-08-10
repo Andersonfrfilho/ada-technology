@@ -88,3 +88,20 @@ publica aceita sem autenticacao, contra `security.md` §3. Vale auditar aquele f
 
 **Acao:** copiar o segredo de Configuracoes do app -> Basico -> Chave secreta do app, e conferir com
 o teste de `appsecret_proof` antes de anunciar o canal como pronto.
+
+## 10/08/2026 — Politica de privacidade promete retencao e exclusao que nada automatiza
+
+**Aberto.** A pagina `/privacidade` publicada hoje declara prazos concretos — conversas por 24
+meses, trilha de auditoria por 5 anos, exclusao a pedido em ate 15 dias — e nenhum deles existe em
+codigo. Nao ha rotina que expire conversa antiga, nem endpoint ou procedimento que apague um lead e
+o historico dele a partir do telefone ou do e-mail. Hoje a promessa so se cumpre no braco, por
+alguem rodando SQL a mao.
+
+O risco nao e vazamento, e o inverso do minimizar do art. 6º, III da LGPD: dado que devia ter sido
+eliminado continua no banco, e um pedido de exclusao (art. 18, VI) depende de memoria humana para
+ser atendido dentro do prazo que a propria politica anuncia.
+
+**Acao:** um `cron-` que elimina conversa sem mensagem ha 24 meses e auditoria com mais de 5 anos, e
+um caso de uso de exclusao por titular que apague lead, conversa e mensagens numa transacao,
+deixando so o registro de que a exclusao ocorreu. Enquanto nao existir, todo pedido de exclusao
+precisa virar tarefa rastreada — nao pode morrer numa conversa de WhatsApp.

@@ -20,9 +20,24 @@ const DEV_PORT = 5176;
  * landing sobe onde ninguem procura, e ela pode ocupar a porta do painel. Porta fixa tambem e o
  * que mantem a origem estavel na allowlist de CORS que o widget precisa para falar com a API.
  */
+/**
+ * Cada HTML precisa ser declarado: o Vite so varre `index.html` sozinho, e uma pagina fora dessa
+ * lista simplesmente nao aparece no `dist` — sem erro, sem aviso. A politica de privacidade e o
+ * endereco que a Meta exige no cadastro do app, entao um build silencioso sem ela derruba o
+ * WhatsApp na proxima revisao deles.
+ */
+const pages = ['index', 'privacidade'] as const;
+
 export default defineConfig({
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   server: { port: DEV_PORT, strictPort: true },
+  build: {
+    rollupOptions: {
+      input: Object.fromEntries(
+        pages.map((page) => [page, fileURLToPath(new URL(`./${page}.html`, import.meta.url))]),
+      ),
+    },
+  },
 });

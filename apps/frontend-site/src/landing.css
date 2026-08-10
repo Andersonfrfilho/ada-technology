@@ -6,30 +6,7 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --navy:     #0d1b3e;
-  --blue:     #1a4fd6;
-  --cyan:     #06b6d4;
-  --bg:       #f5f8ff;
-  --white:    #ffffff;
-  --text:     #1e2a4a;
-  --muted:    #64748b;
-  --border:   #e2e8f0;
-  --radius:   12px;
-}
-
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
-  background: var(--white);
-  color: var(--text);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
+@import './base.css';
 
 /* ── REVEAL ANIMATIONS ─────────────────────────── */
 .reveal {
