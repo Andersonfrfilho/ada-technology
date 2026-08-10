@@ -26,7 +26,7 @@ divide banco ou segredo com producao e producao com outro nome.
 
 ## 1. Provisionamento por script
 
-Quatro scripts em `scripts/`, todos idempotentes. Rodar de novo reconcilia em vez de duplicar — o
+Cinco scripts em `scripts/`, todos idempotentes. Rodar de novo reconcilia em vez de duplicar — o
 `railway add` sozinho **nao** faz isso: chamado duas vezes ele cria `Postgres` e `Postgres-bg59`,
 cada um com o seu volume.
 
@@ -40,7 +40,9 @@ railway login                                # uma vez por maquina
 ./scripts/railway-provision.sh staging
 ./scripts/railway-secrets.sh   staging
 
-./scripts/railway-domains.py                 # dominios proprios e o estado do DNS (secao 4)
+./scripts/railway-domains.py                 # dominios proprios e o estado do DNS (secao 5)
+./scripts/railway-redeploy.py production     # as variaveis so valem na proxima build
+./scripts/railway-redeploy.py staging
 ```
 
 O que cada um faz e por que existe:
@@ -60,6 +62,10 @@ O que cada um faz e por que existe:
 - **`railway-domains.py`** — tambem GraphQL: a CLI responde `Unauthorized` em dominio customizado,
   e nao mostra o estado do registro enquanto o DNS propaga, que e o unico dado que interessa nessa
   hora.
+- **`railway-redeploy.py <ambiente> [servicos]`** — dispara build nova do ultimo commit. Existe
+  porque o provision grava tudo com `--skip-deploys`: dezoito variaveis viram dezoito deploys em
+  cascata, e os intermediarios sobem com configuracao pela metade. E precisa ser build, nao
+  `railway redeploy`, que reaproveita a imagem — `VITE_API_BASE_URL` esta dentro do bundle.
 
 ### Ajustes que so a API GraphQL faz
 
@@ -194,10 +200,12 @@ o corte e um passo separado, depois que `railway-domains.py` mostrar o certifica
 
 ```bash
 ./scripts/railway-provision.sh production custom
-./scripts/railway-provision.sh staging custom
+./scripts/railway-redeploy.py production
 ```
 
-Isso forca rebuild dos frontends, que e o esperado: `VITE_API_BASE_URL` esta no bundle.
+O segundo comando nao e opcional. O provision escreve tudo com `--skip-deploys`, entao a troca so
+vale na proxima build — e ela precisa ser build, nao redeploy: `VITE_API_BASE_URL` e inlinado no
+bundle pelo Vite, e reaproveitar a imagem antiga manteria o dominio velho no JavaScript.
 
 ## 6. Migrations
 

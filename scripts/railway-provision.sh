@@ -166,6 +166,7 @@ for service in panel site; do
 done
 
 echo
-echo "==> falta, e so voce pode fazer:"
+echo "==> proximos passos:"
 echo "    1. ./scripts/railway-secrets.sh $ENVIRONMENT_NAME   (gera o PANEL_JWT_SECRET sem imprimir)"
 echo "    2. ./scripts/railway-domains.py              (dominios proprios + registros de DNS)"
+echo "    3. ./scripts/railway-redeploy.py $ENVIRONMENT_NAME   (as variaveis acima so valem na proxima build)"
