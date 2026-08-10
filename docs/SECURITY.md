@@ -52,3 +52,39 @@ As escritas de estilo que sobraram no JS sao via CSSOM (`el.style.display = 'fle
 console limpo, zero violacao; dentro do shadow root do widget, `adoptedStyleSheets: 1` e
 `styleTags: 0`; estilos computados conferidos na navegacao, no launcher, nos cards bento e no modal
 do easter egg.
+
+## 10/08/2026 — Token de System User do WhatsApp com escopo largo e sem expiracao
+
+**Aberto.** O `WHATSAPP_ACCESS_TOKEN` de producao e um token de System User valido, sem expiracao
+(`expires_at: 0`) e com 17 escopos: alem de `whatsapp_business_messaging` e
+`whatsapp_business_management`, que sao os dois que a API usa, ele carrega `catalog_management`,
+`instagram_content_publish`, `instagram_manage_messages`, `pages_read_engagement` e mais.
+
+`security.md` §2 pede o oposto: escopo enumerado do que a integracao realmente usa, e token
+rotacionavel. Token eterno e largo transforma vazamento de uma variavel de ambiente em acesso a
+Instagram, catalogo e paginas — dano muito maior do que o canal de atendimento.
+
+Agrava: o mesmo valor esta em dois servicos (`ada-technology/api` e `financiamento-imobiliario-bot/n8n`),
+entao rotacionar exige atualizar os dois, e quem esquecer descobre pelo envio falhando calado.
+
+**Acao:** criar um System User dedicado com so os dois escopos de WhatsApp, trocar a variavel nos
+dois servicos e revogar o token largo. Enquanto nao for feito, o token nao pode aparecer em log,
+terminal ou commit — nem mascarado.
+
+## 10/08/2026 — WHATSAPP_APP_SECRET de producao nao pertence ao app
+
+**Bloqueante para o canal, sem risco de exposicao.** O valor herdado do servico `n8n` nao e o app
+secret do app `1017474297938142` (`AdA technology`), que e quem emitiu o access token. Comprovado por
+duas vias: o app access token `app_id|app_secret` foi recusado com `Invalid OAuth access token
+signature`, e o `appsecret_proof` calculado com ele foi recusado com `Invalid appsecret_proof`.
+
+O modo de falhar e traicoeiro: o desafio `GET` do webhook usa o `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, que
+e nosso e esta correto, entao **a Meta valida e salva o webhook normalmente**. So depois, em cada
+mensagem real, o `POST` morre em `401 META_WHATSAPP_INVALID_SIGNATURE` — canal aparentemente
+configurado que nao entrega nada.
+
+Que o n8n conviva com o valor errado indica que ele nao confere assinatura de webhook: entrada
+publica aceita sem autenticacao, contra `security.md` §3. Vale auditar aquele fluxo.
+
+**Acao:** copiar o segredo de Configuracoes do app -> Basico -> Chave secreta do app, e conferir com
+o teste de `appsecret_proof` antes de anunciar o canal como pronto.
