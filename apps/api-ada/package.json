@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.10",
-    "@adatechnology/meta-whatsapp-module": "0.2.0-rc.19",
+    "@adatechnology/meta-whatsapp-module": "0.2.0-rc.20",
     "@adatechnology/meta-whatsapp-provider": "0.2.0-rc.3",
     "@adatechnology/module-http": "0.1.0-rc.1",
     "@adatechnology/notification-contracts": "0.1.0-rc.2",

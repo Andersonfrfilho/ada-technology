@@ -14,7 +14,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.10",
-        "@adatechnology/meta-whatsapp-module": "0.2.0-rc.19",
+        "@adatechnology/meta-whatsapp-module": "0.2.0-rc.20",
         "@adatechnology/meta-whatsapp-provider": "0.2.0-rc.3",
         "@adatechnology/module-http": "0.1.0-rc.1",
         "@adatechnology/notification-contracts": "0.1.0-rc.2",
@@ -93,7 +93,7 @@
 
     "@adatechnology/meta-whatsapp-contracts": ["@adatechnology/meta-whatsapp-contracts@0.2.0-rc.10", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-va/lGqBiSraLYyHBH1YfQrkd3NbqGVFDpYOaP5gQR9fW4iGl99EGw/TDDOlWbGknmQ+jL/4SVu7D24sQtCqfGQ=="],
 
-    "@adatechnology/meta-whatsapp-module": ["@adatechnology/meta-whatsapp-module@0.2.0-rc.19", "", { "dependencies": { "@adatechnology/meta-graph-core": "0.2.0-rc.2", "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.10", "@adatechnology/meta-whatsapp-provider": "0.2.0-rc.3" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <1" } }, "sha512-MuIA4n+NtgVufRf4RHpFdkLlcelCMceGN1MoxNDdSV8mB53gqwegh/eWqVmWl48PibK7fJljhAil67jHOlVRtA=="],
+    "@adatechnology/meta-whatsapp-module": ["@adatechnology/meta-whatsapp-module@0.2.0-rc.20", "", { "dependencies": { "@adatechnology/meta-graph-core": "0.2.0-rc.2", "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.10", "@adatechnology/meta-whatsapp-provider": "0.2.0-rc.3" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <1" } }, "sha512-D0vA5nljNNYle1UopRoTuwkvkjhwp47AhLtmMXyYdy9M7T4H4FvcoNvaT0TME3x6EJW8BnsWo10WuRB77ZcKEA=="],
 
     "@adatechnology/meta-whatsapp-provider": ["@adatechnology/meta-whatsapp-provider@0.2.0-rc.3", "", { "dependencies": { "@adatechnology/meta-graph-core": "0.2.0-rc.2", "zod": "^3.24.1" } }, "sha512-hGhMnVuaU3vTDQLLXKYvlMGFjN+gbOVvwjSCU4n0uwJkeynSP3sjpBi7ao/5KPTAyzkEHpaPLkppcRBdjU7mNw=="],
 
