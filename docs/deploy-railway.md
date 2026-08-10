@@ -26,7 +26,7 @@ divide banco ou segredo com producao e producao com outro nome.
 
 ## 1. Provisionamento por script
 
-Tres scripts em `scripts/`, todos idempotentes. Rodar de novo reconcilia em vez de duplicar — o
+Quatro scripts em `scripts/`, todos idempotentes. Rodar de novo reconcilia em vez de duplicar — o
 `railway add` sozinho **nao** faz isso: chamado duas vezes ele cria `Postgres` e `Postgres-bg59`,
 cada um com o seu volume.
 
@@ -39,6 +39,8 @@ railway login                                # uma vez por maquina
 
 ./scripts/railway-provision.sh staging
 ./scripts/railway-secrets.sh   staging
+
+./scripts/railway-domains.py                 # dominios proprios e o estado do DNS (secao 4)
 ```
 
 O que cada um faz e por que existe:
@@ -55,6 +57,9 @@ O que cada um faz e por que existe:
   criacao do servico (`railway add --service --repo`) e nao expoe branch por ambiente. Alem disso
   `serviceConnect` cria gatilho identico nos dois ambientes, ambos em `main` — o script corrige o
   do staging para `staging`.
+- **`railway-domains.py`** — tambem GraphQL: a CLI responde `Unauthorized` em dominio customizado,
+  e nao mostra o estado do registro enquanto o DNS propaga, que e o unico dado que interessa nessa
+  hora.
 
 ### Ajustes que so a API GraphQL faz
 
@@ -130,7 +135,45 @@ cada ambiente tem o seu build, e nao se promove imagem de staging para producao.
 
 Nenhum segredo com prefixo `VITE_` — o prefixo e publico por definicao.
 
-## 4. Migrations
+## 4. Dominios proprios
+
+`./scripts/railway-domains.py` cria os dominios nos dois ambientes e imprime o estado de cada
+registro. A zona `adatechnology.com.br` vive no HostGator (`dns3`/`dns4.hostgator.com.br`) e so
+muda por la — o script nao toca em DNS.
+
+| Host | Tipo | Aponta para | Ambiente |
+|---|---|---|---|
+| `api` | CNAME | dominio gerado do servico `api` | production |
+| `painel` | CNAME | dominio gerado do servico `panel` | production |
+| `www` | CNAME | dominio gerado do servico `site` | production |
+| `@` | CNAME | dominio gerado do servico `site` | production |
+| `api.staging` | CNAME | dominio gerado do servico `api` | staging |
+| `painel.staging` | CNAME | dominio gerado do servico `panel` | staging |
+| `staging` | CNAME | dominio gerado do servico `site` | staging |
+
+Os valores mudam a cada dominio criado; rode o script para ver os atuais.
+
+**O apex e o unico que nao fecha no HostGator.** O Railway exige CNAME tambem na raiz, e uma zona
+cPanel comum nao aceita CNAME convivendo com o SOA — e proibido pelo RFC, nao e limitacao do
+painel. Duas saidas:
+
+- mover a zona para um DNS com CNAME flattening ou ALIAS (Cloudflare resolve, e e gratis);
+- servir o site em `www` e deixar o apex com um redirecionamento 301 para `www`.
+
+A ordem importa. As allowlists (`CORS_ALLOWED_ORIGINS`, `WIDGET_ALLOWED_ORIGINS`) citam o dominio
+gerado **e** o proprio desde ja: lista permissiva com host que ainda nao existe nao permite nada.
+Ja `API_PUBLIC_URL`, `VITE_API_BASE_URL` e `API_ORIGIN` guardam um valor so, e trocar antes do DNS
+resolver derruba o painel — o `connect-src` do CSP passaria a citar um host inexistente. Por isso
+o corte e um passo separado, depois que `railway-domains.py` mostrar o certificado emitido:
+
+```bash
+./scripts/railway-provision.sh production custom
+./scripts/railway-provision.sh staging custom
+```
+
+Isso forca rebuild dos frontends, que e o esperado: `VITE_API_BASE_URL` esta no bundle.
+
+## 5. Migrations
 
 O `railway.json` da API declara `preDeployCommand: ["bun run db:migrate"]`. O comando roda no
 mesmo container do release, antes de trocar a versao no ar, com o `WORKDIR` ja em
@@ -152,13 +195,13 @@ bun run db:seed-flow
 
 A senha do admin entra por stdin justamente para nao virar argumento de comando.
 
-## 5. Healthcheck
+## 6. Healthcheck
 
 `GET /health/ready` responde `200` com `{"status":"ready"}` e `503` com `degraded` quando o
 Postgres nao responde. E ele que o Railway consulta antes de considerar a versao viva, entao um
 deploy com `DATABASE_URL` errada nao substitui a versao boa.
 
-## 6. WhatsApp
+## 7. WhatsApp
 
 Depois que o servico `api` tiver dominio:
 
@@ -170,7 +213,7 @@ Depois que o servico `api` tiver dominio:
 Um numero de teste da Meta aponta para o webhook de `staging`; o numero de producao, para o de
 `production`. Compartilhar o numero entre os dois faz mensagem de cliente cair no ambiente errado.
 
-## 7. Cabecalhos e CSP dos frontends
+## 8. Cabecalhos e CSP dos frontends
 
 Painel e landing sao servidos por `caddy:2.10-alpine` com `Caddyfile` versionado ao lado do
 Dockerfile. De la saem `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`,
@@ -190,7 +233,7 @@ atributo nao tem hash sem `'unsafe-hashes'`.
 O risco residual e menor que o de `script-src`, mas continua sendo divergencia do
 `security.md` §3 e esta registrada em `docs/SECURITY.md`.
 
-## 8. Verificacao pos-deploy
+## 9. Verificacao pos-deploy
 
 ```bash
 curl -sS  https://<api do ambiente>/health/ready

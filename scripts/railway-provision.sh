@@ -13,6 +13,16 @@
 #   ./scripts/railway-provision.sh production
 #   ./scripts/railway-provision.sh staging
 #
+# O segundo argumento escolhe qual dominio e o principal:
+#
+#   ./scripts/railway-provision.sh production custom
+#
+# `railway` (padrao) aponta API_PUBLIC_URL, VITE_API_BASE_URL e API_ORIGIN para o dominio
+# `*.up.railway.app`; `custom` aponta para o dominio proprio. Rodar com `custom` antes do DNS
+# resolver derruba o painel, porque `VITE_API_BASE_URL` e inlinado na build e o `connect-src` do
+# CSP passa a citar um host que ainda nao existe. As allowlists (CORS e widget) sempre citam os
+# dois, e por isso podem ser escritas antes: lista permissiva com host inexistente nao permite nada.
+#
 # O que ele NAO faz, de proposito:
 #   - `PANEL_JWT_SECRET`: gerado por `railway-secrets.sh`, que le de /dev/urandom e escreve por
 #     stdin. Segredo que aparece no terminal e segredo queimado (`security.md` §4).
@@ -23,15 +33,35 @@
 set -euo pipefail
 
 ENVIRONMENT_NAME="${1:-}"
+PRIMARY_DOMAIN_KIND="${2:-railway}"
 
 if [[ "$ENVIRONMENT_NAME" != "production" && "$ENVIRONMENT_NAME" != "staging" ]]; then
-  echo "uso: $0 <production|staging>" >&2
+  echo "uso: $0 <production|staging> [railway|custom]" >&2
+  exit 1
+fi
+
+if [[ "$PRIMARY_DOMAIN_KIND" != "railway" && "$PRIMARY_DOMAIN_KIND" != "custom" ]]; then
+  echo "uso: $0 <production|staging> [railway|custom]" >&2
   exit 1
 fi
 
 PROJECT_NAME="ada"
 COMPANY_ID="fb2298b4-084d-4f12-bd98-df5b46a13bb1"
 APP_SERVICES=(api panel site)
+
+# Dominios proprios de cada ambiente. Criar o dominio no Railway e trabalho de
+# `railway-domains.py`; aqui eles so entram nas variaveis.
+if [[ "$ENVIRONMENT_NAME" == "production" ]]; then
+  CUSTOM_API="https://api.adatechnology.com.br"
+  CUSTOM_PANEL="https://painel.adatechnology.com.br"
+  CUSTOM_SITE="https://adatechnology.com.br"
+  CUSTOM_SITE_ALTERNATE="https://www.adatechnology.com.br"
+else
+  CUSTOM_API="https://api.staging.adatechnology.com.br"
+  CUSTOM_PANEL="https://painel.staging.adatechnology.com.br"
+  CUSTOM_SITE="https://staging.adatechnology.com.br"
+  CUSTOM_SITE_ALTERNATE=""
+fi
 
 echo "==> ambiente $ENVIRONMENT_NAME"
 railway environment "$ENVIRONMENT_NAME" >/dev/null
@@ -92,6 +122,18 @@ echo "    api   $API_URL"
 echo "    panel $PANEL_URL"
 echo "    site  $SITE_URL"
 
+CORS_ORIGINS="$PANEL_URL,$SITE_URL,$CUSTOM_PANEL,$CUSTOM_SITE"
+WIDGET_ORIGINS="$SITE_URL,$CUSTOM_SITE"
+if [[ -n "$CUSTOM_SITE_ALTERNATE" ]]; then
+  CORS_ORIGINS="$CORS_ORIGINS,$CUSTOM_SITE_ALTERNATE"
+  WIDGET_ORIGINS="$WIDGET_ORIGINS,$CUSTOM_SITE_ALTERNATE"
+fi
+
+if [[ "$PRIMARY_DOMAIN_KIND" == "custom" ]]; then
+  API_URL="$CUSTOM_API"
+fi
+echo "    api principal: $API_URL"
+
 # `PORT` e o que o Railway injeta e o que o Caddy le; `API_PORT` e o nome no schema zod da API.
 # Os dois precisam existir e coincidir, senao o healthcheck bate numa porta onde ninguem escuta.
 set_variables api \
@@ -106,8 +148,8 @@ set_variables api \
   'DATABASE_URL=${{Postgres.DATABASE_URL}}' \
   'REDIS_URL=${{Redis.REDIS_URL}}' \
   "ADA_COMPANY_ID=$COMPANY_ID" \
-  "CORS_ALLOWED_ORIGINS=$PANEL_URL,$SITE_URL" \
-  "WIDGET_ALLOWED_ORIGINS=$SITE_URL" \
+  "CORS_ALLOWED_ORIGINS=$CORS_ORIGINS" \
+  "WIDGET_ALLOWED_ORIGINS=$WIDGET_ORIGINS" \
   "PANEL_ACCESS_TOKEN_TTL_MINUTES=15" \
   "WHATSAPP_ENABLED=false" \
   "WHATSAPP_GRAPH_BASE_URL=https://graph.facebook.com" \
@@ -126,4 +168,4 @@ done
 echo
 echo "==> falta, e so voce pode fazer:"
 echo "    1. ./scripts/railway-secrets.sh $ENVIRONMENT_NAME   (gera o PANEL_JWT_SECRET sem imprimir)"
-echo "    2. conectar o repo aos servicos api/panel/site (GitHub App do Railway)"
+echo "    2. ./scripts/railway-domains.py              (dominios proprios + registros de DNS)"
