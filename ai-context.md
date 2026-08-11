@@ -162,9 +162,20 @@ workspace manda nos seus parâmetros.
 `PanelSectionView` tem `switch` exaustivo sem `default`: item novo na barra sem tela por trás não
 compila, e é isso que impede uma seção "em breve" chegar ao operador.
 
+**O tema é a classe `dark` no `<html>`, uma fonte só.** `index.css` declara
+`@custom-variant dark (&:where(.dark, .dark *))` porque o padrão do Tailwind v4 é
+`prefers-color-scheme` — e aí o painel teria duas verdades em desacordo: os utilitários seguiriam o
+sistema operacional enquanto o `styles.css` do SDK (`.dark .cv-*`) e os componentes que escolhem cor
+em JavaScript (`useIsDarkTheme`) seguiriam o `<html>`. Era isso que deixava a barra lateral escura
+com a lista de conversas branca. `useDarkMode` é montado **uma vez**, no `PanelShell`: a barra
+lateral existe em duas cópias abaixo de `desktop:` (o `aside` escondido e a gaveta), e dois
+controladores da mesma classe divergiriam. O `body` pinta por token (`--panel-canvas`), senão a tela
+de carregamento aparece clara antes de a aplicação montar.
+
 | Seção | Tela | Nota |
 |---|---|---|
 | Conversas | `ConversationsWorkspace` | Inbox + transcript + takeover. |
+| Fluxos | `Flows.page` | Editor do grafo do bot. |
 | Mensagens | `MessagesWorkspace` | Só `getMessages`/`saveMessages`; sem tópicos, templates nem transcrição a tela colapsa na aba do bot e some a barra de abas. |
 | Templates | `WhatsAppTemplatesSettings` | Componente é presentacional — todo o estado vive em `templateSettings.hook.ts`. |
 | Documentos | `DocumentsWorkspace` | `dateFilter={false}` e `categories={[]}`: a rota só entende `search`, `source`, `sortDirection` e paginação. Filtro que o servidor descarta faria lista crua parecer filtrada. |

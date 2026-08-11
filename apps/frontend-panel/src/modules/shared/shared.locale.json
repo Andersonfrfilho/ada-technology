@@ -5,6 +5,8 @@
     "openMenu": "Abrir menu",
     "closeMenu": "Fechar menu",
     "signOut": "Sair",
+    "themeToDark": "Tema escuro",
+    "themeToLight": "Tema claro",
     "sections": {
       "conversas": "Conversas",
       "fluxos": "Fluxos",

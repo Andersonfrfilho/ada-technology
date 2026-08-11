@@ -6,6 +6,7 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import { DarkModeToggle } from '@adatechnology/conversations-ui';
 import { LogOut } from 'lucide-react';
 
 import { signOutAgent } from '@/modules/auth/auth.api';
@@ -26,10 +27,12 @@ const ITEM_IDLE =
 
 export type PanelSidebarProps = {
   section: PanelSection;
+  isDark: boolean;
   onNavigate: (section: PanelSection) => void;
+  onToggleTheme: () => void;
 };
 
-export function PanelSidebar({ section, onNavigate }: PanelSidebarProps) {
+export function PanelSidebar({ section, isDark, onNavigate, onToggleTheme }: PanelSidebarProps) {
   const agentName = useSessionStore((state) => state.agent?.name);
   const signOut = useSessionStore((state) => state.signOut);
 
@@ -68,6 +71,17 @@ export function PanelSidebar({ section, onNavigate }: PanelSidebarProps) {
         {agentName ? (
           <p className="truncate px-3 pb-1 text-xs text-gray-500 dark:text-gray-400">{agentName}</p>
         ) : null}
+        {/* O raio vai na forma arbitraria porque `rounded-panel` e token daqui: o `tailwind-merge`
+            do pacote nao o reconhece como familia e deixaria os dois raios na mesma classe. */}
+        <DarkModeToggle
+          className={`${ITEM_BASE} ${ITEM_IDLE} justify-start rounded-[var(--radius-panel)]`}
+          classNames={{ icon: 'size-4' }}
+          isDark={isDark}
+          labels={{ toDark: locale.themeToDark, toLight: locale.themeToLight }}
+          onToggle={onToggleTheme}
+          showLabel
+        />
+
         <button className={`${ITEM_BASE} ${ITEM_IDLE}`} onClick={handleSignOut} type="button">
           <LogOut aria-hidden="true" className="size-4 shrink-0" />
           {locale.signOut}

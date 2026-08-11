@@ -9,6 +9,17 @@
 @source '../node_modules/@adatechnology/conversations-ui/dist';
 
 /**
+ * O `dark:` do painel passa a ser a classe no `<html>`, e nao `prefers-color-scheme`.
+ *
+ * Sem isto o tema tem duas fontes de verdade que discordam: os utilitarios `dark:` seguem o sistema
+ * operacional, enquanto o `styles.css` do SDK (`.dark .cv-*`) e os componentes que decidem cor em
+ * JavaScript (`useIsDarkTheme`, que observa a classe) seguem o `<html>`. Como ninguem escrevia a
+ * classe, a tela saia metade escura pelo sistema e metade clara pelo seletor — a barra lateral
+ * escura com a lista de conversas branca. Uma fonte so, e o interruptor manda nas duas metades.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/**
  * Tokens do painel.
  *
  * Ficam aqui, e nao num arquivo TypeScript, porque componente nao usa estilo inline: declarados no
@@ -22,8 +33,10 @@
   --color-brand-600: #163fae;
   --color-brand-900: #0d1b3e;
   --color-accent-500: #06b6d4;
+  --color-ink-100: #e2e8f0;
   --color-ink-500: #64748b;
   --color-ink-900: #1e2a4a;
+  --color-canvas-dark: #030712;
   --radius-panel: 0.75rem;
 
   /* Os nomes da regra de frontend, para que `min-width` seja lido como intencao e nao como numero. */
@@ -38,9 +51,26 @@ body,
   height: 100%;
 }
 
+/**
+ * O fundo da pagina vem de token por tema, e nao de uma cor fixa.
+ *
+ * O `body` fica atras de tudo: com valor claro fixo, qualquer folga entre os cartoes acendia uma
+ * faixa branca no tema escuro — e a tela de carregamento, que nao tem cartao nenhum, aparecia
+ * inteira clara antes de a aplicacao montar.
+ */
+:root {
+  --panel-canvas: var(--color-brand-50);
+  --panel-ink: var(--color-ink-900);
+}
+
+.dark {
+  --panel-canvas: var(--color-canvas-dark);
+  --panel-ink: var(--color-ink-100);
+}
+
 body {
   margin: 0;
-  background-color: var(--color-brand-50);
-  color: var(--color-ink-900);
+  background-color: var(--panel-canvas);
+  color: var(--panel-ink);
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }

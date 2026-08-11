@@ -6,6 +6,7 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import { useDarkMode } from '@adatechnology/conversations-ui';
 import { Menu, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -30,6 +31,15 @@ export function PanelShell() {
   const { section, navigate } = usePanelSection();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  /**
+   * O controlador do tema mora aqui, e nao na barra lateral.
+   *
+   * A barra e montada duas vezes abaixo de `desktop:` — o `aside` fica no DOM, so escondido, e a
+   * gaveta soma outra copia. `useDarkMode` grava a classe no `<html>`: duas instancias guardariam
+   * estados iniciais separados e o botao da gaveta mostraria o icone contrario ao tema no ar.
+   */
+  const { isDark, toggle: toggleTheme } = useDarkMode();
+
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
 
   function handleNavigate(next: PanelSection): void {
@@ -42,7 +52,12 @@ export function PanelShell() {
   return (
     <div className="flex h-full bg-gray-50 dark:bg-gray-950">
       <aside className="hidden desktop:block">
-        <PanelSidebar onNavigate={handleNavigate} section={section} />
+        <PanelSidebar
+          isDark={isDark}
+          onNavigate={handleNavigate}
+          onToggleTheme={toggleTheme}
+          section={section}
+        />
       </aside>
 
       {isDrawerOpen ? (
@@ -54,7 +69,12 @@ export function PanelShell() {
             type="button"
           />
           <div className="relative">
-            <PanelSidebar onNavigate={handleNavigate} section={section} />
+            <PanelSidebar
+          isDark={isDark}
+          onNavigate={handleNavigate}
+          onToggleTheme={toggleTheme}
+          section={section}
+        />
           </div>
         </div>
       ) : null}
