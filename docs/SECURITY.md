@@ -40,7 +40,7 @@ O que mudou:
 2. **Atributos `style="..."`** — os 24 atributos inline viraram classe no `landing.css`
    (`badge-dot-indigo`, `bento-icon-cyan`, `egg-title`, ...). `grep -c 'style="' index.html` da `0`.
    Atributo nao poderia ser resolvido por hash sem `'unsafe-hashes'`; classe resolve.
-3. **Widget** — `packages/chat-widget/src/widget.style.ts` ganhou `applyWidgetStyle()`, que monta
+3. **Widget** — `@adatechnology/web-chat-widget` (`src/widget.style.ts`) ganhou `applyWidgetStyle()`, que monta
    uma `CSSStyleSheet` construida e a atribui a `root.adoptedStyleSheets`. Folha adotada nao passa
    por `style-src`. O `<style>` continua como fallback para navegador sem folha construida
    (Safari < 16.4).

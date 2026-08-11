@@ -6,7 +6,7 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import { API_BASE_ATTRIBUTE, WIDGET_TAG_NAME } from '@ada/chat-widget';
+import { API_BASE_ATTRIBUTE, WIDGET_TAG_NAME } from '@adatechnology/web-chat-widget';
 
 import { environment } from '@/modules/shared/config/environment';
 

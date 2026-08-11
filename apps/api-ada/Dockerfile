@@ -13,13 +13,11 @@ COPY package.json bun.lock ./
 COPY apps/api-ada/package.json apps/api-ada/
 COPY apps/frontend-panel/package.json apps/frontend-panel/
 COPY apps/frontend-site/package.json apps/frontend-site/
-COPY packages/chat-widget/package.json packages/chat-widget/
 
 # `--frozen-lockfile`: a build falha se o lock divergir do manifest, em vez de resolver uma versao
 # nova sem ninguem ver (security.md §4).
 RUN bun install --frozen-lockfile
 
-COPY packages/ packages/
 COPY apps/api-ada/ apps/api-ada/
 
 ENV NODE_ENV=production

@@ -9,11 +9,9 @@ COPY package.json bun.lock tsconfig.json ./
 COPY apps/api-ada/package.json apps/api-ada/
 COPY apps/frontend-panel/package.json apps/frontend-panel/
 COPY apps/frontend-site/package.json apps/frontend-site/
-COPY packages/chat-widget/package.json packages/chat-widget/
 
 RUN bun install --frozen-lockfile
 
-COPY packages/ packages/
 COPY apps/frontend-panel/ apps/frontend-panel/
 
 # `VITE_*` e inlinado no bundle, entao a origem da API precisa existir na BUILD, nao no runtime.

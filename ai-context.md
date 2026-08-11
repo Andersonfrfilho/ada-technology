@@ -10,7 +10,6 @@ arquivo no mesmo commit.
 | `apps/api-ada` | HTTP com `Bun.serve`. Dona do domínio, hospeda o módulo de WhatsApp e o bot. |
 | `apps/frontend-site` | Landing institucional (widget de chat embutido). |
 | `apps/frontend-panel` | Painel de atendimento. |
-| `packages/chat-widget` | Web Component do chat, embutido pela landing. |
 
 Stack: Bun + TypeScript, PostgreSQL + Drizzle, Redis (cache, nonce, pub/sub de tempo real),
 `@adatechnology/meta-whatsapp-module` como motor de conversa (ver `docs/adr/0001`).
@@ -220,7 +219,7 @@ não tela inacabada.
 
 ## Landing e widget
 
-`packages/chat-widget` é Web Component nativo (`<ada-chat-widget>`, shadow DOM), não React — regra do
+`@adatechnology/web-chat-widget` é Web Component nativo (`<ada-chat-widget>`, shadow DOM), não React — regra do
 `web.md` §1 para elemento que precisa rodar fora do React. Ele não depende do bundle da landing e
 pode ser colado em qualquer página com um `<script type="module">`.
 

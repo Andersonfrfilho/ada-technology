@@ -1,4 +1,4 @@
-# Contexto de build e a RAIZ do monorepo — a landing importa `packages/chat-widget` por workspace.
+# Contexto de build e a RAIZ do monorepo: `bun.lock` e `tsconfig.json` da raiz sao do workspace.
 FROM oven/bun:1.3.14-slim AS build
 
 WORKDIR /repo
@@ -9,11 +9,9 @@ COPY package.json bun.lock tsconfig.json ./
 COPY apps/api-ada/package.json apps/api-ada/
 COPY apps/frontend-panel/package.json apps/frontend-panel/
 COPY apps/frontend-site/package.json apps/frontend-site/
-COPY packages/chat-widget/package.json packages/chat-widget/
 
 RUN bun install --frozen-lockfile
 
-COPY packages/ packages/
 COPY apps/frontend-site/ apps/frontend-site/
 
 ARG VITE_API_BASE_URL
