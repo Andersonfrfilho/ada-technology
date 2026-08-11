@@ -14,9 +14,10 @@
     "typecheck:panel": "cd apps/frontend-panel && bun run typecheck",
     "typecheck:widget": "cd packages/chat-widget && bun run typecheck",
     "typecheck:site": "cd apps/frontend-site && bun run typecheck",
-    "test": "bun run test:scripts && bun run test:api",
+    "test": "bun run test:scripts && bun run test:api && bun run test:widget",
     "test:scripts": "bun test scripts",
-    "test:api": "cd apps/api-ada && bun run test"
+    "test:api": "cd apps/api-ada && bun run test",
+    "test:widget": "cd packages/chat-widget && bun run test"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

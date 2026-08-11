@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   }
 }

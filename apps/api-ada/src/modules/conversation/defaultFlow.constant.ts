@@ -42,10 +42,15 @@ const CONTEXT_KEY = LEAD_CONTEXT_KEY;
 
 const CONTINUE_QUESTION = 'Quer falar com alguém do time sobre isso?';
 
-/** Duas opcoes viram botao no WhatsApp, e botao corta o titulo em 20 caracteres. */
+/**
+ * Duas opcoes: o presenter manda como botao, e botao corta o titulo em 20 caracteres.
+ *
+ * O emoji entra em todo botao de resposta rapida e conta no orcamento — nesta lista ele ja consome
+ * dois dos vinte. Rotulo mais longo nao degrada: a Graph API recusa a mensagem inteira.
+ */
 const CONTINUE_OPTIONS: [string, string][] = [
-  [OPTION_ID.FALAR, 'Sim, quero falar'],
-  [OPTION_ID.VOLTAR, 'Ver outra solução'],
+  [OPTION_ID.FALAR, '✅ Sim, quero falar'],
+  [OPTION_ID.VOLTAR, '🔙 Ver outra opção'],
 ];
 
 const CONTINUE_NEXT = {
@@ -53,7 +58,7 @@ const CONTINUE_NEXT = {
   default: NODE_ID.HANDOFF,
 } as const;
 
-const CHOICE_FALLBACK = 'Essa eu não sei responder. Escolha uma das opções e eu te mostro.';
+const CHOICE_FALLBACK = 'Essa eu não sei responder 😅 — escolha uma das opções e eu te mostro.';
 
 /**
  * `contextKey` no no de produto guarda o interesse.
@@ -71,14 +76,15 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
       id: NODE_ID.MENU,
       type: 'menu',
       contextKey: CONTEXT_KEY.INTEREST,
-      directMessage: 'Oi! Aqui é o assistente da Ada Technology.',
+      directMessage: 'Oi! 👋 Aqui é o assistente da *Ada Technology*.',
       question: 'Sobre o que você quer saber?',
       fallbackMessage: CHOICE_FALLBACK,
+      // Quatro opcoes: passa do teto de botao e sai como lista, onde o titulo cabe em 24.
       options: [
-        [OPTION_ID.ATENDIMENTO, 'Atendimento no WhatsApp'],
-        [OPTION_ID.DADOS, 'Dashboards e dados'],
-        [OPTION_ID.INTEGRACOES, 'Automações e integrações'],
-        [OPTION_ID.PESSOA, 'Falar com o time'],
+        [OPTION_ID.ATENDIMENTO, '💬 Atendimento WhatsApp'],
+        [OPTION_ID.DADOS, '📊 Dashboards e dados'],
+        [OPTION_ID.INTEGRACOES, '🔗 Automações e APIs'],
+        [OPTION_ID.PESSOA, '🙋 Falar com o time'],
       ],
       next: {
         byAnswer: {
@@ -96,9 +102,10 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
       type: 'question',
       questionType: 'choice',
       directMessage:
-        'Plataforma de Atendimento WhatsApp: o bot roda o fluxo real do seu negócio e passa para '
-        + 'uma pessoa quando precisa. Vários atendentes na mesma linha oficial da Meta, histórico '
-        + 'completo das conversas e templates aprovados para mensagem ativa.',
+        '💬 *Plataforma de Atendimento WhatsApp*\n\n'
+        + 'O bot roda o fluxo real do seu negócio e chama uma pessoa quando precisa. Vários '
+        + 'atendentes na mesma linha oficial da Meta, com histórico completo das conversas.\n\n'
+        + '_Mensagem ativa sai por template aprovado._',
       question: CONTINUE_QUESTION,
       fallbackMessage: CHOICE_FALLBACK,
       options: CONTINUE_OPTIONS,
@@ -110,8 +117,9 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
       type: 'question',
       questionType: 'choice',
       directMessage:
-        'Dashboards e Inteligência de Dados: os dados da operação viram painel com os indicadores '
-        + 'que importam, relatórios recorrentes e alertas quando algo sai da curva.',
+        '📊 *Dashboards e Inteligência de Dados*\n\n'
+        + 'Os dados da operação viram painel com os indicadores que importam, relatórios '
+        + 'recorrentes e alerta quando algo sai da curva.',
       question: CONTINUE_QUESTION,
       fallbackMessage: CHOICE_FALLBACK,
       options: CONTINUE_OPTIONS,
@@ -123,8 +131,9 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
       type: 'question',
       questionType: 'choice',
       directMessage:
-        'Automações e Integrações: conectamos os sistemas que sua equipe já usa, do CRM ao ERP, '
-        + 'por API REST e webhooks — e o trabalho manual repetitivo sai da rotina.',
+        '🔗 *Automações e Integrações*\n\n'
+        + 'Conectamos os sistemas que sua equipe já usa, do CRM ao ERP, por API REST e webhooks '
+        + '— e o trabalho manual repetitivo sai da rotina.',
       question: CONTINUE_QUESTION,
       fallbackMessage: CHOICE_FALLBACK,
       options: CONTINUE_OPTIONS,
@@ -136,7 +145,7 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
       type: 'question',
       questionType: 'text',
       contextKey: CONTEXT_KEY.NAME,
-      question: 'Combinado. Como podemos te chamar?',
+      question: 'Combinado! 🙌 Como podemos te chamar?',
       next: NODE_ID.CONTATO,
     },
 
@@ -145,7 +154,7 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
       type: 'question',
       questionType: 'text',
       contextKey: CONTEXT_KEY.CONTACT,
-      question: 'E qual o melhor e-mail ou telefone para retorno?',
+      question: '📩 E qual o melhor e-mail ou telefone para retorno?',
       next: NODE_ID.HANDOFF,
     },
 

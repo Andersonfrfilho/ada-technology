@@ -7,6 +7,7 @@
  */
 
 import { MESSAGE_DIRECTION, MESSAGE_MAX_LENGTH } from './widget.constant';
+import { buildFormattedFragment } from './widget.markup';
 import { applyWidgetStyle } from './widget.style';
 import locale from './widget.locale.json';
 import type { WidgetViewHandlers, WidgetViewState } from './types/widget.types';
@@ -150,7 +151,7 @@ export class WidgetView {
         const bubble = document.createElement('p');
         const isVisitor = message.direction === MESSAGE_DIRECTION.INBOUND;
         bubble.className = `bubble ${isVisitor ? 'bubble-visitor' : 'bubble-bot'}`;
-        bubble.textContent = message.content ?? '';
+        bubble.replaceChildren(buildFormattedFragment(message.content ?? ''));
 
         return bubble;
       }),

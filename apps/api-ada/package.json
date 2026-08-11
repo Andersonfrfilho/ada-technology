@@ -9,12 +9,13 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run src/infra/database/migrate.ts",
     "db:seed": "bun run src/infra/database/seeds/index.ts",
+    "flow:republish": "bun run src/infra/database/republishFlow.ts",
     "test": "bun test --env-file=../../envs/env.test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.10",
-    "@adatechnology/meta-whatsapp-module": "0.2.0-rc.20",
+    "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.11",
+    "@adatechnology/meta-whatsapp-module": "0.2.0-rc.21",
     "@adatechnology/meta-whatsapp-provider": "0.2.0-rc.3",
     "@adatechnology/module-http": "0.1.0-rc.1",
     "@adatechnology/notification-contracts": "0.1.0-rc.2",
