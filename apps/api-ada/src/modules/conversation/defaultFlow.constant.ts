@@ -53,8 +53,9 @@ const CONTINUE_OPTIONS: [string, string][] = [
   [OPTION_ID.VOLTAR, '🔙 Ver outra opção'],
 ];
 
+// O nome ja foi perguntado na abertura: daqui o que falta e o contato para retorno.
 const CONTINUE_NEXT = {
-  byAnswer: { [OPTION_ID.FALAR]: NODE_ID.NOME, [OPTION_ID.VOLTAR]: NODE_ID.MENU },
+  byAnswer: { [OPTION_ID.FALAR]: NODE_ID.CONTATO, [OPTION_ID.VOLTAR]: NODE_ID.MENU },
   default: NODE_ID.HANDOFF,
 } as const;
 
@@ -69,14 +70,27 @@ const CHOICE_FALLBACK = 'Essa eu não sei responder 😅 — escolha uma das op�
 export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
   key: DEFAULT_FLOW_KEY,
   label: 'Atendimento Ada',
-  startNodeId: NODE_ID.MENU,
+  startNodeId: NODE_ID.NOME,
   version: 1,
   nodes: {
+    // Primeira coisa da conversa: o nome. Ele vai para o contexto da sessao antes de qualquer
+    // ramificacao, entao o atendente que assumir no meio ja sabe com quem esta falando — mesmo que
+    // o cliente desista antes de chegar ao pedido de contato.
+    [NODE_ID.NOME]: {
+      id: NODE_ID.NOME,
+      type: 'question',
+      questionType: 'text',
+      contextKey: CONTEXT_KEY.NAME,
+      directMessage: 'Oi! 👋 Aqui é o assistente da *Ada Technology*.',
+      question: 'Antes de começar, como podemos te chamar?',
+      next: NODE_ID.MENU,
+    },
+
     [NODE_ID.MENU]: {
       id: NODE_ID.MENU,
       type: 'menu',
       contextKey: CONTEXT_KEY.INTEREST,
-      directMessage: 'Oi! 👋 Aqui é o assistente da *Ada Technology*.',
+      directMessage: 'Prazer! 🙌',
       question: 'Sobre o que você quer saber?',
       fallbackMessage: CHOICE_FALLBACK,
       // Quatro opcoes: passa do teto de botao e sai como lista, onde o titulo cabe em 24.
@@ -140,21 +154,12 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
       next: CONTINUE_NEXT,
     },
 
-    [NODE_ID.NOME]: {
-      id: NODE_ID.NOME,
-      type: 'question',
-      questionType: 'text',
-      contextKey: CONTEXT_KEY.NAME,
-      question: 'Combinado! 🙌 Como podemos te chamar?',
-      next: NODE_ID.CONTATO,
-    },
-
     [NODE_ID.CONTATO]: {
       id: NODE_ID.CONTATO,
       type: 'question',
       questionType: 'text',
       contextKey: CONTEXT_KEY.CONTACT,
-      question: '📩 E qual o melhor e-mail ou telefone para retorno?',
+      question: 'Combinado! 📩 Qual o melhor e-mail ou telefone para retorno?',
       next: NODE_ID.HANDOFF,
     },
 

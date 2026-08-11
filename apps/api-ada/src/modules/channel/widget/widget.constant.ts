@@ -38,3 +38,11 @@ export const WIDGET_SESSION_ID_PATTERN = `^${WIDGET_SESSION_PREFIX}[0-9a-f]{${WI
 export function isWidgetSessionId(value: string): boolean {
   return new RegExp(WIDGET_SESSION_ID_PATTERN).test(value);
 }
+
+/** Dica de idioma para o engine: corta a deteccao e evita pt-BR curto ser lido como espanhol. */
+export const AUDIO_LANGUAGE_HINT = 'pt';
+
+/** Teto do upload. Dois minutos de Opus cabem folgados; acima disto e outra coisa, nao nota de voz. */
+export const WIDGET_AUDIO_MAX_BYTES = 4 * 1024 * 1024;
+
+export const WIDGET_AUDIO_FIELD = 'audio';

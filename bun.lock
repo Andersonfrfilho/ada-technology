@@ -13,6 +13,7 @@
       "name": "@ada/api",
       "version": "0.0.1",
       "dependencies": {
+        "@adatechnology/audio-transcription-provider": "^0.1.0-rc.1",
         "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.11",
         "@adatechnology/meta-whatsapp-module": "0.2.0-rc.21",
         "@adatechnology/meta-whatsapp-provider": "0.2.0-rc.3",
@@ -86,6 +87,8 @@
     "@ada/frontend-panel": ["@ada/frontend-panel@workspace:apps/frontend-panel"],
 
     "@ada/frontend-site": ["@ada/frontend-site@workspace:apps/frontend-site"],
+
+    "@adatechnology/audio-transcription-provider": ["@adatechnology/audio-transcription-provider@0.1.0-rc.1", "", {}, "sha512-v46OyWwj/H5gGdhYixiA43faXpihDpYtCVizVmTcejOGdSu6eMS3zmWI1zdyVvwi+BjHVHBz3jU5C31lcJGiKQ=="],
 
     "@adatechnology/conversations-ui": ["@adatechnology/conversations-ui@0.1.0-rc.33", "", { "dependencies": { "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.11", "clsx": "^2.1.1", "lucide-react": "^1.21.0", "tailwind-merge": "^3.6.0" }, "peerDependencies": { "@xyflow/react": "^12", "react": "^18 || ^19", "react-dom": "^18 || ^19" }, "optionalPeers": ["@xyflow/react"] }, "sha512-CPeHDZL6H42un2ollT+ZdKvToQxpUC9tV+IfLzdywIoYoP8FteovSeUwd+QmI8/rGekP/E4YDT/nKX4Cbi7XZg=="],
 

@@ -9,6 +9,7 @@
 import type { FlowGraphData } from '@adatechnology/meta-whatsapp-contracts';
 
 import {
+  CONVERSATION_COMMAND,
   CONVERSATION_MESSAGE,
   CONVERSATION_OUTCOME,
   DEFAULT_FLOW_KEY,
@@ -18,7 +19,8 @@ import {
   MAX_FLOW_STEPS,
 } from '@/modules/conversation/conversation.constant';
 import { toConversationSession } from '@/modules/conversation/conversation.mapper';
-import { validateFlowAnswer } from '@/modules/conversation/flowAnswer.validator';
+import { resolveConversationCommand } from '@/modules/conversation/conversationCommand.resolver';
+import { isChoiceNode, validateFlowAnswer } from '@/modules/conversation/flowAnswer.validator';
 import { presentFlowNode } from '@/modules/conversation/flowNode.presenter';
 import type {
   AdvanceConversationDependencies,
@@ -27,6 +29,7 @@ import type {
   AnswerNodeParams,
   ConversationStepParams,
   HandOffFromConversationParams,
+  RunConversationCommandParams,
   RunFlowParams,
   SettleFlowParams,
 } from '@/modules/conversation/types/conversation.types';
@@ -95,11 +98,76 @@ export class AdvanceConversationUseCase {
 
   private async answerNode({ params, session, graph, node, nodeId }: AnswerNodeParams): Promise<AdvanceConversationResult> {
     const validation = validateFlowAnswer({ node, text: params.text });
+
+    // Num no de escolha a opcao vence o comando: grafo que ja tenha um `voltar` desenhado continua
+    // mandando na propria palavra. Ja pergunta de texto livre aceita qualquer coisa, entao ali o
+    // comando vem antes — ninguem se chama "sair", e sem isso nao haveria como desistir da pergunta.
+    const command = resolveConversationCommand(params.text);
+    if (command && (!validation.isValid || !isChoiceNode(node))) {
+      return this.runCommand({ params, session, graph, command });
+    }
+
     if (!validation.isValid) return this.handleInvalidAnswer({ params, session, graph, node, nodeId });
 
     const context = { ...session.context, [FALLBACK_COUNT_CONTEXT_KEY]: 0 };
 
     return this.runFrom({ params, session, graph, nodeId, context, userAnswer: validation.answer });
+  }
+
+  private async runCommand({ params, session, graph, command }: RunConversationCommandParams): Promise<AdvanceConversationResult> {
+    if (command === CONVERSATION_COMMAND.HUMAN) {
+      return this.handOff({ params, reason: HANDOFF_REASON.CONTACT_REQUESTED });
+    }
+
+    if (command === CONVERSATION_COMMAND.MENU) return this.restartFlow({ params, session, graph });
+
+    return this.exitConversation(params);
+  }
+
+  /**
+   * Volta ao inicio sem reperguntar o que o cliente ja respondeu.
+   *
+   * O no inicial do fluxo pergunta o nome, e um `menu` cru o perguntaria de novo a cada volta. Se a
+   * resposta ja esta no contexto, ela e reentregue ao interpretador como se tivesse sido digitada
+   * agora: o no e satisfeito sem aparecer na tela, e a conversa cai direto no menu.
+   */
+  private async restartFlow({ params, session, graph }: ConversationStepParams): Promise<AdvanceConversationResult> {
+    const { sessions, companyId } = this.dependencies;
+    const startNode = graph.nodes[graph.startNodeId];
+    const answered = startNode?.contextKey ? session.context[startNode.contextKey] : undefined;
+
+    if (typeof answered !== 'string' || !answered) return this.startFlow({ params, session, graph });
+
+    await sessions.setFlowPosition(companyId, params.whatsappNumber, graph.key, graph.startNodeId);
+
+    return this.runFrom({
+      params,
+      session,
+      graph,
+      nodeId: graph.startNodeId,
+      context: { ...session.context, [FALLBACK_COUNT_CONTEXT_KEY]: 0 },
+      userAnswer: answered,
+    });
+  }
+
+  /**
+   * Encerra por pedido do cliente, com a despedida que o painel configurou.
+   *
+   * A posicao no grafo cai junto: a proxima mensagem cai no `!nodeId` do `execute` e a conversa
+   * recomeca do menu, em vez de voltar para a pergunta que o cliente acabou de abandonar.
+   */
+  private async exitConversation(params: AdvanceConversationParams): Promise<AdvanceConversationResult> {
+    const { sessions, settings, companyId } = this.dependencies;
+    const configured = await settings.get(companyId);
+
+    await sessions.setFlowPosition(companyId, params.whatsappNumber, null, null);
+    await sessions.patchContext(companyId, params.whatsappNumber, { [FALLBACK_COUNT_CONTEXT_KEY]: 0 });
+    await params.channel.sendText(
+      params.whatsappNumber,
+      configured.farewellMessage.trim() || CONVERSATION_MESSAGE.CLOSING,
+    );
+
+    return { outcome: CONVERSATION_OUTCOME.COMPLETED };
   }
 
   private async handleInvalidAnswer({ params, session, node }: AnswerNodeParams): Promise<AdvanceConversationResult> {

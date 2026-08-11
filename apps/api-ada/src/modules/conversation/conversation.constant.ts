@@ -35,6 +35,32 @@ export const CONVERSATION_MESSAGE = {
   CLOSING: 'Se precisar de mais alguma coisa, é só chamar.',
 } as const;
 
+/**
+ * Comandos que o cliente digita e valem em qualquer no do grafo.
+ *
+ * Eles vivem aqui, e nao no grafo, porque valem para qualquer fluxo publicado — inclusive os que o
+ * painel desenhar amanha, que nao teriam como lembrar de repetir "sair" em cada no.
+ */
+export const CONVERSATION_COMMAND = {
+  /** Encerra com a despedida configurada; a proxima mensagem recomeca do menu. */
+  EXIT: 'exit',
+  /** Volta ao inicio do fluxo de qualquer ponto. */
+  MENU: 'menu',
+  /** Chama uma pessoa sem gastar as tentativas de fallback. */
+  HUMAN: 'human',
+} as const;
+
+export type ConversationCommand = (typeof CONVERSATION_COMMAND)[keyof typeof CONVERSATION_COMMAND];
+
+/** Sinonimos ja normalizados: minusculas, sem acento e sem pontuacao. */
+export const CONVERSATION_COMMAND_SYNONYMS: Readonly<
+  Record<ConversationCommand, readonly string[]>
+> = {
+  [CONVERSATION_COMMAND.EXIT]: ['sair', 'encerrar', 'parar', 'tchau', 'obrigado', 'obrigada', 'valeu'],
+  [CONVERSATION_COMMAND.MENU]: ['menu', 'voltar', 'inicio', 'comecar', 'recomecar'],
+  [CONVERSATION_COMMAND.HUMAN]: ['atendente', 'humano', 'pessoa', 'falar com alguem', 'falar com atendente'],
+} as const;
+
 export const CONVERSATION_OUTCOME = {
   /** O bot avancou e deixou uma pergunta no ar. */
   PRESENTED: 'presented',

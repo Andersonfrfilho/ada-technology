@@ -115,9 +115,13 @@ function validateCpf(text: string): FlowAnswerValidation {
   return first === digits[9] && second === digits[10] ? accept(digits.join('')) : invalid;
 }
 
+/** No de escolha responde por id, rotulo ou posicao; o resto aceita texto livre. */
+export function isChoiceNode(node: FlowNodeData): boolean {
+  return node.type === 'menu' || node.questionType === 'choice';
+}
+
 export function validateFlowAnswer({ node, text }: ValidateFlowAnswerParams): FlowAnswerValidation {
-  const isChoice = node.type === 'menu' || node.questionType === 'choice';
-  if (isChoice) return validateChoice(node, text);
+  if (isChoiceNode(node)) return validateChoice(node, text);
 
   const trimmed = text.trim();
   if (trimmed.length === 0) return invalid;

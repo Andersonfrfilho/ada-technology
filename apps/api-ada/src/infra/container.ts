@@ -11,6 +11,8 @@ import { WhatsAppTemplateProvider } from '@adatechnology/meta-whatsapp-provider'
 
 import { RedisCache } from '@/infra/cache/RedisCache';
 import { RedisNonceStore } from '@/infra/cache/RedisNonceStore';
+import { createGroqTranscriber, GROQ_BASE_URL } from '@adatechnology/audio-transcription-provider';
+
 import { environment } from '@/infra/config/environment';
 import { database } from '@/infra/database/client';
 import { RedisRelay } from '@/infra/realtime/RedisRelay';
@@ -23,7 +25,11 @@ import { RecordAuditLogUseCase } from '@/modules/audit/recordAuditLog.use-case';
 import { TranscribedWhatsAppChannel } from '@/modules/channel/whatsapp/TranscribedWhatsAppChannel';
 import type { WhatsAppMessageHandlers } from '@/modules/channel/whatsapp/types/whatsapp.types';
 import { createWhatsAppMessageHook } from '@/modules/channel/whatsapp/whatsappMessageHook';
+import { PostWidgetAudioUseCase } from '@/modules/channel/widget/postWidgetAudio.use-case';
 import { PostWidgetMessageUseCase } from '@/modules/channel/widget/postWidgetMessage.use-case';
+import { AUDIO_LANGUAGE_HINT } from '@/modules/channel/widget/widget.constant';
+import { ExtractLeadSignalsUseCase } from '@/modules/conversation/extractLeadSignals.use-case';
+import { LEAD_SIGNALS_TIMEOUT_MS } from '@/modules/conversation/leadSignals.constant';
 import { StartWidgetSessionUseCase } from '@/modules/channel/widget/startWidgetSession.use-case';
 import { WidgetChannelAdapter } from '@/modules/channel/widget/WidgetChannelAdapter';
 import { AdvanceConversationUseCase } from '@/modules/conversation/advanceConversation.use-case';
@@ -133,6 +139,7 @@ export const advanceConversation = new AdvanceConversationUseCase({
   getFlowGraph: flows.get,
   interpreter: flows.interpreter,
   requestHandoff,
+  settings: metaWhatsApp.settings,
   companyId: environment.ADA_COMPANY_ID,
   startState: START_STATE,
 });
@@ -161,6 +168,35 @@ export const postWidgetMessage = new PostWidgetMessageUseCase({
   logMessage: metaWhatsApp.conversations.log,
   companyId: environment.ADA_COMPANY_ID,
   startState: START_STATE,
+});
+
+/**
+ * Transcricao e capacidade opcional: sem chave, nao ha objeto — e a rota de audio responde 503.
+ *
+ * O mesmo `undefined` desce ate o widget pela ausencia do microfone, entao o visitante nunca ve um
+ * botao que a instalacao nao sabe atender.
+ */
+const audioTranscriber = environment.GROQ_API_KEY
+  ? createGroqTranscriber({
+    apiKey: environment.GROQ_API_KEY,
+    model: environment.GROQ_TRANSCRIPTION_MODEL,
+    languageHint: AUDIO_LANGUAGE_HINT,
+  })
+  : undefined;
+
+export const extractLeadSignals = new ExtractLeadSignalsUseCase({
+  sessions: metaWhatsApp.conversations.repository,
+  companyId: environment.ADA_COMPANY_ID,
+  apiKey: environment.GROQ_API_KEY,
+  model: environment.GROQ_MODEL,
+  baseUrl: GROQ_BASE_URL,
+  timeoutMs: LEAD_SIGNALS_TIMEOUT_MS,
+});
+
+export const postWidgetAudio = new PostWidgetAudioUseCase({
+  transcriber: audioTranscriber,
+  postMessage: postWidgetMessage,
+  extractLeadSignals,
 });
 
 export const recordAuditLog = new RecordAuditLogUseCase();
@@ -284,6 +320,8 @@ export const container = {
   requestHandoff,
   startWidgetSession,
   postWidgetMessage,
+  postWidgetAudio,
+  extractLeadSignals,
   panelConversations,
   transcriptMessages,
   panelLeads,

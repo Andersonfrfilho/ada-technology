@@ -9,7 +9,11 @@
 import type { ChannelAdapterInterface } from '@adatechnology/meta-whatsapp-contracts';
 import type { LogMessageUseCase } from '@adatechnology/meta-whatsapp-module';
 
+import type { AudioTranscriber } from '@adatechnology/audio-transcription-provider';
+
 import type { AdvanceConversationUseCase } from '@/modules/conversation/advanceConversation.use-case';
+import type { ExtractLeadSignalsUseCase } from '@/modules/conversation/extractLeadSignals.use-case';
+import type { PostWidgetMessageUseCase } from '@/modules/channel/widget/postWidgetMessage.use-case';
 import type { ConversationOutcome } from '@/modules/conversation/conversation.constant';
 
 export type WidgetChannelAdapterDependencies = {
@@ -40,4 +44,21 @@ export type PostWidgetMessageParams = {
 
 export type PostWidgetMessageResult = {
   readonly outcome: ConversationOutcome;
+};
+
+/**
+ * `transcriber` ausente e a forma de dizer que a capacidade nao existe neste ambiente.
+ *
+ * Sem chave de provedor configurada, nao ha objeto para injetar — e a rota responde 503 em vez de
+ * fingir que aceitou o audio.
+ */
+export type PostWidgetAudioDependencies = {
+  readonly transcriber: AudioTranscriber | undefined;
+  readonly postMessage: PostWidgetMessageUseCase;
+  readonly extractLeadSignals: ExtractLeadSignalsUseCase;
+};
+
+export type PostWidgetAudioParams = {
+  readonly sessionId: string;
+  readonly audio: { readonly buffer: Buffer; readonly mimeType: string };
 };

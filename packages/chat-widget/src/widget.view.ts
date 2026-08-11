@@ -6,9 +6,10 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import { MESSAGE_DIRECTION, MESSAGE_MAX_LENGTH } from './widget.constant';
-import { buildFormattedFragment } from './widget.markup';
+import { MESSAGE_MAX_LENGTH } from './widget.constant';
+import { buildMascot } from './widget.mascot';
 import { applyWidgetStyle } from './widget.style';
+import { buildTranscriptNodes } from './widget.transcript';
 import locale from './widget.locale.json';
 import type { WidgetViewHandlers, WidgetViewState } from './types/widget.types';
 
@@ -24,9 +25,11 @@ export class WidgetView {
   readonly #launcher = document.createElement('button');
   readonly #panel = document.createElement('section');
   readonly #transcript = document.createElement('div');
+  readonly #typing = document.createElement('div');
   readonly #options = document.createElement('div');
   readonly #status = document.createElement('p');
   readonly #input = document.createElement('input');
+  readonly #mic = document.createElement('button');
   readonly #send = document.createElement('button');
   #renderedIds = '';
 
@@ -43,7 +46,11 @@ export class WidgetView {
   #buildLauncher(): void {
     this.#launcher.className = 'launcher';
     this.#launcher.type = 'button';
-    this.#launcher.textContent = locale.launcher.open;
+
+    const label = document.createElement('span');
+    label.textContent = locale.launcher.open;
+
+    this.#launcher.append(buildMascot('mascot mascot-launcher'), label);
     this.#launcher.addEventListener('click', this.#handlers.onToggle);
   }
 
@@ -56,6 +63,10 @@ export class WidgetView {
     this.#transcript.setAttribute('role', 'log');
     this.#transcript.setAttribute('aria-live', 'polite');
 
+    this.#typing.className = 'typing';
+    this.#typing.hidden = true;
+    this.#typing.append(...[0, 1, 2].map(() => document.createElement('span')));
+
     this.#options.className = 'options';
     this.#status.className = 'status';
     this.#status.hidden = true;
@@ -63,6 +74,7 @@ export class WidgetView {
     this.#panel.append(
       this.#buildHeader(),
       this.#transcript,
+      this.#typing,
       this.#options,
       this.#status,
       this.#buildComposer(),
@@ -74,6 +86,7 @@ export class WidgetView {
     header.className = 'header';
 
     const heading = document.createElement('div');
+    heading.className = 'header-heading';
     const title = document.createElement('p');
     title.className = 'header-title';
     title.textContent = locale.header.title;
@@ -89,7 +102,7 @@ export class WidgetView {
     close.setAttribute('aria-label', locale.launcher.close);
     close.addEventListener('click', this.#handlers.onToggle);
 
-    header.append(heading, close);
+    header.append(buildMascot('mascot mascot-header'), heading, close);
 
     return header;
   }
@@ -105,9 +118,10 @@ export class WidgetView {
     this.#input.placeholder = locale.composer.placeholder;
     this.#input.setAttribute('aria-label', locale.composer.placeholder);
 
-    this.#send.className = 'send';
+    this.#send.className = 'icon-button send';
     this.#send.type = 'submit';
-    this.#send.textContent = locale.composer.send;
+    this.#send.textContent = '➤';
+    this.#send.setAttribute('aria-label', locale.composer.send);
 
     composer.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -118,9 +132,20 @@ export class WidgetView {
       this.#handlers.onSubmit(text);
     });
 
-    composer.append(this.#input, this.#send);
+    composer.append(this.#input, this.#buildMicrophone(), this.#send);
 
     return composer;
+  }
+
+  /** Sem `onToggleRecording` o botao fica oculto: capacidade opcional e por ausencia, nao por flag. */
+  #buildMicrophone(): HTMLElement {
+    this.#mic.className = 'icon-button mic';
+    this.#mic.type = 'button';
+    this.#mic.textContent = '🎤';
+    this.#mic.hidden = this.#handlers.onToggleRecording === undefined;
+    this.#mic.addEventListener('click', () => this.#handlers.onToggleRecording?.());
+
+    return this.#mic;
   }
 
   focusInput(): void {
@@ -131,7 +156,9 @@ export class WidgetView {
     this.#launcher.hidden = state.isOpen;
     this.#panel.hidden = !state.isOpen;
     this.#send.disabled = state.isBusy;
+    this.#typing.hidden = !state.isBusy;
 
+    this.#renderComposer(state);
     this.#renderTranscript(state);
     this.#renderOptions(state);
 
@@ -140,23 +167,31 @@ export class WidgetView {
     this.#status.classList.toggle('status-error', state.hasFailed);
   }
 
+  /** O teclado e a sugestao do navegador seguem a pergunta que esta de pe (ver `widget.mapper.ts`). */
+  #renderComposer(state: WidgetViewState): void {
+    const hint = state.transcript.inputHint;
+
+    // `autocomplete` por atributo: o DOM tipa a propriedade como a enumeracao fechada do HTML, e o
+    // valor aqui vem do fluxo publicado — pares como "email tel" sao validos e nao estao nela.
+    this.#input.setAttribute('autocomplete', hint.autocomplete);
+    this.#input.inputMode = hint.inputMode;
+    this.#input.type = hint.type;
+
+    this.#mic.classList.toggle('mic-recording', state.isRecording);
+    this.#mic.setAttribute(
+      'aria-label',
+      state.isRecording ? locale.composer.stopRecording : locale.composer.record,
+    );
+    this.#mic.setAttribute('aria-pressed', String(state.isRecording));
+  }
+
   /** Redesenha so quando o conjunto de mensagens muda: rerender a cada evento perderia o scroll. */
   #renderTranscript(state: WidgetViewState): void {
     const ids = state.transcript.messages.map((message) => message.id).join(',');
     if (ids === this.#renderedIds) return;
 
     this.#renderedIds = ids;
-    this.#transcript.replaceChildren(
-      ...state.transcript.messages.map((message) => {
-        const bubble = document.createElement('p');
-        const isVisitor = message.direction === MESSAGE_DIRECTION.INBOUND;
-        bubble.className = `bubble ${isVisitor ? 'bubble-visitor' : 'bubble-bot'}`;
-        bubble.replaceChildren(buildFormattedFragment(message.content ?? ''));
-
-        return bubble;
-      }),
-    );
-
+    this.#transcript.replaceChildren(...buildTranscriptNodes(state.transcript.messages));
     this.#transcript.scrollTop = this.#transcript.scrollHeight;
   }
 

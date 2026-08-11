@@ -18,9 +18,13 @@ import type {
   GetFlowGraphUseCase,
   SessionRepository,
   SessionRow,
+  SettingsRepository,
 } from '@adatechnology/meta-whatsapp-module';
 
-import type { ConversationOutcome } from '@/modules/conversation/conversation.constant';
+import type {
+  ConversationCommand,
+  ConversationOutcome,
+} from '@/modules/conversation/conversation.constant';
 import type { RequestHandoffUseCase } from '@/modules/conversation/requestHandoff.use-case';
 import type { HandoffReason } from '@/shared/constants/domain.constant';
 
@@ -57,6 +61,8 @@ export type AdvanceConversationDependencies = {
   readonly getFlowGraph: GetFlowGraphUseCase;
   readonly interpreter: FlowInterpreter;
   readonly requestHandoff: RequestHandoffUseCase;
+  /** So a despedida sai daqui: o texto e editavel na tela de Mensagens do painel. */
+  readonly settings: SettingsRepository;
   readonly companyId: string;
   readonly startState: string;
 };
@@ -88,6 +94,10 @@ export type RunFlowParams = ConversationStepParams & {
   readonly userAnswer?: string;
 };
 
+export type RunConversationCommandParams = ConversationStepParams & {
+  readonly command: ConversationCommand;
+};
+
 export type HandOffFromConversationParams = {
   readonly params: AdvanceConversationParams;
   readonly reason: HandoffReason;
@@ -102,4 +112,18 @@ export type SettleFlowParams = {
 export type RegisterConversationFlowActionsParams = {
   readonly registry: FlowActionRegistry;
   readonly requestHandoff: RequestHandoffUseCase;
+};
+
+export type ExtractLeadSignalsDependencies = {
+  readonly sessions: SessionRepository;
+  readonly companyId: string;
+  readonly apiKey: string;
+  readonly model: string;
+  readonly baseUrl: string;
+  readonly timeoutMs: number;
+};
+
+export type ExtractLeadSignalsParams = {
+  readonly sessionId: string;
+  readonly text: string;
 };

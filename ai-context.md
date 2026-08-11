@@ -28,6 +28,31 @@ nasce `false`.
 - sem grafo, sem nó, resposta inválida repetida ou ação de fluxo pedindo gente → handoff;
 - caso contrário apresenta o próximo nó pelo `ChannelAdapterInterface` recebido.
 
+Comandos globais (`conversationCommand.resolver.ts`) valem em qualquer nó, sem estarem desenhados no
+grafo: `sair` e sinônimos encerram com a `farewellMessage` do painel e zeram a posição — a próxima
+mensagem recomeça do menu; `menu`/`voltar` voltam ao nó inicial; `atendente`/`humano` chamam uma
+pessoa sem gastar as duas tentativas de fallback. Num nó de escolha a opção do grafo vence a palavra
+do comando; em pergunta de texto livre o comando vem antes, senão não haveria como desistir dela.
+`menu` não repergunta o nó inicial quando o `contextKey` dele já está no contexto — a resposta
+guardada é reentregue ao interpretador, e a conversa cai direto no menu.
+
+O widget do site aceita **nota de voz**: `POST /v1/widget/sessions/:id/audio` (multipart, campo
+`audio`, teto de 4MB) transcreve por `@adatechnology/audio-transcription-provider` (Groq Whisper) e
+injeta o texto na conversa como fala do visitante. Sem `GROQ_API_KEY` não há transcriber, a rota
+responde 503 e o widget não desenha o microfone — capacidade por ausência. Depois do passo do fluxo,
+`ExtractLeadSignalsUseCase` lê a fala solta e grava em `_leadSignals` no contexto da sessão o que ela
+revelar (empresa, cargo, segmento, porte, dor, ferramentas, urgência), separado dos campos que o
+cliente respondeu; falha de modelo não interrompe a conversa. A rota de transcript carimba
+`answerKind` no payload do último balão do bot (`answerKind.resolver.ts`), e é dele que o widget tira
+`autocomplete`/`inputMode` do campo de texto.
+
+Falha de transcrição nunca chega ao visitante como 500: `toWidgetAudioError` traduz o erro do
+provedor em erro de domínio — cota estourada vira 429 com `retryAfterSeconds` no contexto, que o
+filtro global publica como header `Retry-After`; falha do engine vira 502. O widget escolhe a frase
+pelo `code` do envelope (`getApiErrorCode` + `AUDIO_STATUS_BY_ERROR_CODE`), com o status HTTP só como
+rede para resposta de proxy sem corpo nosso: `audioBusy` traz o número de segundos, `audioUnavailable`
+e `audioFailed` convidam a escrever, que é o caminho que continua funcionando.
+
 Entrada de cada canal:
 
 - **WhatsApp** — `hooks.onMessageReceived` do módulo (`whatsappMessageHook.ts`). O módulo já não

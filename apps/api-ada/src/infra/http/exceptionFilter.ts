@@ -53,10 +53,19 @@ export function handleUncaughtError({ error, traceId, path }: HandleUncaughtErro
       meta: { path, code: error.code, statusCode: error.statusCode, ...error.context },
     });
 
+    // Erro de dominio que sabe quando vale tentar de novo carrega o intervalo no contexto; aqui ele
+    // vira header padrao, que e onde cliente HTTP e navegador sabem procurar.
+    const retryAfter = error.context.retryAfterSeconds;
+    const extraHeaders =
+      typeof retryAfter === 'number' && Number.isFinite(retryAfter)
+        ? { 'Retry-After': String(Math.ceil(retryAfter)) }
+        : undefined;
+
     return jsonError({
       code: error.code,
       message: error.message,
       statusCode: error.statusCode,
+      ...(extraHeaders ? { extraHeaders } : {}),
     });
   }
 

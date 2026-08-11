@@ -21,6 +21,9 @@ export const RATE_LIMIT = {
   WIDGET_SESSION_CREATE: { limit: 10, windowSeconds: ONE_MINUTE },
   WIDGET_MESSAGE_SEND: { limit: 30, windowSeconds: ONE_MINUTE },
   WIDGET_TRANSCRIPT_READ: { limit: 120, windowSeconds: ONE_MINUTE },
+  // Audio custa uma chamada de transcricao por envio: e a rota mais cara que um visitante nao
+  // autenticado alcanca, e por isso a mais apertada das quatro.
+  WIDGET_AUDIO_SEND: { limit: 10, windowSeconds: ONE_MINUTE },
   WIDGET_EVENTS_SUBSCRIBE: { limit: 20, windowSeconds: ONE_MINUTE },
 
   // Login e a unica rota onde tentar de novo tem valor para quem ataca: dez chances por minuto

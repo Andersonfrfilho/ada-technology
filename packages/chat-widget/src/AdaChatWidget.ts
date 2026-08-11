@@ -7,12 +7,14 @@
  */
 
 import { WidgetApi } from './widget.api';
-import { API_BASE_ATTRIBUTE, HANDOFF_OUTCOME, SESSION_STORAGE_KEY } from './widget.constant';
+import { API_BASE_ATTRIBUTE, DEFAULT_INPUT_HINT, HANDOFF_OUTCOME, SESSION_STORAGE_KEY } from './widget.constant';
+import { toAudioFailureMessage } from './widget.failure';
 import locale from './widget.locale.json';
+import { AudioRecorder, isRecordingSupported } from './widget.recorder';
 import { WidgetView } from './widget.view';
 import type { WidgetTranscript } from './types/widget.types';
 
-const EMPTY_TRANSCRIPT: WidgetTranscript = { messages: [], options: [] };
+const EMPTY_TRANSCRIPT: WidgetTranscript = { messages: [], options: [], inputHint: DEFAULT_INPUT_HINT };
 
 /**
  * O elemento so guarda estado e liga API e tela.
@@ -23,10 +25,12 @@ const EMPTY_TRANSCRIPT: WidgetTranscript = { messages: [], options: [] };
 export class AdaChatWidget extends HTMLElement {
   #api?: WidgetApi;
   #view?: WidgetView;
+  readonly #recorder = new AudioRecorder();
   #unsubscribe: (() => void) | undefined;
   #sessionId = '';
   #isOpen = false;
   #isBusy = false;
+  #isRecording = false;
   #status = '';
   #hasFailed = false;
   #transcript: WidgetTranscript = EMPTY_TRANSCRIPT;
@@ -40,6 +44,8 @@ export class AdaChatWidget extends HTMLElement {
     this.#view = new WidgetView(this.attachShadow({ mode: 'open' }), {
       onToggle: () => void this.#toggle(),
       onSubmit: (text) => void this.#submit(text),
+      // Navegador sem `MediaRecorder` nao recebe o callback, e o microfone nem chega a existir.
+      ...(isRecordingSupported() ? { onToggleRecording: () => void this.#toggleRecording() } : {}),
     });
 
     this.#render();
@@ -54,6 +60,7 @@ export class AdaChatWidget extends HTMLElement {
     this.#view?.render({
       isOpen: this.#isOpen,
       isBusy: this.#isBusy,
+      isRecording: this.#isRecording,
       status: this.#status,
       hasFailed: this.#hasFailed,
       transcript: this.#transcript,
@@ -124,6 +131,45 @@ export class AdaChatWidget extends HTMLElement {
       sessionId: this.#sessionId,
       onChange: () => void this.#refresh(),
     });
+  }
+
+  /**
+   * O mesmo botao comeca e termina a gravacao.
+   *
+   * Enquanto grava, o widget nao fica ocupado: o visitante continua podendo digitar e desistir do
+   * audio. So o envio bloqueia, porque ai a conversa realmente andou um passo.
+   */
+  async #toggleRecording(): Promise<void> {
+    if (this.#isRecording) return this.#finishRecording();
+
+    try {
+      await this.#recorder.start(() => void this.#finishRecording());
+      this.#isRecording = true;
+      this.#setStatus(locale.status.recording);
+    } catch {
+      this.#setStatus(locale.status.microphoneDenied, true);
+    }
+  }
+
+  async #finishRecording(): Promise<void> {
+    const audio = await this.#recorder.stop();
+    this.#isRecording = false;
+
+    if (!audio || !this.#api || !this.#sessionId) return this.#setStatus('');
+
+    this.#isBusy = true;
+    this.#setStatus(locale.status.transcribing);
+
+    try {
+      const { outcome } = await this.#api.postAudio({ sessionId: this.#sessionId, audio });
+      await this.#refresh();
+      this.#setStatus(HANDOFF_OUTCOME.includes(outcome) ? locale.status.handedOff : '');
+    } catch (error) {
+      this.#setStatus(toAudioFailureMessage(error), true);
+    } finally {
+      this.#isBusy = false;
+      this.#render();
+    }
   }
 
   async #submit(text: string): Promise<void> {

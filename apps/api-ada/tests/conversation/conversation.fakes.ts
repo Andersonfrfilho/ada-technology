@@ -8,7 +8,12 @@
 
 import { FLOW_ACTION_KIND } from '@adatechnology/meta-whatsapp-contracts';
 import type { ChannelAdapterInterface, FlowGraphData } from '@adatechnology/meta-whatsapp-contracts';
-import type { GetFlowGraphUseCase, SessionRepository, SessionRow } from '@adatechnology/meta-whatsapp-module';
+import type {
+  GetFlowGraphUseCase,
+  SessionRepository,
+  SessionRow,
+  SettingsRepository,
+} from '@adatechnology/meta-whatsapp-module';
 
 export const COMPANY_ID = '00000000-0000-4000-8000-000000000001';
 export const WHATSAPP_NUMBER = '5511999990000';
@@ -37,6 +42,23 @@ export const ATENDIMENTO_GRAPH: FlowGraphData = {
       question: 'Qual produto te interessa?',
     },
     entregar: { id: 'entregar', type: 'action', actionKind: FLOW_ACTION_KIND.HANDOFF },
+  },
+};
+
+/** Copia do grafo de atendimento com o nome na abertura — e o formato do fluxo publicado hoje. */
+export const NOME_PRIMEIRO_GRAPH: FlowGraphData = {
+  ...ATENDIMENTO_GRAPH,
+  startNodeId: 'nome',
+  nodes: {
+    ...ATENDIMENTO_GRAPH.nodes,
+    nome: {
+      id: 'nome',
+      type: 'question',
+      questionType: 'text',
+      contextKey: 'leadName',
+      question: 'Como podemos te chamar?',
+      next: 'menu',
+    },
   },
 };
 
@@ -121,6 +143,15 @@ export class FakeSessionRepository {
 
 export function asSessionRepository(fake: FakeSessionRepository): SessionRepository {
   return fake as unknown as SessionRepository;
+}
+
+export const FAREWELL_MESSAGE = 'Foi bom falar com voce. Ate logo!';
+
+/** Do repositorio de configuracao a conversa so le a despedida. */
+export function fakeSettings(farewellMessage: string = FAREWELL_MESSAGE): SettingsRepository {
+  return {
+    get: async (): Promise<{ farewellMessage: string }> => ({ farewellMessage }),
+  } as unknown as SettingsRepository;
 }
 
 /** Um `GetFlowGraphUseCase` de verdade exige repositorio e cache; o motor so chama `execute`. */

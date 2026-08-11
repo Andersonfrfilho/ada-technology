@@ -8,7 +8,9 @@
 
 import { environment } from '@/infra/config/environment';
 import {
+  flowGraphs,
   metaWhatsApp,
+  postWidgetAudio,
   postWidgetMessage,
   realtime,
   startWidgetSession,
@@ -21,21 +23,26 @@ import { jsonData } from '@/infra/http/responses';
 import { HTTP_METHOD, type Route } from '@/infra/http/router';
 import { createSseResponse } from '@/infra/http/sse';
 import { WidgetOriginNotAllowedError } from '@/modules/channel/channel.error';
+import { resolveAnswerKind } from '@/modules/channel/widget/answerKind.resolver';
 import {
   isWidgetSessionId,
+  WIDGET_AUDIO_FIELD,
+  WIDGET_AUDIO_MAX_BYTES,
   WIDGET_TRANSCRIPT_DEFAULT_LIMIT,
 } from '@/modules/channel/widget/widget.constant';
-import { WidgetSessionNotFoundError } from '@/modules/channel/widget/widget.error';
-import { toWidgetMessage } from '@/modules/channel/widget/widget.mapper';
+import { WidgetAudioInvalidError, WidgetSessionNotFoundError } from '@/modules/channel/widget/widget.error';
+import { toWidgetMessage, withAnswerKind } from '@/modules/channel/widget/widget.mapper';
 import {
   widgetMessageSchema,
   widgetTranscriptQuerySchema,
 } from '@/modules/channel/widget/widget.schema';
+import { DEFAULT_FLOW_KEY } from '@/modules/conversation/conversation.constant';
 import { conversationRealtimeChannel } from '@/modules/shared/realtime.constant';
 
 const SESSIONS_PATH = '/v1/widget/sessions';
 const MESSAGES_PATH = '/v1/widget/sessions/:sessionId/messages';
 const EVENTS_PATH = '/v1/widget/sessions/:sessionId/events';
+const AUDIO_PATH = '/v1/widget/sessions/:sessionId/audio';
 
 const CREATED = 201;
 
@@ -113,9 +120,47 @@ const listMessagesRoute: Route = {
       ...(query.before ? { before: query.before } : {}),
     });
 
-    return jsonData(rows.map(toWidgetMessage));
+    const node = session.currentNodeId
+      ? (await flowGraphs.get.execute({ companyId: environment.ADA_COMPANY_ID, key: session.flowKey ?? DEFAULT_FLOW_KEY }))
+        ?.nodes[session.currentNodeId]
+      : undefined;
+
+    return jsonData(withAnswerKind(rows.map(toWidgetMessage), resolveAnswerKind(node)));
   },
 };
+
+/**
+ * Nota de voz do visitante: sobe o binario, volta o desfecho do passo do fluxo.
+ *
+ * Mesmas guardas das outras rotas do widget, e limite proprio de taxa: transcricao custa dinheiro
+ * por chamada, entao esta e a rota mais cara que um visitante nao autenticado consegue disparar.
+ */
+const postAudioRoute: Route = {
+  method: HTTP_METHOD.POST,
+  path: AUDIO_PATH,
+  rateLimit: RATE_LIMIT.WIDGET_AUDIO_SEND,
+  handler: async ({ request, params }) => {
+    assertAllowedOrigin(request);
+
+    const sessionId = assertWidgetSession(params.sessionId);
+    const audio = await readAudioUpload(request);
+
+    const result = await postWidgetAudio.execute({ sessionId, audio });
+
+    return jsonData(result);
+  },
+};
+
+async function readAudioUpload(request: Request): Promise<{ buffer: Buffer; mimeType: string }> {
+  const form = await request.formData().catch(() => undefined);
+  const file = form?.get(WIDGET_AUDIO_FIELD);
+
+  if (!(file instanceof File)) throw new WidgetAudioInvalidError('arquivo ausente');
+  if (file.size === 0) throw new WidgetAudioInvalidError('arquivo vazio');
+  if (file.size > WIDGET_AUDIO_MAX_BYTES) throw new WidgetAudioInvalidError('arquivo grande demais');
+
+  return { buffer: Buffer.from(await file.arrayBuffer()), mimeType: file.type };
+}
 
 /**
  * O evento avisa que mudou, sem dizer o que: o navegador rebusca o transcript.
@@ -140,5 +185,6 @@ export const widgetRoutes: readonly Route[] = [
   createSessionRoute,
   postMessageRoute,
   listMessagesRoute,
+  postAudioRoute,
   eventsRoute,
 ];

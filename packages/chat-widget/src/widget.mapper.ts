@@ -6,8 +6,8 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import { MESSAGE_DIRECTION, MESSAGE_TYPE } from './widget.constant';
-import type { WidgetMessage, WidgetOption, WidgetTranscript } from './types/widget.types';
+import { DEFAULT_INPUT_HINT, INPUT_HINT_BY_ANSWER_KIND, MESSAGE_DIRECTION, MESSAGE_TYPE } from './widget.constant';
+import type { WidgetInputHint, WidgetMessage, WidgetOption, WidgetTranscript } from './types/widget.types';
 
 /**
  * A resposta da rota e entrada nao confiavel, mesmo vindo da nossa API.
@@ -43,8 +43,27 @@ function toMessage(value: unknown): WidgetMessage | undefined {
     type: typeof value.type === 'string' ? value.type : MESSAGE_TYPE.TEXT,
     content: typeof value.content === 'string' ? value.content : null,
     options: toOptions(value.payload),
+    answerKind: toAnswerKind(value.payload),
     createdAt: value.createdAt,
   };
+}
+
+function toAnswerKind(payload: unknown): string {
+  if (!isRecord(payload) || typeof payload.answerKind !== 'string') return '';
+
+  return payload.answerKind;
+}
+
+/**
+ * O hint so vale enquanto a pergunta esta de pe.
+ *
+ * Quem responde ja mudou o campo de assunto; manter `autocomplete="email"` depois da resposta faria
+ * o navegador oferecer o e-mail salvo na pergunta seguinte, que pode ser qualquer outra coisa.
+ */
+function toInputHint(last: WidgetMessage | undefined): WidgetInputHint {
+  if (last?.direction !== MESSAGE_DIRECTION.OUTBOUND) return DEFAULT_INPUT_HINT;
+
+  return INPUT_HINT_BY_ANSWER_KIND[last.answerKind] ?? DEFAULT_INPUT_HINT;
 }
 
 /**
@@ -62,5 +81,5 @@ export function toTranscript(payload: unknown): WidgetTranscript {
   const last = messages.at(-1);
   const options = last?.direction === MESSAGE_DIRECTION.OUTBOUND ? last.options : [];
 
-  return { messages, options };
+  return { messages, options, inputHint: toInputHint(last) };
 }

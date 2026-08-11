@@ -12,6 +12,9 @@
  * O shadow DOM e o que permite embutir o widget em qualquer site sem herdar nem vazar CSS. Os tokens
  * ficam em `:host` de proposito: sao a superficie de customizacao do host, que sobrescreve a variavel
  * sem tocar em nada aqui dentro.
+ *
+ * O tema escuro segue o sistema do visitante, e nao o do site: quem embute o widget nao tem como
+ * avisar qual tema esta ativo, e uma bolha branca dentro de uma pagina escura e o que se ve hoje.
  */
 export const WIDGET_STYLE = `
 :host {
@@ -19,12 +22,15 @@ export const WIDGET_STYLE = `
   --ada-blue: #1a4fd6;
   --ada-cyan: #06b6d4;
   --ada-surface: #ffffff;
-  --ada-bg: #f5f8ff;
+  --ada-bg: #eef2fb;
+  --ada-bubble-bot: #ffffff;
+  --ada-bubble-visitor: #dbe6ff;
+  --ada-visor: #0d1b3e;
   --ada-text: #1e2a4a;
   --ada-muted: #64748b;
   --ada-danger: #b42318;
   --ada-border: #e2e8f0;
-  --ada-radius: 12px;
+  --ada-radius: 14px;
   --ada-touch: 44px;
   --ada-font: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
 
@@ -37,35 +43,70 @@ export const WIDGET_STYLE = `
   color: var(--ada-text);
 }
 
+@media (prefers-color-scheme: dark) {
+  :host {
+    --ada-navy: #0a1430;
+    --ada-surface: #131c33;
+    --ada-bg: #0d1526;
+    --ada-bubble-bot: #1b2743;
+    --ada-bubble-visitor: #1e4bb8;
+    --ada-visor: #0a1430;
+    --ada-text: #e8eeff;
+    --ada-muted: #93a4c8;
+    --ada-danger: #ff9d94;
+    --ada-border: #223055;
+  }
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
 
+/* --- launcher --- */
+
 .launcher {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-height: var(--ada-touch);
-  padding: 0 20px;
+  margin-left: auto;
+  padding: 6px 20px 6px 8px;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--ada-blue), var(--ada-cyan));
-  color: var(--ada-surface);
+  color: #ffffff;
   font-weight: 600;
   box-shadow: 0 10px 30px rgba(13, 27, 62, 0.28);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .launcher:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(13, 27, 62, 0.34); }
-/* O host ocupa a largura toda no celular; sem isto o botao ficaria colado na borda esquerda. */
-.launcher { margin-left: auto; }
 .launcher:focus-visible { outline: 3px solid var(--ada-navy); outline-offset: 3px; }
 .launcher[hidden] { display: none; }
+
+/* --- mascote --- */
+
+.mascot { display: block; color: var(--ada-navy); }
+.mascot svg { display: block; width: 100%; height: 100%; }
+
+.mascot-launcher { width: 34px; height: 34px; color: #ffffff; }
+.mascot-header { width: 38px; height: 38px; color: #ffffff; flex: none; }
+.mascot-bubble { width: 26px; height: 26px; align-self: flex-end; flex: none; }
+
+/* Piscada rara: da vida ao mascote sem virar animacao de fundo competindo com a conversa. */
+.mascot-header .mascot-eye { animation: ada-blink 7s infinite; transform-origin: center; }
+
+@keyframes ada-blink {
+  0%, 94%, 100% { transform: scaleY(1); }
+  97% { transform: scaleY(0.1); }
+}
+
+/* --- painel --- */
 
 .panel {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: min(70vh, calc(100vh - 96px));
+  height: min(72vh, calc(100vh - 96px));
   border-radius: var(--ada-radius);
   background: var(--ada-surface);
   border: 1px solid var(--ada-border);
@@ -78,15 +119,30 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   background: var(--ada-navy);
-  color: var(--ada-surface);
+  color: #ffffff;
 }
 
+.header-heading { flex: 1; min-width: 0; }
 .header-title { font-weight: 600; letter-spacing: -0.01em; }
-.header-subtitle { font-size: 0.78rem; opacity: 0.72; }
+
+.header-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  opacity: 0.78;
+}
+
+.header-subtitle::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #35d07f;
+}
 
 .close {
   display: flex;
@@ -103,33 +159,119 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .close:hover { background: rgba(255, 255, 255, 0.14); }
 .close:focus-visible { outline: 2px solid var(--ada-cyan); outline-offset: -2px; }
 
+/* --- transcript --- */
+
+/* O papel de parede e o que tira a cara de formulario: textura discreta, sem imagem externa. */
 .transcript {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px;
+  gap: 8px;
+  padding: 16px 14px;
   overflow-y: auto;
-  background: var(--ada-bg);
+  background:
+    radial-gradient(circle at 1px 1px, rgba(26, 79, 214, 0.10) 1px, transparent 0) 0 0 / 22px 22px,
+    var(--ada-bg);
 }
 
+.divider {
+  align-self: center;
+  margin: 4px 0;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--ada-surface);
+  border: 1px solid var(--ada-border);
+  font-size: 0.72rem;
+  color: var(--ada-muted);
+}
+
+.row { display: flex; align-items: flex-end; gap: 8px; max-width: 88%; }
+.row-bot { align-self: flex-start; }
+.row-visitor { align-self: flex-end; flex-direction: row-reverse; }
+/* Sequencia do mesmo lado: so a primeira bolha ganha avatar e rabinho. */
+.row-tight { margin-top: -4px; }
+
 .bubble {
-  max-width: 82%;
-  padding: 10px 14px;
+  position: relative;
+  padding: 8px 12px 6px;
   border-radius: var(--ada-radius);
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  box-shadow: 0 1px 1px rgba(13, 27, 62, 0.10);
 }
 
-.bubble-bot { align-self: flex-start; background: var(--ada-surface); border: 1px solid var(--ada-border); }
-.bubble-visitor { align-self: flex-end; background: var(--ada-blue); color: var(--ada-surface); }
+.bubble-bot { background: var(--ada-bubble-bot); border-top-left-radius: 4px; }
+.bubble-visitor { background: var(--ada-bubble-visitor); border-top-right-radius: 4px; }
 
-.options { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 12px; background: var(--ada-bg); }
+/* Rabinho em CSS puro: um triangulo por borda, sem SVG e sem imagem por bolha. */
+.row-tail .bubble::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  border: 7px solid transparent;
+}
+
+.row-tail .bubble-bot::before {
+  left: -6px;
+  border-top-color: var(--ada-bubble-bot);
+  border-right-color: var(--ada-bubble-bot);
+}
+
+.row-tail .bubble-visitor::before {
+  right: -6px;
+  border-top-color: var(--ada-bubble-visitor);
+  border-left-color: var(--ada-bubble-visitor);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 0.68rem;
+  color: var(--ada-muted);
+}
+
+.ticks { color: var(--ada-cyan); letter-spacing: -2px; }
+
+/* --- digitando --- */
+
+.typing { display: flex; align-items: center; gap: 4px; padding: 10px 14px; }
+.typing[hidden] { display: none; }
+
+.typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ada-muted);
+  animation: ada-typing 1.2s infinite;
+}
+
+.typing span:nth-child(2) { animation-delay: 0.15s; }
+.typing span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes ada-typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+/* --- opcoes --- */
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 14px 12px;
+  background: var(--ada-bg);
+}
+
 .options[hidden] { display: none; }
 
 .option {
-  min-height: var(--ada-touch);
+  min-height: 38px;
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid var(--ada-blue);
@@ -139,12 +281,12 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   font-weight: 500;
 }
 
-.option:hover { background: var(--ada-blue); color: var(--ada-surface); }
+.option:hover { background: var(--ada-blue); color: #ffffff; }
 .option:focus-visible { outline: 3px solid var(--ada-cyan); outline-offset: 2px; }
 .option:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .status {
-  padding: 0 16px 10px;
+  padding: 0 14px 10px;
   font-size: 0.82rem;
   color: var(--ada-muted);
   background: var(--ada-bg);
@@ -153,50 +295,67 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .status[hidden] { display: none; }
 .status-error { color: var(--ada-danger); }
 
+/* --- composer --- */
+
 .composer {
   display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 12px;
+  padding: 10px 12px;
   border-top: 1px solid var(--ada-border);
   background: var(--ada-surface);
 }
 
 .input {
   flex: 1;
+  min-width: 0;
   min-height: var(--ada-touch);
   padding: 0 14px;
   border: 1px solid var(--ada-border);
   border-radius: 999px;
   font: inherit;
   color: inherit;
-  background: var(--ada-surface);
+  background: var(--ada-bg);
 }
 
+.input::placeholder { color: var(--ada-muted); }
 .input:focus-visible { outline: 2px solid var(--ada-blue); outline-offset: 0; border-color: var(--ada-blue); }
 
-.send {
-  min-width: var(--ada-touch);
-  min-height: var(--ada-touch);
-  padding: 0 18px;
-  border-radius: 999px;
-  background: var(--ada-blue);
-  color: var(--ada-surface);
-  font-weight: 600;
+.icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ada-touch);
+  height: var(--ada-touch);
+  flex: none;
+  border-radius: 50%;
+  font-size: 1.05rem;
 }
 
+.mic { color: var(--ada-muted); }
+.mic:hover { background: var(--ada-bg); color: var(--ada-blue); }
+.mic[hidden] { display: none; }
+.mic-recording { background: var(--ada-danger); color: #ffffff; animation: ada-pulse 1.4s infinite; }
+
+@keyframes ada-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(180, 35, 24, 0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(180, 35, 24, 0); }
+}
+
+.send { background: var(--ada-blue); color: #ffffff; }
 .send:hover { background: var(--ada-navy); }
-.send:focus-visible { outline: 3px solid var(--ada-cyan); outline-offset: 2px; }
-.send:disabled { opacity: 0.55; cursor: not-allowed; }
+.icon-button:focus-visible { outline: 3px solid var(--ada-cyan); outline-offset: 2px; }
+.icon-button:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* Mobile e a base: o widget ocupa a faixa inteira. A partir de tablet ele volta a ser um cartao. */
 @media (min-width: 640px) {
   :host { right: 20px; bottom: 20px; left: auto; }
-  .panel { width: 380px; height: min(560px, calc(100vh - 120px)); }
+  .panel { width: 390px; height: min(580px, calc(100vh - 120px)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .launcher { transition: none; }
-  .launcher:hover { transform: none; }
+  .launcher, .launcher:hover { transition: none; transform: none; }
+  .typing span, .mascot-header .mascot-eye, .mic-recording { animation: none; }
 }
 `;
 

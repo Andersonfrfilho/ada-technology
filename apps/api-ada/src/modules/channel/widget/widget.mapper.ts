@@ -35,3 +35,21 @@ export function toWidgetMessage(row: MessageRow): WidgetMessage {
     createdAt: row.createdAt.toISOString(),
   };
 }
+
+/**
+ * Carimba no ultimo balao do bot o que a pergunta espera de volta.
+ *
+ * Vai no `payload` da mensagem, e nao num campo novo da resposta, porque o widget ja le opcoes dali
+ * — e o hint tem exatamente a mesma validade: vale enquanto aquela pergunta e a ultima da tela.
+ */
+export function withAnswerKind(
+  messages: readonly WidgetMessage[],
+  answerKind: string,
+): readonly WidgetMessage[] {
+  const last = messages.at(-1);
+  if (!answerKind || !last) return messages;
+
+  const payload = typeof last.payload === 'object' && last.payload !== null ? last.payload : {};
+
+  return [...messages.slice(0, -1), { ...last, payload: { ...payload, answerKind } }];
+}

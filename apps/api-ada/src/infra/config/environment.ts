@@ -51,6 +51,7 @@ const environmentSchema = z
     INTENT_CLASSIFIER_ENABLED: booleanFromString,
     GROQ_API_KEY: z.string().default(''),
     GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+    GROQ_TRANSCRIPTION_MODEL: z.string().default('whisper-large-v3-turbo'),
   })
   // Fail-closed: canal habilitado sem segredo nao sobe, em vez de aceitar
   // webhook sem assinatura verificavel.

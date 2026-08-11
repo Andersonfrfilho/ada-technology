@@ -6,9 +6,11 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import { WidgetRequestError, getApiErrorCode, toRetryAfterSeconds } from './widget.error';
 import { toTranscript } from './widget.mapper';
 import { TRANSCRIPT_LIMIT, WIDGET_PATH } from './widget.constant';
 import type {
+  PostAudioParams,
   PostMessageParams,
   PostMessageResult,
   SubscribeParams,
@@ -16,13 +18,35 @@ import type {
   WidgetTranscript,
 } from './types/widget.types';
 
-/** A API responde sempre `{ data }`; erro nunca chega aqui como corpo util. */
+/**
+ * Sucesso responde `{ data }`; erro responde `{ error: { code, message } }`.
+ *
+ * O corpo do erro e lido com `catch` proprio porque nem toda falha vem da nossa API: um 502 de proxy
+ * chega como HTML, e um `json()` que estoura ali apagaria o status, que e o unico sinal restante.
+ */
 async function readData(response: Response): Promise<unknown> {
-  if (!response.ok) throw new Error(`widget request failed: ${response.status}`);
+  if (!response.ok) {
+    const failure: unknown = await response.json().catch(() => undefined);
+
+    throw new WidgetRequestError({
+      status: response.status,
+      code: getApiErrorCode(failure),
+      retryAfterSeconds: toRetryAfterSeconds(response.headers.get('Retry-After')),
+    });
+  }
 
   const body: unknown = await response.json();
 
   return typeof body === 'object' && body !== null && 'data' in body ? body.data : undefined;
+}
+
+function toPostMessageResult(data: unknown): PostMessageResult {
+  const outcome =
+    typeof data === 'object' && data !== null && 'outcome' in data && typeof data.outcome === 'string'
+      ? data.outcome
+      : '';
+
+  return { outcome };
 }
 
 /**
@@ -56,13 +80,26 @@ export class WidgetApi {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ text }),
     });
-    const data = await readData(response);
-    const outcome =
-      typeof data === 'object' && data !== null && 'outcome' in data && typeof data.outcome === 'string'
-        ? data.outcome
-        : '';
+    return toPostMessageResult(await readData(response));
+  }
 
-    return { outcome };
+  /**
+   * O audio sobe como arquivo; quem transcreve e a API.
+   *
+   * Transcricao no navegador seria mandar a chave do provedor para o cliente. Aqui sobe o `Blob` e
+   * volta o desfecho do passo do fluxo: o texto reconhecido ja entrou na conversa como fala do
+   * visitante, e a tela so precisa recarregar o transcript.
+   */
+  async postAudio({ sessionId, audio }: PostAudioParams): Promise<PostMessageResult> {
+    const form = new FormData();
+    form.append('audio', audio, 'audio');
+
+    const response = await fetch(`${this.#baseUrl}${WIDGET_PATH.AUDIO(sessionId)}`, {
+      method: 'POST',
+      body: form,
+    });
+
+    return toPostMessageResult(await readData(response));
   }
 
   async listMessages(sessionId: string): Promise<WidgetTranscript> {

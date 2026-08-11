@@ -22,6 +22,9 @@ import {
   FakeChannel,
   FakeSessionRepository,
   fakeGetFlowGraph,
+  fakeSettings,
+  FAREWELL_MESSAGE,
+  NOME_PRIMEIRO_GRAPH,
   WHATSAPP_NUMBER,
 } from './conversation.fakes';
 
@@ -44,6 +47,7 @@ beforeEach(() => {
     getFlowGraph: fakeGetFlowGraph({ [ATENDIMENTO_GRAPH.key]: ATENDIMENTO_GRAPH }),
     interpreter,
     requestHandoff,
+    settings: fakeSettings(),
     companyId: COMPANY_ID,
     startState: 'start',
   });
@@ -121,12 +125,108 @@ describe('AdvanceConversationUseCase', () => {
     expect(channel.sent).toHaveLength(0);
   });
 
+  test('"sair" encerra com a despedida configurada em vez de cair no fallback', async () => {
+    await send('oi');
+    const result = await send('sair');
+
+    expect(result.outcome).toBe(CONVERSATION_OUTCOME.COMPLETED);
+    expect(channel.sent.at(-1)).toEqual({ kind: 'text', body: FAREWELL_MESSAGE });
+    expect(repository.row.currentNodeId).toBeNull();
+    expect(repository.row.mode).toBe(SESSION_MODE.BOT);
+  });
+
+  test('depois de encerrar, a proxima mensagem recomeca do menu', async () => {
+    await send('oi');
+    await send('sair');
+    const result = await send('oi de novo');
+
+    expect(result.outcome).toBe(CONVERSATION_OUTCOME.PRESENTED);
+    expect(channel.sent.at(-1)).toEqual({ kind: 'list', body: 'Como posso ajudar?' });
+  });
+
+  test('acento, caixa e pontuacao nao impedem o comando', async () => {
+    await send('oi');
+    const result = await send('Tchau!');
+
+    expect(result.outcome).toBe(CONVERSATION_OUTCOME.COMPLETED);
+    expect(channel.sent.at(-1)).toEqual({ kind: 'text', body: FAREWELL_MESSAGE });
+  });
+
+  test('"menu" volta ao inicio de uma pergunta de texto livre', async () => {
+    await send('oi');
+    await send('Conhecer produtos');
+    const result = await send('menu');
+
+    expect(result.outcome).toBe(CONVERSATION_OUTCOME.PRESENTED);
+    expect(repository.row.currentNodeId).toBe('menu');
+    expect(repository.row.context.produto).toBeUndefined();
+  });
+
+  test('"atendente" chama uma pessoa sem gastar as tentativas de fallback', async () => {
+    await send('oi');
+    const result = await send('atendente');
+
+    expect(result.outcome).toBe(CONVERSATION_OUTCOME.HANDED_OFF);
+    expect(repository.row.mode).toBe(SESSION_MODE.HUMAN);
+    expect(repository.row.context._fallbackCount).toBeUndefined();
+  });
+
+  test('opcao desenhada no grafo vence a palavra do comando global', async () => {
+    await send('oi');
+    const result = await send('produtos');
+
+    expect(result.outcome).toBe(CONVERSATION_OUTCOME.PRESENTED);
+    expect(repository.row.currentNodeId).toBe('produto');
+  });
+
+  test('sem despedida configurada o encerramento usa a mensagem padrao', async () => {
+    const silent = new AdvanceConversationUseCase({
+      sessions: asSessionRepository(repository),
+      getFlowGraph: fakeGetFlowGraph({ [ATENDIMENTO_GRAPH.key]: ATENDIMENTO_GRAPH }),
+      interpreter: new FlowInterpreter(),
+      requestHandoff: new RequestHandoffUseCase({ sessions: asSessionRepository(repository), companyId: COMPANY_ID }),
+      settings: fakeSettings('   '),
+      companyId: COMPANY_ID,
+      startState: 'start',
+    });
+
+    await send('oi');
+    const result = await silent.execute({ whatsappNumber: WHATSAPP_NUMBER, text: 'sair', channel });
+
+    expect(result.outcome).toBe(CONVERSATION_OUTCOME.COMPLETED);
+    expect(channel.sent.at(-1)).toEqual({ kind: 'text', body: CONVERSATION_MESSAGE.CLOSING });
+  });
+
+  test('"menu" nao repergunta o nome que o cliente ja deu', async () => {
+    const named = new AdvanceConversationUseCase({
+      sessions: asSessionRepository(repository),
+      getFlowGraph: fakeGetFlowGraph({ [NOME_PRIMEIRO_GRAPH.key]: NOME_PRIMEIRO_GRAPH }),
+      interpreter: new FlowInterpreter(),
+      requestHandoff: new RequestHandoffUseCase({ sessions: asSessionRepository(repository), companyId: COMPANY_ID }),
+      settings: fakeSettings(),
+      companyId: COMPANY_ID,
+      startState: 'start',
+    });
+    const speak = (text: string): Promise<{ outcome: string }> =>
+      named.execute({ whatsappNumber: WHATSAPP_NUMBER, text, channel });
+
+    await speak('oi');
+    await speak('Anderson');
+    const result = await speak('menu');
+
+    expect(result.outcome).toBe(CONVERSATION_OUTCOME.PRESENTED);
+    expect(repository.row.currentNodeId).toBe('menu');
+    expect(repository.row.context.leadName).toBe('Anderson');
+    expect(channel.sent.at(-1)).toEqual({ kind: 'list', body: 'Como posso ajudar?' });
+  });
+
   test('fluxo publicado ausente vira atendimento humano, e nao conversa morta', async () => {
     const orphan = new AdvanceConversationUseCase({
       sessions: asSessionRepository(repository),
       getFlowGraph: fakeGetFlowGraph({}),
       interpreter: new FlowInterpreter(),
       requestHandoff: new RequestHandoffUseCase({ sessions: asSessionRepository(repository), companyId: COMPANY_ID }),
+      settings: fakeSettings(),
       companyId: COMPANY_ID,
       startState: 'start',
     });
