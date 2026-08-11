@@ -9,6 +9,7 @@
 import { API_BASE_ATTRIBUTE, WIDGET_TAG_NAME } from '@adatechnology/web-chat-widget';
 
 import { environment } from '@/modules/shared/config/environment';
+import { resolveActiveTheme, THEME_CHANGE_EVENT } from '@/theme';
 
 /**
  * O elemento nasce daqui, e nao do HTML, para a origem da API vir do env validado.
@@ -18,4 +19,14 @@ import { environment } from '@/modules/shared/config/environment';
  */
 const widget = document.createElement(WIDGET_TAG_NAME);
 widget.setAttribute(API_BASE_ATTRIBUTE, environment.VITE_API_BASE_URL);
+/**
+ * O `data-theme` do `<html>` nao atravessa o shadow DOM: sem escrever `theme` no elemento, o chat
+ * ficaria claro sobre a pagina escura. O atributo carrega sempre o tema efetivo, inclusive quando o
+ * visitante nunca clicou no botao — nesse caso a pagina tambem esta apenas seguindo o sistema.
+ */
+const THEME_ATTRIBUTE = 'theme';
+const applyWidgetTheme = (): void => widget.setAttribute(THEME_ATTRIBUTE, resolveActiveTheme());
+
 document.body.append(widget);
+applyWidgetTheme();
+document.addEventListener(THEME_CHANGE_EVENT, applyWidgetTheme);

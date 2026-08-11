@@ -19,6 +19,9 @@
 
 const STORAGE_KEY = 'ada-theme';
 const THEME_ATTRIBUTE = 'data-theme';
+
+/** Quem quiser reagir ao tema escuta isto. Nada aqui conhece o chat — as paginas legais nao o carregam. */
+export const THEME_CHANGE_EVENT = 'ada:theme-change';
 const TOGGLE_ELEMENT_ID = 'themeToggle';
 const DARK_SCHEME_QUERY = '(prefers-color-scheme: dark)';
 
@@ -51,7 +54,7 @@ function persistTheme(theme: Theme): void {
 }
 
 /** O que esta na tela agora: a escolha explicita quando existe, o tema do sistema quando nao. */
-function resolveActiveTheme(): Theme {
+export function resolveActiveTheme(): Theme {
   const explicit = document.documentElement.getAttribute(THEME_ATTRIBUTE);
 
   if (isTheme(explicit)) return explicit;
@@ -61,6 +64,11 @@ function resolveActiveTheme(): Theme {
 
 function applyTheme(theme: Theme): void {
   document.documentElement.setAttribute(THEME_ATTRIBUTE, theme);
+  announceTheme();
+}
+
+function announceTheme(): void {
+  document.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: resolveActiveTheme() }));
 }
 
 function reflectPressedState(toggle: HTMLElement): void {
@@ -88,5 +96,6 @@ export function mountThemeToggle(): void {
   // Sem escolha explicita o CSS acompanha o sistema sozinho; o que fica velho e o `aria-pressed`.
   window.matchMedia(DARK_SCHEME_QUERY).addEventListener('change', () => {
     reflectPressedState(toggle);
+    announceTheme();
   });
 }
