@@ -26,6 +26,7 @@ import { RefreshAgentSessionUseCase } from '@/modules/agent/refreshAgentSession.
 import { SignOutAgentUseCase } from '@/modules/agent/signOutAgent.use-case';
 import { RecordAuditLogUseCase } from '@/modules/audit/recordAuditLog.use-case';
 import { CATALOG_CURRENCY, CATALOG_LOCALE, CATALOG_META_SYNC } from '@/modules/catalog/catalog.constant';
+import { createCatalogChannelPort } from '@/modules/catalog/CatalogChannelPort';
 import { MetaCatalogSyncAdapter } from '@/modules/catalog/MetaCatalogSyncAdapter';
 import { TranscribedWhatsAppChannel } from '@/modules/channel/whatsapp/TranscribedWhatsAppChannel';
 import type { WhatsAppMessageHandlers } from '@/modules/channel/whatsapp/types/whatsapp.types';
@@ -101,6 +102,9 @@ export const metaWhatsApp = createMetaWhatsAppModule({
     appSecret: environment.WHATSAPP_APP_SECRET || DISABLED_WHATSAPP_CREDENTIAL,
     wabaId: environment.WHATSAPP_BUSINESS_ACCOUNT_ID,
     baseUrl: environment.WHATSAPP_GRAPH_BASE_URL,
+    // Vitrine no chat so existe com catalogo publicado na Meta: sem o id, a action nem e
+    // registrada e o no de produto passa em silencio.
+    ...(environment.META_CATALOG_ID ? { catalogId: environment.META_CATALOG_ID } : {}),
   },
   nonceStore: new RedisNonceStore(),
   startState: START_STATE,
@@ -113,6 +117,10 @@ export const metaWhatsApp = createMetaWhatsAppModule({
   providers: {
     cache: new RedisCache(),
     realtime,
+    catalog: createCatalogChannelPort({
+      resolveLookup: () => catalogModule.lookup,
+      companyId: environment.ADA_COMPANY_ID,
+    }),
   },
   hooks: {
     onMessageReceived: createWhatsAppMessageHook({
@@ -124,6 +132,19 @@ export const metaWhatsApp = createMetaWhatsAppModule({
         return whatsappMessageHandlers;
       },
     }),
+    // Vitrine que nao saiu deixa o cliente sem resposta num no automatico, e o modulo segue a
+    // conversa de proposito. Quem tem de gritar e o host.
+    onFlowProductListError: (error, details) => {
+      logger.error({
+        message: 'Vitrine de produtos nao enviada',
+        source: CATALOG_SOURCE,
+        meta: {
+          flowKey: details.flowKey,
+          nodeId: details.nodeId,
+          reason: error instanceof Error ? error.message : String(error),
+        },
+      });
+    },
   },
 });
 
