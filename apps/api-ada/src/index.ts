@@ -12,6 +12,7 @@ import { closeDatabase } from '@/infra/database/client';
 import { createRouter, type Route } from '@/infra/http/router';
 import { agentRoutes } from '@/modules/agent/agent.controller';
 import { authenticateRequest } from '@/modules/agent/authenticateRequest';
+import { catalogRoutes } from '@/modules/catalog/catalog.controller';
 import { metaCatalogRoutes } from '@/modules/channel/meta/metaCatalog.controller';
 import { whatsappRoutes } from '@/modules/channel/whatsapp/whatsapp.controller';
 import { widgetRoutes } from '@/modules/channel/widget/widget.controller';
@@ -43,6 +44,7 @@ const routes: readonly Route[] = [
   ...panelFlowRoutes,
   ...panelSettingsRoutes,
   ...panelTemplateRoutes,
+  ...catalogRoutes,
 ];
 
 const handleRequest = createRouter({ routes, authenticate: authenticateRequest });

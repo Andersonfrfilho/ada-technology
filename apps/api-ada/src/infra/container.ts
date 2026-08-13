@@ -6,6 +6,9 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import type { LoggerPort as CatalogLoggerPort } from '@adatechnology/catalog-contracts';
+import { createCatalogModule } from '@adatechnology/catalog-module';
+import { MetaCatalogProvider } from '@adatechnology/meta-catalog-provider';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
 import { WhatsAppTemplateProvider } from '@adatechnology/meta-whatsapp-provider';
 
@@ -22,6 +25,8 @@ import { RedisRefreshTokenStore } from '@/modules/agent/RedisRefreshTokenStore';
 import { RefreshAgentSessionUseCase } from '@/modules/agent/refreshAgentSession.use-case';
 import { SignOutAgentUseCase } from '@/modules/agent/signOutAgent.use-case';
 import { RecordAuditLogUseCase } from '@/modules/audit/recordAuditLog.use-case';
+import { CATALOG_CURRENCY, CATALOG_LOCALE, CATALOG_META_SYNC } from '@/modules/catalog/catalog.constant';
+import { MetaCatalogSyncAdapter } from '@/modules/catalog/MetaCatalogSyncAdapter';
 import { TranscribedWhatsAppChannel } from '@/modules/channel/whatsapp/TranscribedWhatsAppChannel';
 import type { WhatsAppMessageHandlers } from '@/modules/channel/whatsapp/types/whatsapp.types';
 import { createWhatsAppMessageHook } from '@/modules/channel/whatsapp/whatsappMessageHook';
@@ -52,9 +57,20 @@ import { MetaTemplateCatalog } from '@/modules/settings/MetaTemplateCatalog';
 import { SaveBotMessagesUseCase } from '@/modules/settings/saveBotMessages.use-case';
 import { SaveTemplateSettingsUseCase } from '@/modules/settings/saveTemplateSettings.use-case';
 import { DrizzleTranscriptRepository } from '@/modules/shared/DrizzleTranscriptRepository';
+import { logger } from '@/shared/logger';
 
 // Estado inicial de sessao nova. O modulo nao conhece a maquina de estados do produto.
 export const START_STATE = 'start';
+
+const CATALOG_SOURCE = 'modules.catalog';
+
+/** O modulo loga por assinatura propria; a mascara e o nivel continuam sendo os da Ada. */
+const catalogLogger: CatalogLoggerPort = {
+  debug: (message, meta) => logger.debug({ message, source: CATALOG_SOURCE, ...(meta ? { meta } : {}) }),
+  info: (message, meta) => logger.info({ message, source: CATALOG_SOURCE, ...(meta ? { meta } : {}) }),
+  warn: (message, meta) => logger.warn({ message, source: CATALOG_SOURCE, ...(meta ? { meta } : {}) }),
+  error: (message, meta) => logger.error({ message, source: CATALOG_SOURCE, ...(meta ? { meta } : {}) }),
+};
 
 export const realtime = new SseHub(new RedisRelay());
 
@@ -306,6 +322,40 @@ export const createWhatsAppTemplate = new CreateWhatsAppTemplateUseCase({
   recordAuditLog,
 });
 
+/**
+ * Publicacao na Meta so existe com catalogo e token — capacidade por ausencia.
+ *
+ * Sem eles o modulo sobe inteiro e o painel gerencia produto normalmente; o que fica desligado e
+ * o espelhamento para o Commerce. E o inverso tambem vale: o modulo recusa subir se a config pedir
+ * `metaSync` sem a porta, para o operador nao descobrir dias depois pelo item que nunca publica.
+ */
+export const catalogMetaSync =
+  environment.META_CATALOG_ID && environment.META_CATALOG_ACCESS_TOKEN
+    ? new MetaCatalogSyncAdapter(
+        new MetaCatalogProvider({
+          accessToken: environment.META_CATALOG_ACCESS_TOKEN,
+          catalogId: environment.META_CATALOG_ID,
+          wabaId: environment.WHATSAPP_BUSINESS_ACCOUNT_ID,
+        }),
+      )
+    : undefined;
+
+export const catalogModule = createCatalogModule({
+  db: database as never,
+  config: {
+    currency: CATALOG_CURRENCY,
+    locale: CATALOG_LOCALE,
+    // Estoque zerado tira o item do ar sozinho: quem vende pronta-entrega nao quer receber pedido
+    // do que acabou, e corrigir a disponibilidade a mao sempre chega tarde.
+    deriveAvailabilityFromInventory: true,
+    ...(catalogMetaSync ? { metaSync: CATALOG_META_SYNC } : {}),
+  },
+  providers: {
+    logger: catalogLogger,
+    ...(catalogMetaSync ? { metaSync: catalogMetaSync } : {}),
+  },
+});
+
 export const container = {
   realtime,
   metaWhatsApp,
@@ -339,6 +389,8 @@ export const container = {
   deleteFlowGraph,
   templateCatalog,
   createWhatsAppTemplate,
+  catalogModule,
+  catalogMetaSync,
 } as const;
 
 export type Container = typeof container;
