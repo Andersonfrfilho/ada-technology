@@ -15,7 +15,7 @@
       "dependencies": {
         "@adatechnology/audio-transcription-provider": "^0.1.0-rc.1",
         "@adatechnology/catalog-contracts": "0.1.0-rc.1",
-        "@adatechnology/catalog-module": "0.1.0-rc.1",
+        "@adatechnology/catalog-module": "0.1.0-rc.2",
         "@adatechnology/meta-catalog-provider": "0.2.0-rc.2",
         "@adatechnology/meta-graph-core": "^0.1.0",
         "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.11",
@@ -91,7 +91,7 @@
 
     "@adatechnology/catalog-contracts": ["@adatechnology/catalog-contracts@0.1.0-rc.1", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-iYxtPMO+Kb7S/28TagHiM9PBeb1Ua1do8+MiD/nUeVO3s4zOjdy34phgFnrsFMNiPJuwuyD+UKP/hjzVMiZGOg=="],
 
-    "@adatechnology/catalog-module": ["@adatechnology/catalog-module@0.1.0-rc.1", "", { "dependencies": { "@adatechnology/catalog-contracts": "0.1.0-rc.1", "@adatechnology/module-http": "0.1.0-rc.1", "zod": "^3.24.1" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <1" } }, "sha512-rYY5p5Un0x/1BJzG6LD3POroLvoigXiK5Q0W9kBxiSv0fnMzOX5nkjyJsnQFqwpxAhywMcoJr9KAqsnLxQJ4ZA=="],
+    "@adatechnology/catalog-module": ["@adatechnology/catalog-module@0.1.0-rc.2", "", { "dependencies": { "@adatechnology/catalog-contracts": "0.1.0-rc.1", "@adatechnology/module-http": "0.1.0-rc.1", "zod": "^3.24.1" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <1" } }, "sha512-nVm/LNXNV8yq78gJxaNa2Sie8GEeKRTWr4bqmpN9PeVpoIRGZnIQl68Tm1VhVE/HVwoFiAn8eBg/+Hw1m8E7pA=="],
 
     "@adatechnology/conversations-ui": ["@adatechnology/conversations-ui@0.1.0-rc.33", "", { "dependencies": { "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.11", "clsx": "^2.1.1", "lucide-react": "^1.21.0", "tailwind-merge": "^3.6.0" }, "peerDependencies": { "@xyflow/react": "^12", "react": "^18 || ^19", "react-dom": "^18 || ^19" }, "optionalPeers": ["@xyflow/react"] }, "sha512-CPeHDZL6H42un2ollT+ZdKvToQxpUC9tV+IfLzdywIoYoP8FteovSeUwd+QmI8/rGekP/E4YDT/nKX4Cbi7XZg=="],
 

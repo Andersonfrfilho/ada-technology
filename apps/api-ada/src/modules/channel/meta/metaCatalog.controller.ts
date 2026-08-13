@@ -9,9 +9,14 @@
 import { verifyWebhookChallenge, verifyWebhookSignature } from '@adatechnology/meta-whatsapp-module';
 
 import { environment } from '@/infra/config/environment';
+import { catalogModule } from '@/infra/container';
 import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
 import { jsonData } from '@/infra/http/responses';
 import { HTTP_METHOD, type Route } from '@/infra/http/router';
+import {
+  CATALOG_WEBHOOK_PATH,
+} from '@/modules/channel/meta/metaCatalog.constant';
+import { extractReviewVerdicts } from '@/modules/channel/meta/metaCatalogEvent';
 import { logger } from '@/shared/logger';
 
 const SOURCE = 'modules.channel.meta.catalog.controller';
@@ -30,12 +35,11 @@ const SOURCE = 'modules.channel.meta.catalog.controller';
  * Misturar os dois faria evento de catalogo cair no caminho de mensagem e sair no log como payload
  * nao reconhecido.
  *
- * Hoje o endpoint apenas autentica e confirma o recebimento. Confirmar sem processar e deliberado:
- * a Meta reentrega por dias o que nao recebe 200, e uma fila de retentativa acumulada e pior do
- * que evento descartado enquanto o consumo nao existe. O que cada campo dispara entra depois, junto
- * ao SDK — este arquivo ja deixa a porta autenticada de pe para a subscricao poder ser criada.
+ * O que o endpoint consome e o veredito da revisao de item. A publicacao devolve 200 muito antes de
+ * a Meta aprovar, entao e por aqui que o produto reprovado deixa de aparecer como `synced` no
+ * painel. Campo que nao seja `product_catalogs` continua confirmado e descartado: a Meta reentrega
+ * por dias o que nao recebe 200, e fila de retentativa acumulada e pior que evento ignorado.
  */
-const CATALOG_WEBHOOK_PATH = '/v1/meta/catalog/webhook';
 const SIGNATURE_HEADER = 'x-hub-signature-256';
 
 const challengeRoute: Route = {
@@ -73,13 +77,31 @@ const receiveRoute: Route = {
       appSecret: environment.WHATSAPP_APP_SECRET,
     });
 
-    // So o tamanho e o campo — nunca o corpo. Evento de catalogo carrega dado comercial, e log nao
+    const verdicts = extractReviewVerdicts(rawBody);
+
+    const applied = await Promise.all(
+      verdicts.map((verdict) =>
+        catalogModule.useCases.recordMetaReviewVerdict.execute({
+          companyId: environment.ADA_COMPANY_ID,
+          retailerId: verdict.retailerId,
+          approved: verdict.approved,
+          ...(verdict.externalId ? { externalId: verdict.externalId } : {}),
+          ...(verdict.reason ? { reason: verdict.reason } : {}),
+        }),
+      ),
+    );
+
+    // So contagem e id opaco — nunca o corpo. Evento de catalogo carrega dado comercial, e log nao
     // e lugar de inventario nem de preco.
     logger.info({
-      message: 'Webhook de catalogo recebido (sem consumo ainda)',
+      message: 'Webhook de catalogo recebido',
       source: SOURCE,
       traceId,
-      meta: { bytes: rawBody.length },
+      meta: {
+        bytes: rawBody.length,
+        verdicts: verdicts.length,
+        applied: applied.filter((result) => result.applied).length,
+      },
     });
 
     return jsonData({ received: true });

@@ -16,7 +16,7 @@
   "dependencies": {
     "@adatechnology/audio-transcription-provider": "^0.1.0-rc.1",
     "@adatechnology/catalog-contracts": "0.1.0-rc.1",
-    "@adatechnology/catalog-module": "0.1.0-rc.1",
+    "@adatechnology/catalog-module": "0.1.0-rc.2",
     "@adatechnology/meta-catalog-provider": "0.2.0-rc.2",
     "@adatechnology/meta-graph-core": "^0.1.0",
     "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.11",

@@ -10,6 +10,8 @@ import { closeRedis } from '@/infra/cache/redisClient';
 import { environment } from '@/infra/config/environment';
 import { closeDatabase } from '@/infra/database/client';
 import { createRouter, type Route } from '@/infra/http/router';
+import { startScheduler } from '@/infra/scheduler/scheduler';
+import { catalogModule } from '@/infra/container';
 import { agentRoutes } from '@/modules/agent/agent.controller';
 import { authenticateRequest } from '@/modules/agent/authenticateRequest';
 import { catalogRoutes } from '@/modules/catalog/catalog.controller';
@@ -57,6 +59,15 @@ const server = Bun.serve({
   idleTimeout: 0,
 });
 
+/**
+ * Sem `META_CATALOG_*` o modulo devolve lista de agendamentos vazia, e o relogio nem sobe: quem so
+ * usa o catalogo interno nao paga por um timer que nao tem o que sincronizar.
+ */
+const scheduler = startScheduler({
+  tasks: catalogModule.schedules,
+  companyId: environment.ADA_COMPANY_ID,
+});
+
 logger.info({
   message: 'API no ar',
   source: SOURCE,
@@ -78,6 +89,7 @@ async function shutdown(signal: string): Promise<void> {
   }, SHUTDOWN_TIMEOUT_MS);
   forceExit.unref();
 
+  scheduler.stop();
   await server.stop(false);
   await Promise.allSettled([closeDatabase(), closeRedis()]);
 
