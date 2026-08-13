@@ -7,6 +7,7 @@
  */
 
 import type { LoggerPort as CatalogLoggerPort } from '@adatechnology/catalog-contracts';
+import { createS3ProductImageStorage } from '@adatechnology/catalog-image-storage-provider';
 import { createCatalogModule } from '@adatechnology/catalog-module';
 import { MetaCatalogProvider } from '@adatechnology/meta-catalog-provider';
 import { createObjectStorageProvider } from '@adatechnology/object-storage-provider';
@@ -34,7 +35,6 @@ import {
 } from '@/modules/catalog/catalog.constant';
 import { createCatalogChannelPort } from '@/modules/catalog/CatalogChannelPort';
 import { MetaCatalogSyncAdapter } from '@/modules/catalog/MetaCatalogSyncAdapter';
-import { ProductImageStorageAdapter } from '@/modules/catalog/ProductImageStorageAdapter';
 import { TranscribedWhatsAppChannel } from '@/modules/channel/whatsapp/TranscribedWhatsAppChannel';
 import type { WhatsAppMessageHandlers } from '@/modules/channel/whatsapp/types/whatsapp.types';
 import { createWhatsAppMessageHook } from '@/modules/channel/whatsapp/whatsappMessageHook';
@@ -373,7 +373,7 @@ export const catalogMetaSync =
  * campo de arquivo — quem nao tem storage segue digitando a URL da imagem, como antes.
  */
 export const productImageStorage = environment.OBJECT_STORAGE_BUCKET
-  ? new ProductImageStorageAdapter({
+  ? createS3ProductImageStorage({
       storage: createObjectStorageProvider({
         endpoint: new URL(environment.OBJECT_STORAGE_ENDPOINT),
         region: environment.OBJECT_STORAGE_REGION,
