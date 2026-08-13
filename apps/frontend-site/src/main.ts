@@ -8,6 +8,7 @@
 
 import { API_BASE_ATTRIBUTE, WIDGET_TAG_NAME } from '@adatechnology/web-chat-widget';
 
+import { applyEnvironmentBadge } from '@/modules/shared/environmentBadge/environmentBadge';
 import { environment } from '@/modules/shared/config/environment';
 import { resolveActiveTheme, THEME_CHANGE_EVENT } from '@/theme';
 
@@ -17,6 +18,8 @@ import { resolveActiveTheme, THEME_CHANGE_EVENT } from '@/theme';
  * Atributo escrito a mao no `index.html` seria o mesmo dominio nos tres ambientes — e o servidor
  * confere o `Origin`, entao o erro so apareceria depois do deploy.
  */
+applyEnvironmentBadge();
+
 const widget = document.createElement(WIDGET_TAG_NAME);
 widget.setAttribute(API_BASE_ATTRIBUTE, environment.VITE_API_BASE_URL);
 /**

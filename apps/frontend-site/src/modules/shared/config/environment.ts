@@ -8,6 +8,8 @@
 
 import { z } from 'zod';
 
+import { APP_ENVIRONMENT } from '@/modules/shared/config/appEnvironment.constant';
+
 /**
  * Falha no carregamento do modulo, e nao na primeira chamada HTTP.
  *
@@ -16,6 +18,8 @@ import { z } from 'zod';
  */
 const environmentSchema = z.object({
   VITE_API_BASE_URL: z.string().url(),
+  /** Ausente vira producao: variavel esquecida nao pode por "em obras" na frente do visitante. */
+  VITE_APP_ENV: z.nativeEnum(APP_ENVIRONMENT).default(APP_ENVIRONMENT.PRODUCTION),
 });
 
 export const environment = environmentSchema.parse(import.meta.env);

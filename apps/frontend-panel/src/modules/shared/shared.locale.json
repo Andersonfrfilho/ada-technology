@@ -21,5 +21,9 @@
       "conteudo": "Conteúdo",
       "cadastros": "Cadastros"
     }
+  },
+  "environmentBadge": {
+    "dev": "Ambiente de desenvolvimento",
+    "staging": "Ambiente de homologação — os dados daqui são de teste"
   }
 }

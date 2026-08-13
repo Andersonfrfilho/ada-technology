@@ -17,6 +17,10 @@ COPY apps/frontend-site/ apps/frontend-site/
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
+# Ausente vira producao no schema: so dev e staging recebem a faixa e o simbolo no favicon.
+ARG VITE_APP_ENV
+ENV VITE_APP_ENV=$VITE_APP_ENV
+
 RUN cd apps/frontend-site && bun run build
 
 FROM caddy:2.10-alpine

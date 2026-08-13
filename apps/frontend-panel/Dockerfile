@@ -19,6 +19,10 @@ COPY apps/frontend-panel/ apps/frontend-panel/
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
+# Ausente vira producao no schema: so dev e staging recebem a faixa e o simbolo no favicon.
+ARG VITE_APP_ENV
+ENV VITE_APP_ENV=$VITE_APP_ENV
+
 # `build` roda `tsc --noEmit` antes do vite: bundle nao sai de codigo que nao tipa.
 RUN cd apps/frontend-panel && bun run build
 

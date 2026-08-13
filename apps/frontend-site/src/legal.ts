@@ -14,7 +14,9 @@
  * de um deploy. O indice continua sendo ancora HTML pura, sem JS.
  */
 
+import { applyEnvironmentBadge } from '@/modules/shared/environmentBadge/environmentBadge';
 import './legal.css';
 import { mountThemeToggle } from './theme';
 
+applyEnvironmentBadge();
 mountThemeToggle();

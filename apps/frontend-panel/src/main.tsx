@@ -10,8 +10,12 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from '@/modules/shared/App.component';
+import { applyEnvironmentBadge } from '@/modules/shared/environmentBadge/environmentBadge';
 
 import '@/index.css';
+
+// Antes do React: a faixa e do documento, e nao de uma tela — ela vale inclusive no erro de boot.
+applyEnvironmentBadge();
 
 const container = document.getElementById('root');
 
