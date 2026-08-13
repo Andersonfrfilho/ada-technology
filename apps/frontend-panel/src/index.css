@@ -7,6 +7,7 @@
  * padrao, entao sem este `@source` o balao de mensagem sai sem estilo nenhum.
  */
 @source '../node_modules/@adatechnology/conversations-ui/dist';
+@source '../node_modules/@adatechnology/products-ui/dist';
 
 /**
  * O `dark:` do painel passa a ser a classe no `<html>`, e nao `prefers-color-scheme`.
@@ -29,8 +30,13 @@
 @theme {
   --color-brand-50: #f5f8ff;
   --color-brand-100: #e2e8f0;
+  /* 200, 700 e 800 existem porque os componentes do SDK os usam em borda e hover; sem o token o
+     Tailwind nao gera a classe, e o botao fica sem reacao ao passar o mouse. */
+  --color-brand-200: #c7d5f5;
   --color-brand-500: #1a4fd6;
   --color-brand-600: #163fae;
+  --color-brand-700: #123186;
+  --color-brand-800: #0f2668;
   --color-brand-900: #0d1b3e;
   --color-accent-500: #06b6d4;
   --color-ink-100: #e2e8f0;

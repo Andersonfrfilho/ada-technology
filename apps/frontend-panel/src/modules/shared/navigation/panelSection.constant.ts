@@ -8,6 +8,7 @@
 
 import {
   FileText,
+  Package,
   LayoutTemplate,
   MessageSquare,
   Send,
@@ -27,6 +28,7 @@ export const PANEL_SECTION = {
   FLOWS: 'fluxos',
   MESSAGES: 'mensagens',
   TEMPLATES: 'templates',
+  CATALOG: 'catalogo',
   DOCUMENTS: 'documentos',
   LEADS: 'clientes',
 } as const;
@@ -49,6 +51,7 @@ export const PANEL_SECTION_ITEMS: readonly PanelSectionItem[] = [
   { section: PANEL_SECTION.FLOWS, icon: Workflow },
   { section: PANEL_SECTION.MESSAGES, icon: Send },
   { section: PANEL_SECTION.TEMPLATES, icon: LayoutTemplate },
+  { section: PANEL_SECTION.CATALOG, icon: Package },
   { section: PANEL_SECTION.DOCUMENTS, icon: FileText },
   { section: PANEL_SECTION.LEADS, icon: Users },
 ];

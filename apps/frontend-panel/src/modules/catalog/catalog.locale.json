@@ -1,0 +1,15 @@
+{
+  "workspace": {
+    "title": "Catálogo",
+    "search": "Buscar produto",
+    "newProduct": "Novo produto",
+    "bulkImport": "Importar planilha",
+    "productsTab": "Produtos",
+    "catalogsTab": "Catálogos",
+    "editTitle": "Editar produto",
+    "createTitle": "Novo produto",
+    "close": "Fechar",
+    "remove": "Excluir",
+    "loadFailure": "Não foi possível carregar os produtos"
+  }
+}

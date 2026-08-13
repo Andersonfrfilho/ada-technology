@@ -12,9 +12,10 @@
     "typecheck:api": "cd apps/api-ada && bun run typecheck",
     "typecheck:panel": "cd apps/frontend-panel && bun run typecheck",
     "typecheck:site": "cd apps/frontend-site && bun run typecheck",
-    "test": "bun run test:scripts && bun run test:api",
+    "test": "bun run test:scripts && bun run test:api && bun run test:panel",
     "test:scripts": "bun test scripts",
-    "test:api": "cd apps/api-ada && bun run test"
+    "test:api": "cd apps/api-ada && bun run test",
+    "test:panel": "cd apps/frontend-panel && bun run test"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

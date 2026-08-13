@@ -6,6 +6,7 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import { CatalogPage } from '@/modules/catalog/Catalog.page';
 import { DocumentsPage } from '@/modules/documents/Documents.page';
 import { FlowsPage } from '@/modules/flows/Flows.page';
 import { InboxPage } from '@/modules/inbox/Inbox.page';
@@ -34,6 +35,8 @@ export function PanelSectionView({ section }: PanelSectionViewProps) {
       return <MessagesPage />;
     case PANEL_SECTION.TEMPLATES:
       return <TemplatesPage />;
+    case PANEL_SECTION.CATALOG:
+      return <CatalogPage />;
     case PANEL_SECTION.DOCUMENTS:
       return <DocumentsPage />;
     case PANEL_SECTION.LEADS:
