@@ -11,7 +11,7 @@ import { LogOut } from 'lucide-react';
 
 import { signOutAgent } from '@/modules/auth/auth.api';
 import {
-  PANEL_SECTION_ITEMS,
+  PANEL_SECTION_GROUPS,
   type PanelSection,
 } from '@/modules/shared/navigation/panelSection.constant';
 import { useSessionStore } from '@/modules/shared/session/session.store';
@@ -52,18 +52,33 @@ export function PanelSidebar({ section, isDark, onNavigate, onToggleTheme }: Pan
         <h1 className="text-sm font-semibold text-gray-900 dark:text-white">{locale.title}</h1>
       </div>
 
-      <nav aria-label={locale.title} className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
-        {PANEL_SECTION_ITEMS.map((item) => (
-          <button
-            aria-current={item.section === section ? 'page' : undefined}
-            className={`${ITEM_BASE} ${item.section === section ? ITEM_ACTIVE : ITEM_IDLE}`}
-            key={item.section}
-            onClick={() => onNavigate(item.section)}
-            type="button"
-          >
-            <item.icon aria-hidden="true" className="size-4 shrink-0" />
-            {locale.sections[item.section]}
-          </button>
+      <nav aria-label={locale.title} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-2">
+        {PANEL_SECTION_GROUPS.map((group) => (
+          <div key={group.group}>
+            {/* O titulo do grupo e rotulo do proprio bloco, e nao texto solto acima dele: sem o
+                `aria-labelledby` o leitor de tela anuncia sete itens em fila, sem a separacao que
+                a tela mostra. */}
+            <p
+              className="px-3 pb-1 text-[0.6875rem] font-semibold tracking-widest text-gray-400 uppercase dark:text-gray-500"
+              id={`panel-group-${group.group}`}
+            >
+              {locale.groups[group.group]}
+            </p>
+            <div aria-labelledby={`panel-group-${group.group}`} className="space-y-1" role="group">
+              {group.items.map((item) => (
+                <button
+                  aria-current={item.section === section ? 'page' : undefined}
+                  className={`${ITEM_BASE} ${item.section === section ? ITEM_ACTIVE : ITEM_IDLE}`}
+                  key={item.section}
+                  onClick={() => onNavigate(item.section)}
+                  type="button"
+                >
+                  <item.icon aria-hidden="true" className="size-4 shrink-0" />
+                  {locale.sections[item.section]}
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 

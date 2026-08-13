@@ -15,6 +15,11 @@
       "catalogo": "Catálogo",
       "documentos": "Documentos",
       "clientes": "Clientes"
+    },
+    "groups": {
+      "atendimento": "Atendimento",
+      "conteudo": "Conteúdo",
+      "cadastros": "Cadastros"
     }
   }
 }

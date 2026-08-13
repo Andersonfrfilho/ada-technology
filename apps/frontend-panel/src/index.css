@@ -33,6 +33,9 @@
   /* 200, 700 e 800 existem porque os componentes do SDK os usam em borda e hover; sem o token o
      Tailwind nao gera a classe, e o botao fica sem reacao ao passar o mouse. */
   --color-brand-200: #c7d5f5;
+  /* Usado so no escuro, pelo estado ativo da navegacao do `products-ui`: no fundo cinza-900 o
+     brand-600 nao passa de contraste. */
+  --color-brand-400: #4b78ec;
   --color-brand-500: #1a4fd6;
   --color-brand-600: #163fae;
   --color-brand-700: #123186;

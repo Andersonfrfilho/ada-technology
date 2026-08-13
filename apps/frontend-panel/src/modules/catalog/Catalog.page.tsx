@@ -9,6 +9,7 @@
 import { ProductsProvider, ProductsWorkspace } from '@adatechnology/products-ui';
 
 import { catalogApi } from '@/modules/catalog/catalog.api';
+import { useCatalogArea } from '@/modules/catalog/catalogArea.hook';
 import catalogLocale from '@/modules/catalog/catalog.locale.json';
 import { PRODUCTS_CONFIG } from '@/modules/catalog/products.config';
 
@@ -17,10 +18,12 @@ import { PRODUCTS_CONFIG } from '@/modules/catalog/products.config';
  * e essa e a unica diferenca em relacao ao padrao do pacote.
  */
 export function CatalogPage() {
+  const { area, setArea } = useCatalogArea();
+
   return (
     <section className="h-full min-h-0">
       <ProductsProvider api={catalogApi} config={PRODUCTS_CONFIG}>
-        <ProductsWorkspace labels={catalogLocale.workspace} />
+        <ProductsWorkspace area={area} labels={catalogLocale.workspace} onAreaChange={setArea} />
       </ProductsProvider>
     </section>
   );

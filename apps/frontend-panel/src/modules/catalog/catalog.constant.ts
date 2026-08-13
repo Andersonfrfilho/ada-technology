@@ -40,3 +40,16 @@ export const CSV_COLUMN_BY_HEADER: Readonly<Record<string, string | undefined>> 
   estoque: 'inventory',
   inventory: 'inventory',
 };
+
+/**
+ * A area do catalogo na URL, em portugues.
+ *
+ * O id da area e do pacote e nao muda; o que o atendente cola no chat do time e este termo, e ele
+ * segue a convencao das outras telas do painel.
+ */
+export const CATALOG_AREA_URL_KEY = 'aba';
+
+export const CATALOG_AREA_URL_VALUE = {
+  PRODUCTS: 'produtos',
+  CATALOGS: 'catalogos',
+} as const;

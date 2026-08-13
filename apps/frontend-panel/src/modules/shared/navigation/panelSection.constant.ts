@@ -42,19 +42,55 @@ export type PanelSectionItem = {
   readonly icon: LucideIcon;
 };
 
+export const PANEL_GROUP = {
+  SERVICE: 'atendimento',
+  CONTENT: 'conteudo',
+  REGISTRY: 'cadastros',
+} as const;
+
+export type PanelGroup = (typeof PANEL_GROUP)[keyof typeof PANEL_GROUP];
+
+export type PanelSectionGroup = {
+  readonly group: PanelGroup;
+  readonly items: readonly PanelSectionItem[];
+};
+
 /**
- * A ordem e a do trabalho, nao a do alfabeto: a fila primeiro, o que se manda depois, e o cadastro
- * por ultimo. O rotulo nao mora aqui — vem do `shared.locale.json` pela chave da secao.
+ * O menu e agrupado pelo que a pessoa esta fazendo, nao pelo alfabeto.
+ *
+ * Sete itens seguidos viraram uma lista que se le inteira toda vez para achar um. Em tres blocos o
+ * olho para no titulo do bloco: quem esta atendendo nunca desce ate os cadastros, e quem vai mexer
+ * em produto nao passa pela fila. A ordem dentro do bloco continua sendo a do trabalho.
+ *
+ * O rotulo nao mora aqui — vem do `shared.locale.json`, pela chave da secao e do grupo.
  */
-export const PANEL_SECTION_ITEMS: readonly PanelSectionItem[] = [
-  { section: PANEL_SECTION.CONVERSATIONS, icon: MessageSquare },
-  { section: PANEL_SECTION.FLOWS, icon: Workflow },
-  { section: PANEL_SECTION.MESSAGES, icon: Send },
-  { section: PANEL_SECTION.TEMPLATES, icon: LayoutTemplate },
-  { section: PANEL_SECTION.CATALOG, icon: Package },
-  { section: PANEL_SECTION.DOCUMENTS, icon: FileText },
-  { section: PANEL_SECTION.LEADS, icon: Users },
+export const PANEL_SECTION_GROUPS: readonly PanelSectionGroup[] = [
+  {
+    group: PANEL_GROUP.SERVICE,
+    items: [
+      { section: PANEL_SECTION.CONVERSATIONS, icon: MessageSquare },
+      { section: PANEL_SECTION.FLOWS, icon: Workflow },
+      { section: PANEL_SECTION.MESSAGES, icon: Send },
+      { section: PANEL_SECTION.TEMPLATES, icon: LayoutTemplate },
+    ],
+  },
+  {
+    group: PANEL_GROUP.CONTENT,
+    items: [
+      { section: PANEL_SECTION.CATALOG, icon: Package },
+      { section: PANEL_SECTION.DOCUMENTS, icon: FileText },
+    ],
+  },
+  {
+    group: PANEL_GROUP.REGISTRY,
+    items: [{ section: PANEL_SECTION.LEADS, icon: Users }],
+  },
 ];
+
+/** Lista plana, para quem so precisa percorrer as secoes sem se importar com o agrupamento. */
+export const PANEL_SECTION_ITEMS: readonly PanelSectionItem[] = PANEL_SECTION_GROUPS.flatMap(
+  (group) => group.items,
+);
 
 /** Escrita por Clientes ao abrir um lead e lida pela fila para ja selecionar aquela conversa. */
 export const CONVERSATION_URL_KEY = 'conversa';

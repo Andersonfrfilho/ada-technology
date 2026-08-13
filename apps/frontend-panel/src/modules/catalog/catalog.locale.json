@@ -10,6 +10,7 @@
     "createTitle": "Novo produto",
     "close": "Fechar",
     "remove": "Excluir",
-    "loadFailure": "Não foi possível carregar os produtos"
+    "loadFailure": "Não foi possível carregar os produtos",
+    "areaNav": "Áreas do catálogo"
   }
 }
