@@ -33,5 +33,13 @@ export const RETRIABLE_GRAPH_ERROR_CODES: readonly string[] = [
 /** Escopo do modulo esperado por `dispatchRoute` nas rotas de catalogo. */
 export const CATALOG_ADMIN_SCOPE = 'admin';
 
+/**
+ * Teto do objeto no provider de storage, alinhado ao teto do `catalog-module`.
+ *
+ * O modulo ja recusa acima disso; aqui e a segunda barreira, do lado do bucket, para um caminho
+ * futuro que nao passe pelo use case nao conseguir subir um objeto de gigabyte.
+ */
+export const PRODUCT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
 /** Config e rotas precisam concordar sobre o que e publicado; declarar duas vezes as separaria. */
 export const CATALOG_META_SYNC = { products: true, catalogs: true } as const;

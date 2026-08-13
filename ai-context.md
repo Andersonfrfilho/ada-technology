@@ -108,6 +108,18 @@ headers de segurança e `X-Trace-Id`. Rate limit por IP declarado na própria ro
 | `GET` | `/v1/panel/events` | Bilhete no `?ticket`. SSE do canal `global`. |
 | `GET` | `/v1/panel/conversations/:id/events` | Bilhete no `?ticket`, amarrado àquela conversa. |
 
+O catálogo de produtos vem inteiro do `@adatechnology/catalog-module`, montado sob
+`/v1/panel/catalog` (produtos, catálogos, seções, importação em lote), todas 🔒 `admin`. O
+`catalogRouteBridge` cria **uma rota da Ada para cada rota do módulo** — sem curinga —, e o
+`ProductImageStorageAdapter` liga a porta de imagem do módulo ao
+`@adatechnology/object-storage-provider`. Sem `OBJECT_STORAGE_BUCKET` o adapter não existe, o módulo
+não publica `POST /v1/panel/catalog/products/images` e o painel volta ao campo de URL digitada —
+capacidade por ausência. A rota recebe os **bytes crus** com o `Content-Type` do arquivo (sem
+`multipart`: é uma imagem só, e o parser de fronteira carregaria o mesmo byte), valida contra a lista
+fechada `jpeg/png/webp` (SVG carrega script) com teto de 5MB, e grava em
+`products/<companyId>/<uuid>.<ext>`. A URL devolvida é pública e estável porque quem busca a imagem é
+a Meta, para renderizar o item dentro do WhatsApp.
+
 As rotas de WhatsApp só são montadas com `WHATSAPP_ENABLED=true`: sem segredo não há como conferir
 assinatura, e rota pública que aceita qualquer corpo é pior que rota nenhuma.
 

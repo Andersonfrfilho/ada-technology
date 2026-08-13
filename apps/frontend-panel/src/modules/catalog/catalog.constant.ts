@@ -11,6 +11,7 @@ const CATALOG_BASE_PATH = '/v1/panel/catalog';
 export const CATALOG_PATH = {
   PRODUCTS: `${CATALOG_BASE_PATH}/products`,
   BULK_IMPORT: `${CATALOG_BASE_PATH}/products/bulk-import`,
+  PRODUCT_IMAGES: `${CATALOG_BASE_PATH}/products/images`,
   CATALOGS: `${CATALOG_BASE_PATH}/catalogs`,
 } as const;
 

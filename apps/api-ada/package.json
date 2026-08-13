@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "@adatechnology/audio-transcription-provider": "^0.1.0-rc.1",
-    "@adatechnology/catalog-contracts": "0.1.0-rc.1",
-    "@adatechnology/catalog-module": "0.1.0-rc.2",
+    "@adatechnology/catalog-contracts": "0.1.0-rc.2",
+    "@adatechnology/catalog-module": "0.1.0-rc.3",
     "@adatechnology/meta-catalog-provider": "0.2.0-rc.2",
     "@adatechnology/meta-graph-core": "^0.1.0",
     "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.12",
@@ -24,6 +24,7 @@
     "@adatechnology/meta-whatsapp-provider": "0.2.0-rc.3",
     "@adatechnology/module-http": "0.1.0-rc.1",
     "@adatechnology/notification-contracts": "0.1.0-rc.2",
+    "@adatechnology/object-storage-provider": "0.2.0-rc.0",
     "drizzle-orm": "0.45.2",
     "ioredis": "5.11.1",
     "jose": "^6.2.8",

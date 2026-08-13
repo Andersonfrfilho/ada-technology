@@ -9,6 +9,7 @@
 import type { LoggerPort as CatalogLoggerPort } from '@adatechnology/catalog-contracts';
 import { createCatalogModule } from '@adatechnology/catalog-module';
 import { MetaCatalogProvider } from '@adatechnology/meta-catalog-provider';
+import { createObjectStorageProvider } from '@adatechnology/object-storage-provider';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
 import { WhatsAppTemplateProvider } from '@adatechnology/meta-whatsapp-provider';
 
@@ -25,9 +26,15 @@ import { RedisRefreshTokenStore } from '@/modules/agent/RedisRefreshTokenStore';
 import { RefreshAgentSessionUseCase } from '@/modules/agent/refreshAgentSession.use-case';
 import { SignOutAgentUseCase } from '@/modules/agent/signOutAgent.use-case';
 import { RecordAuditLogUseCase } from '@/modules/audit/recordAuditLog.use-case';
-import { CATALOG_CURRENCY, CATALOG_LOCALE, CATALOG_META_SYNC } from '@/modules/catalog/catalog.constant';
+import {
+  CATALOG_CURRENCY,
+  CATALOG_LOCALE,
+  CATALOG_META_SYNC,
+  PRODUCT_IMAGE_MAX_BYTES,
+} from '@/modules/catalog/catalog.constant';
 import { createCatalogChannelPort } from '@/modules/catalog/CatalogChannelPort';
 import { MetaCatalogSyncAdapter } from '@/modules/catalog/MetaCatalogSyncAdapter';
+import { ProductImageStorageAdapter } from '@/modules/catalog/ProductImageStorageAdapter';
 import { TranscribedWhatsAppChannel } from '@/modules/channel/whatsapp/TranscribedWhatsAppChannel';
 import type { WhatsAppMessageHandlers } from '@/modules/channel/whatsapp/types/whatsapp.types';
 import { createWhatsAppMessageHook } from '@/modules/channel/whatsapp/whatsappMessageHook';
@@ -361,6 +368,27 @@ export const catalogMetaSync =
       )
     : undefined;
 
+/**
+ * Bucket ausente e upload de imagem ausente: o modulo nao publica a rota e o painel nao desenha o
+ * campo de arquivo — quem nao tem storage segue digitando a URL da imagem, como antes.
+ */
+export const productImageStorage = environment.OBJECT_STORAGE_BUCKET
+  ? new ProductImageStorageAdapter({
+      storage: createObjectStorageProvider({
+        endpoint: new URL(environment.OBJECT_STORAGE_ENDPOINT),
+        region: environment.OBJECT_STORAGE_REGION,
+        accessKeyId: environment.OBJECT_STORAGE_ACCESS_KEY_ID,
+        secretAccessKey: environment.OBJECT_STORAGE_SECRET_ACCESS_KEY,
+        // MinIO e o bucket do Railway servem por caminho; o virtual-host exigiria DNS por bucket.
+        forcePathStyle: true,
+        healthCheckBucket: environment.OBJECT_STORAGE_BUCKET,
+        maxObjectSizeBytes: PRODUCT_IMAGE_MAX_BYTES,
+      }),
+      bucket: environment.OBJECT_STORAGE_BUCKET,
+      publicBaseUrl: environment.OBJECT_STORAGE_PUBLIC_BASE_URL,
+    })
+  : undefined;
+
 export const catalogModule = createCatalogModule({
   db: database as never,
   config: {
@@ -374,6 +402,7 @@ export const catalogModule = createCatalogModule({
   providers: {
     logger: catalogLogger,
     ...(catalogMetaSync ? { metaSync: catalogMetaSync } : {}),
+    ...(productImageStorage ? { imageStorage: productImageStorage } : {}),
   },
 });
 

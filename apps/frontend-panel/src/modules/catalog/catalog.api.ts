@@ -106,9 +106,17 @@ export const catalogApi: ProductsApi = {
       body: { rows: parseCatalogCsv(await file.text()) },
     }),
 
-  uploadImage: () => {
-    // O modulo nao tem rota de imagem, e o painel nao guarda arquivo. Enquanto isso, o produto
-    // recebe URL de imagem digitada no formulario.
-    throw new Error('Upload de imagem nao esta disponivel neste painel');
-  },
+  /**
+   * O arquivo vai cru, com o proprio `Content-Type` — sem `multipart`.
+   *
+   * A rota recebe uma imagem so, e o `multipart` custaria um parser de fronteira na API para
+   * carregar exatamente o mesmo byte. Quem decide se o formato serve e o servidor: o tipo declarado
+   * pelo navegador vem do cliente, e o modulo o valida contra a lista fechada dele.
+   */
+  uploadImage: (file: File) =>
+    panelRequest<{ readonly url: string; readonly key: string }>({
+      path: CATALOG_PATH.PRODUCT_IMAGES,
+      method: HTTP_METHOD.POST,
+      binary: { blob: file, contentType: file.type },
+    }),
 };

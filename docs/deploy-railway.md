@@ -129,6 +129,29 @@ default silencioso para segredo.
 | `INTENT_CLASSIFIER_ENABLED` | `false` | `false` | ligado exige `GROQ_API_KEY` |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` | idem | so importa com o classificador ligado |
 
+### Bucket da imagem de produto (opcional)
+
+Sem `OBJECT_STORAGE_BUCKET` o modulo **nao publica** a rota de upload e o painel volta ao campo de
+URL digitada — capacidade por ausencia. Preencher **um** dos campos abaixo obriga todos: bucket meio
+configurado sobe a rota e falha so quando o operador tenta enviar a foto.
+
+| Variavel | Valor | Nota |
+|---|---|---|
+| `OBJECT_STORAGE_ENDPOINT` | endpoint interno do servico de bucket | S3-compativel (MinIO no Railway) |
+| `OBJECT_STORAGE_REGION` | `us-east-1` | o MinIO ignora, o SDK exige |
+| `OBJECT_STORAGE_ACCESS_KEY_ID` | chave **do ambiente** | staging e producao nunca compartilham |
+| `OBJECT_STORAGE_SECRET_ACCESS_KEY` | segredo **do ambiente** | via `railway-secrets.sh` |
+| `OBJECT_STORAGE_BUCKET` | `ada-products` | criado com leitura anonima |
+| `OBJECT_STORAGE_PUBLIC_BASE_URL` | `https://<dominio-do-bucket>/ada-products` | dominio **publico**, nao o interno |
+
+A URL publica e separada do endpoint de proposito: a Meta busca a imagem do produto por conta
+propria para renderizar o item no WhatsApp, entao ela precisa ser estavel e sem credencial — URL
+assinada expira e o catalogo aparece quebrado semanas depois. O bucket libera apenas **leitura**
+anonima; escrita continua exigindo a chave.
+
+A chave do objeto e `products/<companyId>/<uuid>.<ext>`: nome de arquivo digitado pelo operador
+nunca entra nela, porque viraria URL publica e ja vazou dado pessoal em outros produtos.
+
 Com `WHATSAPP_ENABLED=true` o schema passa a exigir `WHATSAPP_PHONE_NUMBER_ID`,
 `WHATSAPP_BUSINESS_ACCOUNT_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` e
 `WHATSAPP_APP_SECRET`. Sem qualquer um deles o processo nao sobe — fail-closed de proposito: um

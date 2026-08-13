@@ -17,6 +17,11 @@ export type PanelRequest = {
   readonly method?: HttpMethod;
   readonly body?: unknown;
   readonly query?: Readonly<Record<string, string | number | boolean | undefined>>;
+  /**
+   * Corpo binario cru (imagem de produto). `Blob` e nao stream de proposito: a chamada e reenviada
+   * depois de renovar a sessao, e stream so pode ser lido uma vez.
+   */
+  readonly binary?: { readonly blob: Blob; readonly contentType: string };
 };
 
 /**
@@ -71,18 +76,23 @@ export function buildUrl(path: string, query?: PanelRequest['query']): URL {
 }
 
 /** Sempre com credenciais: o refresh vive num cookie `HttpOnly`, e o `fetch` so o envia se pedirmos. */
-async function send({ path, method, body, query }: PanelRequest): Promise<Response> {
+async function send({ path, method, body, query, binary }: PanelRequest): Promise<Response> {
   const { accessToken } = useSessionStore.getState();
+  const payload = binary
+    ? { headers: { 'Content-Type': binary.contentType }, body: binary.blob }
+    : body === undefined
+      ? { headers: {} }
+      : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
 
   try {
     return await fetch(buildUrl(path, query), {
       method: method ?? HTTP_METHOD.GET,
       credentials: 'include',
       headers: {
-        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...payload.headers,
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      ...('body' in payload ? { body: payload.body } : {}),
     });
   } catch {
     throw toNetworkError();

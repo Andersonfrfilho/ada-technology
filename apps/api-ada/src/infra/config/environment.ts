@@ -55,6 +55,16 @@ const environmentSchema = z
     META_CATALOG_ACCESS_TOKEN: z.string().default(''),
     META_CATALOG_WEBHOOK_VERIFY_TOKEN: z.string().default(''),
 
+    // Bucket S3-compativel para imagem de produto. Sem ele o modulo nao publica a rota de upload e
+    // o painel nao desenha o campo — capacidade por ausencia. A URL publica e separada do endpoint
+    // porque a Meta precisa buscar a imagem por uma URL estavel, e URL assinada expira.
+    OBJECT_STORAGE_ENDPOINT: z.string().default(''),
+    OBJECT_STORAGE_REGION: z.string().default('us-east-1'),
+    OBJECT_STORAGE_ACCESS_KEY_ID: z.string().default(''),
+    OBJECT_STORAGE_SECRET_ACCESS_KEY: z.string().default(''),
+    OBJECT_STORAGE_BUCKET: z.string().default(''),
+    OBJECT_STORAGE_PUBLIC_BASE_URL: z.string().default(''),
+
     INTENT_CLASSIFIER_ENABLED: booleanFromString,
     GROQ_API_KEY: z.string().default(''),
     GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
@@ -78,6 +88,40 @@ const environmentSchema = z
           code: z.ZodIssueCode.custom,
           path: [key],
           message: `${key} e obrigatorio quando WHATSAPP_ENABLED=true`,
+        });
+      }
+    }
+  })
+  // Bucket meio configurado e pior que bucket ausente: a rota sobe e falha so quando o cliente
+  // tenta enviar a foto. Ou tudo, ou nada.
+  .superRefine((value, context) => {
+    const storageKeys = [
+      'OBJECT_STORAGE_ENDPOINT',
+      'OBJECT_STORAGE_ACCESS_KEY_ID',
+      'OBJECT_STORAGE_SECRET_ACCESS_KEY',
+      'OBJECT_STORAGE_BUCKET',
+      'OBJECT_STORAGE_PUBLIC_BASE_URL',
+    ] as const;
+
+    const filled = storageKeys.filter((key) => value[key].length > 0);
+    if (filled.length === 0) return;
+
+    for (const key of storageKeys) {
+      if (value[key].length === 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `${key} e obrigatorio quando o bucket de imagem esta configurado`,
+        });
+      }
+    }
+
+    for (const key of ['OBJECT_STORAGE_ENDPOINT', 'OBJECT_STORAGE_PUBLIC_BASE_URL'] as const) {
+      if (value[key].length > 0 && !URL.canParse(value[key])) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `${key} precisa ser uma URL valida`,
         });
       }
     }
