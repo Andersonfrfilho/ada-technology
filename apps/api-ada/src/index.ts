@@ -13,6 +13,7 @@ import { createRouter, type Route } from '@/infra/http/router';
 import { agentRoutes } from '@/modules/agent/agent.controller';
 import { authenticateRequest } from '@/modules/agent/authenticateRequest';
 import { whatsappRoutes } from '@/modules/channel/whatsapp/whatsapp.controller';
+import { whatsappCatalogRoutes } from '@/modules/channel/whatsapp/whatsappCatalog.controller';
 import { widgetRoutes } from '@/modules/channel/widget/widget.controller';
 import { panelFlowRoutes } from '@/modules/flow/flow.controller';
 import { healthRoutes } from '@/modules/health/health.controller';
@@ -31,6 +32,7 @@ const SHUTDOWN_TIMEOUT_MS = 10_000;
 const routes: readonly Route[] = [
   ...healthRoutes,
   ...whatsappRoutes,
+  ...whatsappCatalogRoutes,
   ...widgetRoutes,
   ...agentRoutes,
   ...panelConversationRoutes,

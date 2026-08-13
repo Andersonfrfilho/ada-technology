@@ -18,6 +18,9 @@ export const RATE_LIMIT = {
   // A Meta reentrega em rajada apos instabilidade; apertar demais aqui perderia mensagem de cliente.
   WHATSAPP_WEBHOOK: { limit: 120, windowSeconds: ONE_MINUTE },
   WHATSAPP_CHALLENGE: { limit: 10, windowSeconds: ONE_MINUTE },
+  // Catalogo muda em lote (importacao de feed, revisao da Meta), mas nada perto do volume de
+  // mensagem: metade do teto do webhook de conversa ja cobre uma sincronizacao inteira.
+  WHATSAPP_CATALOG_WEBHOOK: { limit: 60, windowSeconds: ONE_MINUTE },
   WIDGET_SESSION_CREATE: { limit: 10, windowSeconds: ONE_MINUTE },
   WIDGET_MESSAGE_SEND: { limit: 30, windowSeconds: ONE_MINUTE },
   WIDGET_TRANSCRIPT_READ: { limit: 120, windowSeconds: ONE_MINUTE },

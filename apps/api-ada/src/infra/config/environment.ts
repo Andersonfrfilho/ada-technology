@@ -48,6 +48,12 @@ const environmentSchema = z
     WHATSAPP_APP_SECRET: z.string().default(''),
     WHATSAPP_GRAPH_BASE_URL: z.string().url(),
 
+    // Catalogo e um produto separado no app da Meta, com callback URL e verify token proprios. Sem
+    // o verify token a rota nem existe: capacidade opcional e por ausencia, nao por flag.
+    WHATSAPP_CATALOG_ID: z.string().default(''),
+    WHATSAPP_CATALOG_ACCESS_TOKEN: z.string().default(''),
+    WHATSAPP_CATALOG_WEBHOOK_VERIFY_TOKEN: z.string().default(''),
+
     INTENT_CLASSIFIER_ENABLED: booleanFromString,
     GROQ_API_KEY: z.string().default(''),
     GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
