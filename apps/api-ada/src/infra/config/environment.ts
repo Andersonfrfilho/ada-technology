@@ -48,11 +48,12 @@ const environmentSchema = z
     WHATSAPP_APP_SECRET: z.string().default(''),
     WHATSAPP_GRAPH_BASE_URL: z.string().url(),
 
-    // Catalogo e um produto separado no app da Meta, com callback URL e verify token proprios. Sem
-    // o verify token a rota nem existe: capacidade opcional e por ausencia, nao por flag.
-    WHATSAPP_CATALOG_ID: z.string().default(''),
-    WHATSAPP_CATALOG_ACCESS_TOKEN: z.string().default(''),
-    WHATSAPP_CATALOG_WEBHOOK_VERIFY_TOKEN: z.string().default(''),
+    // Catalogo nao e do WhatsApp: e objeto do Meta Commerce, e o mesmo id alimenta anuncio dinamico,
+    // Instagram Shopping e Messenger. O WhatsApp so o consome. Callback URL e verify token sao
+    // proprios; sem o verify token a rota nem existe — capacidade opcional e por ausencia, nao flag.
+    META_CATALOG_ID: z.string().default(''),
+    META_CATALOG_ACCESS_TOKEN: z.string().default(''),
+    META_CATALOG_WEBHOOK_VERIFY_TOKEN: z.string().default(''),
 
     INTENT_CLASSIFIER_ENABLED: booleanFromString,
     GROQ_API_KEY: z.string().default(''),
