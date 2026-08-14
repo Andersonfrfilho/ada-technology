@@ -32,6 +32,9 @@ export const CONVERSATION_PATH = {
   RELEASE: (conversationId: string) => `/v1/panel/conversations/${conversationId}/release`,
   TRANSCRIPT: (conversationId: string) => `/v1/panel/conversations/${conversationId}/transcript`,
   EVENTS: (conversationId: string) => `/v1/panel/conversations/${conversationId}/events`,
+  SIMULATION: (conversationId: string) => `/v1/panel/conversations/${conversationId}/simulation`,
+  SIMULATION_AUDIO: (conversationId: string) =>
+    `/v1/panel/conversations/${conversationId}/simulation/audio`,
 } as const;
 
 /**

@@ -58,7 +58,12 @@ export type PostWidgetAudioDependencies = {
   readonly extractLeadSignals: ExtractLeadSignalsUseCase;
 };
 
+export type WidgetAudioUpload = {
+  readonly buffer: Buffer;
+  readonly mimeType: string;
+};
+
 export type PostWidgetAudioParams = {
   readonly sessionId: string;
-  readonly audio: { readonly buffer: Buffer; readonly mimeType: string };
+  readonly audio: WidgetAudioUpload;
 };

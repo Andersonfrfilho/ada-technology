@@ -9,7 +9,7 @@
 import type { ConversationSummary } from '@adatechnology/meta-whatsapp-contracts';
 import type { MessageRow } from '@adatechnology/meta-whatsapp-module';
 
-import { isWidgetSessionId } from '@/modules/channel/widget/widget.constant';
+import { channelOfConversationKey } from '@/modules/panel/conversationChannel';
 import { PANEL_CHANNEL, type PanelChannel } from '@/modules/panel/panel.constant';
 import type { PanelConversation, PanelMessage } from '@/modules/panel/types/panel.types';
 import { MESSAGE_TYPE } from '@/shared/constants/domain.constant';
@@ -33,7 +33,7 @@ type StoredInteractivePayload = {
  * conversa nas chamadas seguintes e o `id`, que ja e opaco.
  */
 export function toPanelConversation(summary: ConversationSummary): PanelConversation {
-  const channel = channelOf(summary.whatsappNumber);
+  const channel = channelOfConversationKey(summary.whatsappNumber);
 
   return {
     id: summary.id,
@@ -73,10 +73,6 @@ export function toPanelMessage(row: MessageRow): PanelMessage {
     ...toModeration(row),
     ...toTranscription(row),
   };
-}
-
-function channelOf(conversationKey: string): PanelChannel {
-  return isWidgetSessionId(conversationKey) ? PANEL_CHANNEL.WEBCHAT : PANEL_CHANNEL.WHATSAPP;
 }
 
 function contactHandleOf({ channel, key }: { channel: PanelChannel; key: string }): string {

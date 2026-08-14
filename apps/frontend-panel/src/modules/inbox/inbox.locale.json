@@ -11,5 +11,8 @@
     "emptyDetail": "Escolha uma conversa para ler o historico.",
     "composerPlaceholder": "Responder como atendente...",
     "takeoverToReply": "Assuma o atendimento para responder diretamente ao cliente."
+  },
+  "simulator": {
+    "label": "Simular cliente"
   }
 }

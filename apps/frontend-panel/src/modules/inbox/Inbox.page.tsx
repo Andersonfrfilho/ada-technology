@@ -9,6 +9,7 @@
 import { ConversationsProvider, ConversationsWorkspace } from '@adatechnology/conversations-ui';
 
 import { adaConversationsApi } from '@/modules/inbox/adaConversations.api';
+import { useConversationSimulator } from '@/modules/inbox/conversationSimulator.hook';
 import inboxLocale from '@/modules/inbox/inbox.locale.json';
 import { panelSseProvider } from '@/modules/inbox/panelSse.provider';
 import { CONVERSATION_URL_KEY } from '@/modules/shared/navigation/panelSection.constant';
@@ -21,6 +22,8 @@ import { CONVERSATION_URL_KEY } from '@/modules/shared/navigation/panelSection.c
  * vem do pacote: a API recusa o envio de quem nao assumiu, e a UI precisa dizer isso antes do clique.
  */
 export function InboxPage() {
+  const simulator = useConversationSimulator();
+
   /** Chegou de Clientes com uma conversa no endereco: abrir ja nela poupa procurar na fila. */
   const initialConversationId = new URLSearchParams(window.location.search).get(CONVERSATION_URL_KEY);
 
@@ -30,6 +33,7 @@ export function InboxPage() {
         className="h-full"
         labels={inboxLocale.labels}
         requireTakeoverToReply
+        {...(simulator ? { simulator } : {})}
         {...(initialConversationId ? { initialConversationId } : {})}
       />
     </ConversationsProvider>

@@ -20,6 +20,7 @@ export const AUDIT_ACTION = {
   CONVERSATION_RELEASED: 'conversation.released',
   CONVERSATION_FINISHED: 'conversation.finished',
   CONVERSATION_EXPORTED: 'conversation.exported',
+  CONVERSATION_SIMULATED: 'conversation.simulated',
   FLOW_CREATED: 'flow.created',
   FLOW_CHANGED: 'flow.changed',
   FLOW_DELETED: 'flow.deleted',

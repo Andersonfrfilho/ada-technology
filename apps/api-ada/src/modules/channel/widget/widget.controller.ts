@@ -26,16 +26,15 @@ import { WidgetOriginNotAllowedError } from '@/modules/channel/channel.error';
 import { resolveAnswerKind } from '@/modules/channel/widget/answerKind.resolver';
 import {
   isWidgetSessionId,
-  WIDGET_AUDIO_FIELD,
-  WIDGET_AUDIO_MAX_BYTES,
   WIDGET_TRANSCRIPT_DEFAULT_LIMIT,
 } from '@/modules/channel/widget/widget.constant';
-import { WidgetAudioInvalidError, WidgetSessionNotFoundError } from '@/modules/channel/widget/widget.error';
+import { WidgetSessionNotFoundError } from '@/modules/channel/widget/widget.error';
 import { toWidgetMessage, withAnswerKind } from '@/modules/channel/widget/widget.mapper';
 import {
   widgetMessageSchema,
   widgetTranscriptQuerySchema,
 } from '@/modules/channel/widget/widget.schema';
+import { readWidgetAudioUpload } from '@/modules/channel/widget/widgetAudioUpload';
 import { DEFAULT_FLOW_KEY } from '@/modules/conversation/conversation.constant';
 import { conversationRealtimeChannel } from '@/modules/shared/realtime.constant';
 
@@ -143,24 +142,13 @@ const postAudioRoute: Route = {
     assertAllowedOrigin(request);
 
     const sessionId = assertWidgetSession(params.sessionId);
-    const audio = await readAudioUpload(request);
+    const audio = await readWidgetAudioUpload(request);
 
     const result = await postWidgetAudio.execute({ sessionId, audio });
 
     return jsonData(result);
   },
 };
-
-async function readAudioUpload(request: Request): Promise<{ buffer: Buffer; mimeType: string }> {
-  const form = await request.formData().catch(() => undefined);
-  const file = form?.get(WIDGET_AUDIO_FIELD);
-
-  if (!(file instanceof File)) throw new WidgetAudioInvalidError('arquivo ausente');
-  if (file.size === 0) throw new WidgetAudioInvalidError('arquivo vazio');
-  if (file.size > WIDGET_AUDIO_MAX_BYTES) throw new WidgetAudioInvalidError('arquivo grande demais');
-
-  return { buffer: Buffer.from(await file.arrayBuffer()), mimeType: file.type };
-}
 
 /**
  * O evento avisa que mudou, sem dizer o que: o navegador rebusca o transcript.

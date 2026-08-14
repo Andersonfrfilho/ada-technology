@@ -28,6 +28,7 @@ import { panelLeadRoutes } from '@/modules/panel/lead.controller';
 import { panelRealtimeRoutes } from '@/modules/panel/realtime.controller';
 import { panelSettingsRoutes } from '@/modules/settings/settings.controller';
 import { panelTemplateRoutes } from '@/modules/settings/template.controller';
+import { panelSimulationRoutes } from '@/modules/simulation/simulation.controller';
 import { logger } from '@/shared/logger';
 
 const SOURCE = 'index';
@@ -47,6 +48,7 @@ const routes: readonly Route[] = [
   ...panelFlowRoutes,
   ...panelSettingsRoutes,
   ...panelTemplateRoutes,
+  ...panelSimulationRoutes,
   ...catalogRoutes,
   ...productImageRoutes,
 ];

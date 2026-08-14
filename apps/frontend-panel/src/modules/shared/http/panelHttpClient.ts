@@ -22,6 +22,8 @@ export type PanelRequest = {
    * depois de renovar a sessao, e stream so pode ser lido uma vez.
    */
   readonly binary?: { readonly blob: Blob; readonly contentType: string };
+  /** Multipart (audio do simulador). Sem `Content-Type` nosso: quem escreve o boundary e o navegador. */
+  readonly form?: FormData;
 };
 
 /**
@@ -75,18 +77,27 @@ export function buildUrl(path: string, query?: PanelRequest['query']): URL {
   return url;
 }
 
+type RequestPayload = {
+  readonly headers: Readonly<Record<string, string>>;
+  readonly body?: BodyInit;
+};
+
+function payloadOf({ body, binary, form }: PanelRequest): RequestPayload {
+  if (binary) return { headers: { 'Content-Type': binary.contentType }, body: binary.blob };
+  if (form) return { headers: {}, body: form };
+  if (body === undefined) return { headers: {} };
+
+  return { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+}
+
 /** Sempre com credenciais: o refresh vive num cookie `HttpOnly`, e o `fetch` so o envia se pedirmos. */
-async function send({ path, method, body, query, binary }: PanelRequest): Promise<Response> {
+async function send(request: PanelRequest): Promise<Response> {
   const { accessToken } = useSessionStore.getState();
-  const payload = binary
-    ? { headers: { 'Content-Type': binary.contentType }, body: binary.blob }
-    : body === undefined
-      ? { headers: {} }
-      : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+  const payload = payloadOf(request);
 
   try {
-    return await fetch(buildUrl(path, query), {
-      method: method ?? HTTP_METHOD.GET,
+    return await fetch(buildUrl(request.path, request.query), {
+      method: request.method ?? HTTP_METHOD.GET,
       credentials: 'include',
       headers: {
         ...payload.headers,

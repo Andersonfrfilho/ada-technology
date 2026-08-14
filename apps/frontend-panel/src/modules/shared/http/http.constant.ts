@@ -23,6 +23,7 @@ export const PANEL_PATH = {
   TEMPLATE_SETTINGS: '/v1/panel/template-settings',
   TEMPLATES: '/v1/panel/templates',
   FLOWS: '/v1/panel/flows',
+  SIMULATION: '/v1/panel/simulation',
 } as const;
 
 export const HTTP_METHOD = {

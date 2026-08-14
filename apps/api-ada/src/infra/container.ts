@@ -65,6 +65,8 @@ import { MetaTemplateCatalog } from '@/modules/settings/MetaTemplateCatalog';
 import { SaveBotMessagesUseCase } from '@/modules/settings/saveBotMessages.use-case';
 import { SaveTemplateSettingsUseCase } from '@/modules/settings/saveTemplateSettings.use-case';
 import { DrizzleTranscriptRepository } from '@/modules/shared/DrizzleTranscriptRepository';
+import { SimulateInboundMessageUseCase } from '@/modules/simulation/simulateInboundMessage.use-case';
+import { WhatsAppInboundSimulator } from '@/modules/simulation/WhatsAppInboundSimulator';
 import { logger } from '@/shared/logger';
 
 // Estado inicial de sessao nova. O modulo nao conhece a maquina de estados do produto.
@@ -297,6 +299,30 @@ export const exportConversationTranscript = new ExportConversationTranscriptUseC
   messages: transcriptMessages,
   recordAudit: recordAuditLog,
   companyId: environment.ADA_COMPANY_ID,
+});
+
+/**
+ * Injetor do WhatsApp simulado, ausente quando o canal esta desligado.
+ *
+ * Sem segredo de app nao ha assinatura, e sem assinatura o webhook recusa — a capacidade some por
+ * ausencia, e o painel nem oferece o canal.
+ */
+const whatsappInboundSimulator = environment.WHATSAPP_ENABLED
+  ? new WhatsAppInboundSimulator({
+    receiveWebhook: metaWhatsApp.webhook.receive,
+    companyId: environment.ADA_COMPANY_ID,
+    appSecret: environment.WHATSAPP_APP_SECRET,
+    phoneNumberId: environment.WHATSAPP_PHONE_NUMBER_ID,
+    businessAccountId: environment.WHATSAPP_BUSINESS_ACCOUNT_ID,
+  })
+  : undefined;
+
+export const simulateInboundMessage = new SimulateInboundMessageUseCase({
+  resolveConversation: resolvePanelConversation,
+  postWidgetMessage,
+  postWidgetAudio,
+  recordAudit: recordAuditLog,
+  ...(whatsappInboundSimulator ? { whatsapp: whatsappInboundSimulator } : {}),
 });
 
 export const saveBotMessages = new SaveBotMessagesUseCase({
