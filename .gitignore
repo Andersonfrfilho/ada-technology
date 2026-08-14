@@ -12,3 +12,6 @@ envs/*.local
 .vite/
 coverage/
 .omc/
+
+# Runtime WASM do onnxruntime-web, copiado de node_modules pelo script copy:ort
+apps/frontend-panel/public/ort/

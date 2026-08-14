@@ -4,15 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "bun run typecheck && vite build",
+    "dev": "bun run copy:ort && vite",
+    "build": "bun run copy:ort && bun run typecheck && vite build",
     "preview": "vite preview",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "copy:ort": "bash scripts/copy-ort-runtime.sh"
   },
   "dependencies": {
     "@adatechnology/conversations-ui": "0.1.0-rc.33",
-    "@adatechnology/products-ui": "0.1.0-rc.7",
+    "@adatechnology/products-ui": "0.1.0-rc.10",
     "@tanstack/react-query": "^5.62.8",
     "@tanstack/react-router": "^1.95.1",
     "@xyflow/react": "^12.11.2",
@@ -32,6 +33,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "onnxruntime-web": "^1.27.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.3",
     "vite": "^6.0.0",

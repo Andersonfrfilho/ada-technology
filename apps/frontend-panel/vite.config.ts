@@ -41,6 +41,9 @@ export default defineConfig({
       },
       workbox: {
         navigateFallbackDenylist: [/^\/v1\//],
+        // Modelo de recorte e runtime WASM ficam fora do precache: sao megabytes que so quem usa
+        // remocao de fundo precisa, e o cache do navegador ja os guarda depois do primeiro uso.
+        globIgnores: ['**/models/**', '**/ort/**'],
         // A conversa nao pode ser servida de cache: mensagem velha em tela e pior que tela vazia.
         runtimeCaching: [
           {
