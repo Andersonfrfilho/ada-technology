@@ -21,15 +21,16 @@ const OFFSET_STYLE_ID = 'ada-environment-banner-offset';
 /**
  * Marca a janela inteira quando o site nao e o de producao.
  *
- * Sao tres sinais porque cada um falha sozinho: a faixa some quando a aba esta em segundo plano, o
- * titulo some quando ha abas demais para caber o texto, e o favicon fica. Confundir a homologacao
- * com o site publico custa muito mais que uma tarja.
+ * Sao dois sinais porque cada um falha sozinho: a faixa some quando a aba esta em segundo plano, e
+ * o favicon fica. Confundir a homologacao com o site publico custa muito mais que uma tarja.
+ *
+ * O titulo nao leva o simbolo: ele aparece colado no favicon, que ja o carrega sobreposto, e o par
+ * repetido na mesma aba le como defeito em vez de aviso.
  */
 export function applyEnvironmentBadge(): void {
   const current = environment.VITE_APP_ENV;
   if (current === APP_ENVIRONMENT.PRODUCTION) return;
 
-  document.title = `${ENVIRONMENT_BADGE_EMOJI} ${document.title}`;
   void paintEnvironmentFavicon();
   mountBanner(ENVIRONMENT_BADGE_LABEL[current]);
 }

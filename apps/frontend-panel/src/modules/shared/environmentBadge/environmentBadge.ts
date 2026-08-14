@@ -20,10 +20,12 @@ const BANNER_ID = 'ada-environment-banner';
 /**
  * Marca a janela inteira quando o painel nao e o de producao.
  *
- * Sao tres sinais porque cada um falha sozinho: a faixa some quando a aba esta em segundo plano,
- * o titulo some quando ha abas demais para caber o texto, e o favicon fica. Quem faz suporte
- * alterna entre producao e homologacao o dia todo, e agir na base errada por confundir as abas
- * custa muito mais que uma tarja.
+ * Sao dois sinais porque cada um falha sozinho: a faixa some quando a aba esta em segundo plano, e
+ * o favicon fica. Quem faz suporte alterna entre producao e homologacao o dia todo, e agir na base
+ * errada por confundir as abas custa muito mais que uma tarja.
+ *
+ * O titulo nao leva o simbolo: ele aparece colado no favicon, que ja o carrega sobreposto, e o par
+ * repetido na mesma aba le como defeito em vez de aviso.
  */
 export function applyEnvironmentBadge(): void {
   const current = environment.VITE_APP_ENV;
@@ -31,7 +33,6 @@ export function applyEnvironmentBadge(): void {
 
   const label = sharedLocale.environmentBadge[current];
 
-  document.title = `${ENVIRONMENT_BADGE_EMOJI} ${document.title}`;
   void paintEnvironmentFavicon();
   mountBanner(label);
 }
