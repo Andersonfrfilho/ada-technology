@@ -64,6 +64,8 @@ const environmentSchema = z
     OBJECT_STORAGE_SECRET_ACCESS_KEY: z.string().default(''),
     OBJECT_STORAGE_BUCKET: z.string().default(''),
     OBJECT_STORAGE_PUBLIC_BASE_URL: z.string().default(''),
+    // O bucket do Railway serve por subdominio; o MinIO do compose, por caminho.
+    OBJECT_STORAGE_FORCE_PATH_STYLE: booleanFromString.default('true'),
 
     INTENT_CLASSIFIER_ENABLED: booleanFromString,
     GROQ_API_KEY: z.string().default(''),

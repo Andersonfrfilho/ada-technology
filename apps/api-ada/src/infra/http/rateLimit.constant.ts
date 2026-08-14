@@ -32,6 +32,10 @@ export const RATE_LIMIT = {
 
   // Login e a unica rota onde tentar de novo tem valor para quem ataca: dez chances por minuto
   // por IP tornam forca bruta inviavel sem atrapalhar quem so errou a senha.
+  // Imagem de catalogo e cacheavel e imutavel, e a Meta busca em rajada ao publicar um feed
+  // inteiro: apertar aqui quebraria a vitrine em vez de proteger alguma coisa.
+  PRODUCT_IMAGE_READ: { limit: 300, windowSeconds: ONE_MINUTE },
+
   PANEL_LOGIN: { limit: 10, windowSeconds: ONE_MINUTE },
   PANEL_REFRESH: { limit: 30, windowSeconds: ONE_MINUTE },
   PANEL_READ: { limit: 240, windowSeconds: ONE_MINUTE },

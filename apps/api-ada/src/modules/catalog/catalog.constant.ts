@@ -41,5 +41,17 @@ export const CATALOG_ADMIN_SCOPE = 'admin';
  */
 export const PRODUCT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
+/**
+ * Onde a imagem do produto e servida, e sob que prefixo ela vive no bucket.
+ *
+ * O prefixo espelha o que o `catalog-module` monta na chave: os dois precisam concordar, e
+ * declarar duas vezes os separaria. A rota e publica porque quem busca a imagem e a Meta, sem
+ * token nenhum — fica fora de `/v1/panel` de proposito.
+ */
+export const PRODUCT_IMAGE = {
+  PUBLIC_PATH: '/v1/catalog/images',
+  KEY_PREFIX: 'products',
+} as const;
+
 /** Config e rotas precisam concordar sobre o que e publicado; declarar duas vezes as separaria. */
 export const CATALOG_META_SYNC = { products: true, catalogs: true } as const;

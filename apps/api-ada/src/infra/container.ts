@@ -372,19 +372,27 @@ export const catalogMetaSync =
  * Bucket ausente e upload de imagem ausente: o modulo nao publica a rota e o painel nao desenha o
  * campo de arquivo — quem nao tem storage segue digitando a URL da imagem, como antes.
  */
-export const productImageStorage = environment.OBJECT_STORAGE_BUCKET
-  ? createS3ProductImageStorage({
+export const productImageBucket = environment.OBJECT_STORAGE_BUCKET
+  ? {
+      name: environment.OBJECT_STORAGE_BUCKET,
       storage: createObjectStorageProvider({
         endpoint: new URL(environment.OBJECT_STORAGE_ENDPOINT),
         region: environment.OBJECT_STORAGE_REGION,
         accessKeyId: environment.OBJECT_STORAGE_ACCESS_KEY_ID,
         secretAccessKey: environment.OBJECT_STORAGE_SECRET_ACCESS_KEY,
-        // MinIO e o bucket do Railway servem por caminho; o virtual-host exigiria DNS por bucket.
-        forcePathStyle: true,
+        // O MinIO local serve por caminho; o bucket do Railway, por subdominio. Quem sabe qual e o
+        // ambiente e o ambiente.
+        forcePathStyle: environment.OBJECT_STORAGE_FORCE_PATH_STYLE,
         healthCheckBucket: environment.OBJECT_STORAGE_BUCKET,
         maxObjectSizeBytes: PRODUCT_IMAGE_MAX_BYTES,
       }),
-      bucket: environment.OBJECT_STORAGE_BUCKET,
+    }
+  : undefined;
+
+export const productImageStorage = productImageBucket
+  ? createS3ProductImageStorage({
+      storage: productImageBucket.storage,
+      bucket: productImageBucket.name,
       publicBaseUrl: environment.OBJECT_STORAGE_PUBLIC_BASE_URL,
     })
   : undefined;

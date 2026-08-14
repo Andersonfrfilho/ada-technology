@@ -15,6 +15,7 @@ import { catalogModule } from '@/infra/container';
 import { agentRoutes } from '@/modules/agent/agent.controller';
 import { authenticateRequest } from '@/modules/agent/authenticateRequest';
 import { catalogRoutes } from '@/modules/catalog/catalog.controller';
+import { productImageRoutes } from '@/modules/catalog/productImage.controller';
 import { metaCatalogRoutes } from '@/modules/channel/meta/metaCatalog.controller';
 import { whatsappRoutes } from '@/modules/channel/whatsapp/whatsapp.controller';
 import { widgetRoutes } from '@/modules/channel/widget/widget.controller';
@@ -47,6 +48,7 @@ const routes: readonly Route[] = [
   ...panelSettingsRoutes,
   ...panelTemplateRoutes,
   ...catalogRoutes,
+  ...productImageRoutes,
 ];
 
 const handleRequest = createRouter({ routes, authenticate: authenticateRequest });
