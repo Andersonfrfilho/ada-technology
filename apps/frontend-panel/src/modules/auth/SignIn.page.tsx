@@ -23,10 +23,12 @@ export function SignInPage() {
   return (
     <main className="flex min-h-full items-center justify-center bg-brand-50 p-6">
       <section className="w-full max-w-md rounded-panel bg-white p-8 shadow-lg shadow-brand-900/5">
-        <img alt="" className="mb-4 size-12" src="/ada-icon-192.png" />
-        <p className="text-sm font-semibold tracking-widest text-brand-500 uppercase">{locale.brand}</p>
-        <h1 className="mt-2 text-2xl font-semibold text-brand-900">{locale.title}</h1>
-        <p className="mt-2 text-sm text-ink-500">{locale.subtitle}</p>
+        <header className="flex flex-col items-center text-center">
+          <img alt="" className="mb-4 size-12" src="/ada-icon-192.png" />
+          <p className="text-sm font-semibold tracking-widest text-brand-500 uppercase">{locale.brand}</p>
+          <h1 className="mt-2 text-2xl font-semibold text-brand-900">{locale.title}</h1>
+          <p className="mt-2 text-sm text-ink-500">{locale.subtitle}</p>
+        </header>
 
         <form className="mt-8" onSubmit={handleSubmit}>
           <div className="mb-5">

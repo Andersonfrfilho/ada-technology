@@ -43,7 +43,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@adatechnology/conversations-ui": "0.1.0-rc.33",
-        "@adatechnology/products-ui": "0.1.0-rc.10",
+        "@adatechnology/products-ui": "0.1.0-rc.11",
         "@tanstack/react-query": "^5.62.8",
         "@tanstack/react-router": "^1.95.1",
         "@xyflow/react": "^12.11.2",
@@ -116,7 +116,7 @@
 
     "@adatechnology/object-storage-provider": ["@adatechnology/object-storage-provider@0.2.0-rc.0", "", { "dependencies": { "@aws-sdk/client-s3": "3.1091.0", "@aws-sdk/s3-request-presigner": "3.1091.0" } }, "sha512-3CDCm21SHOhL3V6BmPA/wIlELU1UQyYEJfzLL+QsBnwkfi57CwVGHg9fwSsJK+/jwYMGaregdve0RAIzqaGsTQ=="],
 
-    "@adatechnology/products-ui": ["@adatechnology/products-ui@0.1.0-rc.10", "", { "dependencies": { "lucide-react": "^1.21.0" }, "peerDependencies": { "react": "^18 || ^19", "react-dom": "^18 || ^19" } }, "sha512-U8GBXdLXCAK3ZBvuPyuVDKehsl/S8/jDRJifPB14LNLl4o02ok2Aev84MY38Wmt3SwhW1YdW8yxX2WsCbwBi2A=="],
+    "@adatechnology/products-ui": ["@adatechnology/products-ui@0.1.0-rc.11", "", { "dependencies": { "lucide-react": "^1.21.0" }, "peerDependencies": { "react": "^18 || ^19", "react-dom": "^18 || ^19" } }, "sha512-ooEzuTewQooptFvYf0NGgmSBClMFjmK1buP2Ma+OyhNgRE/QDL4RC2KrFdY/O46z3gesXIf0fVM/8hTDIc4x+w=="],
 
     "@adatechnology/web-chat-widget": ["@adatechnology/web-chat-widget@0.1.0-rc.3", "", {}, "sha512-HX8CdlXG6XaOAXJK7LU/SlLxe3qOboI/zEZKC6kYt/YbgEZVzCNn1i4Nnqv2iLcqdojt07NH5Ohop/o9v9R77Q=="],
 
