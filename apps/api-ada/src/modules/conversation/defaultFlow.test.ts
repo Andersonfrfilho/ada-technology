@@ -72,6 +72,36 @@ describe('DEFAULT_FLOW_GRAPH', () => {
     }
   });
 
+  /**
+   * Destino de acao tambem e destino: `unavailableNext` e `retryNext` sao para onde a conversa vai
+   * quando nao ha horario ou a resposta nao casa, e apontar para um no inexistente termina o fluxo
+   * em silencio no meio do agendamento.
+   */
+  test('todo destino declarado em `actionParams` existe no grafo', () => {
+    const targets = Object.values(NODES).flatMap((node) =>
+      Object.values(node.actionParams ?? {}).filter((value): value is string => typeof value === 'string'),
+    );
+
+    expect(targets.length).toBeGreaterThan(0);
+    expect(targets.filter((target) => !NODES[target])).toEqual([]);
+  });
+
+  /**
+   * O no que recolhe a escolha da agenda nao fala.
+   *
+   * A lista interativa ja foi enviada pela acao anterior, com o proprio texto no corpo; declarar
+   * `question` aqui mandaria a mesma frase duas vezes seguidas.
+   */
+  test('a pergunta depois de uma listagem dinamica nao repete o texto', () => {
+    const afterAction = Object.values(NODES)
+      .filter((node) => node.type === 'action' && typeof node.next === 'string')
+      .map((node) => NODES[node.next as string])
+      .filter((node): node is FlowNodeData => Boolean(node));
+
+    expect(afterAction.length).toBeGreaterThan(0);
+    expect(afterAction.every((node) => !node.question && !node.label)).toBe(true);
+  });
+
   /** Fim de conversa e handoff ou nada: no sem saida deixa o cliente falando sozinho. */
   test('todo caminho termina em handoff', () => {
     const leaves = Object.values(NODES).filter((node) => targetsOf(node).length === 0);

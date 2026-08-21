@@ -33,6 +33,16 @@ nasce `false`.
 - sem grafo, sem nó, resposta inválida repetida ou ação de fluxo pedindo gente → handoff;
 - caso contrário apresenta o próximo nó pelo `ChannelAdapterInterface` recebido.
 
+Agendar pelo bot são três ações de fluxo, e não nós de escolha: quem atende e quais horários sobraram
+só se sabe no meio da conversa, e `options` no grafo é estático. `list_schedule_agents` monta a lista
+de quem tem faixa semanal cadastrada, `list_available_slots` a dos horários livres da pessoa
+escolhida, e `book_appointment` reserva chamando `BookAppointmentUseCase` **em processo** — não existe
+rota HTTP pública de reserva, que seria porta anônima para ocupar a agenda inteira do time. Cada ação
+guarda no contexto o que ofereceu (`scheduleAgentOptions`, `scheduleSlotOptions`) e a seguinte só
+aceita resposta que esteja nessa lista; o nó de pergunta entre elas não declara `question`, porque o
+texto já foi o corpo da lista interativa. Sem agenda ligada, sem ninguém com faixa ou sem horário
+livre, o caminho é `actionParams.unavailableNext` — chamar uma pessoa, nunca deixar a conversa parada.
+
 Comandos globais (`conversationCommand.resolver.ts`) valem em qualquer nó, sem estarem desenhados no
 grafo: `sair` e sinônimos encerram com a `farewellMessage` do painel e zeram a posição — a próxima
 mensagem recomeça do menu; `menu`/`voltar` voltam ao nó inicial; `atendente`/`humano` chamam uma

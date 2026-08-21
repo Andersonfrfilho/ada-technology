@@ -6,6 +6,11 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import type { FlowActionRegistry } from '@adatechnology/meta-whatsapp-contracts';
+
+import type { BookAppointmentUseCase } from '@/modules/scheduling/bookAppointment.use-case';
+import type { ListAvailableSlotsUseCase } from '@/modules/scheduling/listAvailableSlots.use-case';
+import type { ListSchedulableAgentsUseCase } from '@/modules/scheduling/listSchedulableAgents.use-case';
 import type { AppointmentStatus } from '@/modules/scheduling/scheduling.constant';
 import type { ConversationChannel } from '@/shared/constants/domain.constant';
 
@@ -109,4 +114,18 @@ export type SchedulingRepositoryInterface = {
   findById(appointmentId: string): Promise<Appointment | undefined>;
   cancel(appointmentId: string): Promise<void>;
   list(filters: ListAppointmentsFilters): Promise<readonly Appointment[]>;
+};
+
+/** O minimo para oferecer alguem numa lista de escolha: id estavel e nome para o cliente ler. */
+export type SchedulableAgent = {
+  readonly id: string;
+  readonly name: string;
+};
+
+export type RegisterSchedulingFlowActionsParams = {
+  readonly registry: FlowActionRegistry;
+  readonly repository: SchedulingRepositoryInterface;
+  readonly listSchedulableAgents: ListSchedulableAgentsUseCase;
+  readonly listAvailableSlots: ListAvailableSlotsUseCase;
+  readonly bookAppointment: BookAppointmentUseCase;
 };

@@ -37,3 +37,55 @@ export const SCHEDULE_SETTINGS_LIMIT = {
   MINIMUM_NOTICE_MINUTES: { min: 0, max: MINUTES_IN_DAY * 7 },
   HORIZON_DAYS: { min: 1, max: 180 },
 } as const;
+
+/**
+ * Os tipos de acao que o grafo pode declarar para agendar.
+ *
+ * `FlowActionKind` e string no contrato do pacote, entao um tipo novo nasce aqui e nao numa
+ * release de `@adatechnology/meta-whatsapp-contracts`.
+ */
+export const SCHEDULING_FLOW_ACTION_KIND = {
+  LIST_AGENTS: 'list_schedule_agents',
+  LIST_SLOTS: 'list_available_slots',
+  BOOK: 'book_appointment',
+} as const;
+
+/**
+ * O que a escolha dinamica deixa no contexto da sessao.
+ *
+ * A lista de pessoas e a de horarios sao montadas na hora, entao o no de pergunta seguinte nao tem
+ * `options` — e sem as opcoes oferecidas guardadas, "2" ou o nome digitado nao teriam contra o que
+ * casar. Sao ids e instantes, nunca dado pessoal do cliente.
+ */
+export const SCHEDULING_CONTEXT_KEY = {
+  AGENT_ID: 'scheduleAgentId',
+  AGENT_OPTIONS: 'scheduleAgentOptions',
+  SLOT: 'scheduleSlot',
+  SLOT_OPTIONS: 'scheduleSlotOptions',
+} as const;
+
+/** Para onde a acao manda a conversa quando nao ha o que oferecer, declarado pelo grafo. */
+export const SCHEDULING_FLOW_PARAM = {
+  UNAVAILABLE_NEXT: 'unavailableNext',
+  RETRY_NEXT: 'retryNext',
+} as const;
+
+/**
+ * Sem destino declarado a conversa termina aqui.
+ *
+ * `moveTo` trata destino vazio como fim de fluxo; devolver `undefined` faria o interpretador cair
+ * no `next` do no, que e justamente o caminho feliz que nao pode ser seguido.
+ */
+export const SCHEDULING_FLOW_TERMINAL = '';
+
+export const SCHEDULING_FLOW_MESSAGE = {
+  AGENTS_QUESTION: 'Com quem você quer falar? 🗓️',
+  AGENTS_BUTTON: 'Ver quem atende',
+  SLOTS_QUESTION: 'Estes são os horários livres:',
+  SLOTS_BUTTON: 'Ver horários',
+  NO_AGENTS: 'A agenda ainda não está aberta por aqui — vou chamar alguém do time. 🙋',
+  NO_SLOTS: 'Não encontrei horário livre nos próximos dias. Vou chamar alguém do time. 🙋',
+  NOT_UNDERSTOOD: 'Não achei essa opção 😅 — toque em uma das que eu listei.',
+  TAKEN: 'Esse horário acabou de ser preenchido 😕 — escolha outro na lista.',
+  BOOKED: 'Prontinho! ✅ Agendamos para',
+} as const;

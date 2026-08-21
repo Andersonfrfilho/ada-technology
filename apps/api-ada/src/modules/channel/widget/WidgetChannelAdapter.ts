@@ -30,6 +30,15 @@ import {
  * Meta, que nao existe em conversa de site.
  */
 export class WidgetChannelAdapter implements ChannelAdapterInterface {
+  /**
+   * De onde a conversa veio, para quem grava o registro.
+   *
+   * O contrato do adapter nao declara canal — ele so sabe entregar mensagem. Quem persiste um
+   * agendamento precisa da origem, e adivinha-la por `instanceof` acoplaria o modulo de agenda a
+   * esta classe.
+   */
+  readonly channelKind = CONVERSATION_CHANNEL.WIDGET;
+
   constructor(private readonly dependencies: WidgetChannelAdapterDependencies) {}
 
   async sendText(to: string, body: string): Promise<{ externalMessageId: string | null }> {

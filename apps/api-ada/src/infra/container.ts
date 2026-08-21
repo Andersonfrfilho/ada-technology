@@ -65,6 +65,8 @@ import { BookAppointmentUseCase } from '@/modules/scheduling/bookAppointment.use
 import { CancelAppointmentUseCase } from '@/modules/scheduling/cancelAppointment.use-case';
 import { DrizzleSchedulingRepository } from '@/modules/scheduling/DrizzleSchedulingRepository';
 import { ListAvailableSlotsUseCase } from '@/modules/scheduling/listAvailableSlots.use-case';
+import { ListSchedulableAgentsUseCase } from '@/modules/scheduling/listSchedulableAgents.use-case';
+import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
 import { SaveScheduleUseCase } from '@/modules/scheduling/saveSchedule.use-case';
 import { ExportConversationTranscriptUseCase } from '@/modules/panel/exportConversationTranscript.use-case';
 import { RedisRealtimeTicketStore } from '@/modules/panel/RedisRealtimeTicketStore';
@@ -297,6 +299,18 @@ export const listAvailableSlots = new ListAvailableSlotsUseCase(schedulingReposi
 export const bookAppointment = new BookAppointmentUseCase(schedulingRepository, listAvailableSlots);
 export const cancelAppointment = new CancelAppointmentUseCase(schedulingRepository);
 export const saveSchedule = new SaveScheduleUseCase(schedulingRepository, recordAuditLog);
+export const listSchedulableAgents = new ListSchedulableAgentsUseCase(
+  agentRepository,
+  schedulingRepository,
+);
+
+registerSchedulingFlowActions({
+  registry: flows.interpreter,
+  repository: schedulingRepository,
+  listSchedulableAgents,
+  listAvailableSlots,
+  bookAppointment,
+});
 export const realtimeTickets = new RedisRealtimeTicketStore();
 
 export const resolvePanelConversation = new ResolveConversationUseCase({

@@ -23,9 +23,14 @@ const MILLISECONDS_IN_DAY = 24 * 60 * 60 * 1000;
  * por trinta para devolver a mesma lista.
  */
 export class ListAvailableSlotsUseCase {
-  constructor(private readonly repository: SchedulingRepositoryInterface) {}
+  /** O relogio entra pelo construtor pelo mesmo motivo de `BookAppointmentUseCase`: hora vinda de
+   * fora escolheria que dia consultar. */
+  constructor(
+    private readonly repository: SchedulingRepositoryInterface,
+    private readonly clock: () => Date = () => new Date(),
+  ) {}
 
-  async execute({ agentIds, now = new Date() }: ListSlotsParams): Promise<readonly AvailableSlot[]> {
+  async execute({ agentIds, now = this.clock() }: ListSlotsParams): Promise<readonly AvailableSlot[]> {
     const settings = await this.repository.getSettings();
     if (!settings.isEnabled) throw new SchedulingDisabledError();
     if (agentIds.length === 0) return [];

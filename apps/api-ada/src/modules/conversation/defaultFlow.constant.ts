@@ -9,6 +9,11 @@
 import { FLOW_ACTION_KIND, type FlowGraphData } from '@adatechnology/meta-whatsapp-contracts';
 
 import { DEFAULT_FLOW_KEY } from '@/modules/conversation/conversation.constant';
+import {
+  SCHEDULING_CONTEXT_KEY,
+  SCHEDULING_FLOW_ACTION_KIND,
+  SCHEDULING_FLOW_PARAM,
+} from '@/modules/scheduling/scheduling.constant';
 import { LEAD_CONTEXT_KEY } from '@/shared/constants/domain.constant';
 
 /**
@@ -28,6 +33,11 @@ const NODE_ID = {
   CONTATO: 'pergunta_contato',
   EMAIL: 'pergunta_email',
   HANDOFF: 'acao_handoff',
+  AGENDA_PESSOAS: 'acao_agenda_pessoas',
+  AGENDA_PESSOA: 'pergunta_agenda_pessoa',
+  AGENDA_HORARIOS: 'acao_agenda_horarios',
+  AGENDA_HORARIO: 'pergunta_agenda_horario',
+  AGENDA_RESERVA: 'acao_agenda_reserva',
 } as const;
 
 const OPTION_ID = {
@@ -36,6 +46,7 @@ const OPTION_ID = {
   INTEGRACOES: 'integracoes',
   PESSOA: 'pessoa',
   FALAR: 'falar',
+  AGENDAR: 'agendar',
   VOLTAR: 'voltar',
 } as const;
 
@@ -51,12 +62,17 @@ const CONTINUE_QUESTION = 'Quer falar com alguém do time sobre isso?';
  */
 const CONTINUE_OPTIONS: [string, string][] = [
   [OPTION_ID.FALAR, '✅ Sim, quero falar'],
+  [OPTION_ID.AGENDAR, '📅 Agendar horário'],
   [OPTION_ID.VOLTAR, '🔙 Ver outra opção'],
 ];
 
 // O nome ja foi perguntado na abertura: daqui o que falta e o contato para retorno.
 const CONTINUE_NEXT = {
-  byAnswer: { [OPTION_ID.FALAR]: NODE_ID.CONTATO, [OPTION_ID.VOLTAR]: NODE_ID.MENU },
+  byAnswer: {
+    [OPTION_ID.FALAR]: NODE_ID.CONTATO,
+    [OPTION_ID.AGENDAR]: NODE_ID.AGENDA_PESSOAS,
+    [OPTION_ID.VOLTAR]: NODE_ID.MENU,
+  },
   default: NODE_ID.HANDOFF,
 } as const;
 
@@ -100,6 +116,7 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
         [OPTION_ID.DADOS, '📊 Dashboards e dados'],
         [OPTION_ID.INTEGRACOES, '🔗 Automações e APIs'],
         [OPTION_ID.PESSOA, '🙋 Falar com o time'],
+        [OPTION_ID.AGENDAR, '📅 Agendar horário'],
       ],
       next: {
         byAnswer: {
@@ -108,6 +125,7 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
           [OPTION_ID.INTEGRACOES]: NODE_ID.INTEGRACOES,
           // Quem pede uma pessoa no menu tambem esta aceitando falar: passa pelo contato antes.
           [OPTION_ID.PESSOA]: NODE_ID.CONTATO,
+          [OPTION_ID.AGENDAR]: NODE_ID.AGENDA_PESSOAS,
         },
         default: NODE_ID.HANDOFF,
       },
@@ -187,6 +205,61 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
       id: NODE_ID.HANDOFF,
       type: 'action',
       actionKind: FLOW_ACTION_KIND.HANDOFF,
+    },
+
+    /**
+     * Agendar e uma acao, e nao um no de escolha, porque a lista e dinamica.
+     *
+     * Quem atende e quais horarios sobraram so se sabe no meio da conversa: `options` no grafo e
+     * estatico, entao a acao monta e envia a lista, e o no de pergunta seguinte apenas recolhe a
+     * resposta — por isso ele nao declara `question`, ou o cliente leria a mesma frase duas vezes.
+     *
+     * Sem agenda configurada, sem ninguem com faixa cadastrada ou sem horario livre, o caminho e
+     * `unavailableNext`: chamar uma pessoa, nunca deixar a conversa parada num menu vazio.
+     */
+    [NODE_ID.AGENDA_PESSOAS]: {
+      id: NODE_ID.AGENDA_PESSOAS,
+      type: 'action',
+      actionKind: SCHEDULING_FLOW_ACTION_KIND.LIST_AGENTS,
+      actionParams: { [SCHEDULING_FLOW_PARAM.UNAVAILABLE_NEXT]: NODE_ID.HANDOFF },
+      next: NODE_ID.AGENDA_PESSOA,
+    },
+
+    [NODE_ID.AGENDA_PESSOA]: {
+      id: NODE_ID.AGENDA_PESSOA,
+      type: 'question',
+      questionType: 'text',
+      contextKey: SCHEDULING_CONTEXT_KEY.AGENT_ID,
+      fallbackMessage: CHOICE_FALLBACK,
+      next: NODE_ID.AGENDA_HORARIOS,
+    },
+
+    [NODE_ID.AGENDA_HORARIOS]: {
+      id: NODE_ID.AGENDA_HORARIOS,
+      type: 'action',
+      actionKind: SCHEDULING_FLOW_ACTION_KIND.LIST_SLOTS,
+      actionParams: {
+        [SCHEDULING_FLOW_PARAM.UNAVAILABLE_NEXT]: NODE_ID.HANDOFF,
+        [SCHEDULING_FLOW_PARAM.RETRY_NEXT]: NODE_ID.AGENDA_PESSOAS,
+      },
+      next: NODE_ID.AGENDA_HORARIO,
+    },
+
+    [NODE_ID.AGENDA_HORARIO]: {
+      id: NODE_ID.AGENDA_HORARIO,
+      type: 'question',
+      questionType: 'text',
+      contextKey: SCHEDULING_CONTEXT_KEY.SLOT,
+      fallbackMessage: CHOICE_FALLBACK,
+      next: NODE_ID.AGENDA_RESERVA,
+    },
+
+    /** Reservado, a conversa termina: quem marcou hora nao precisa de mais menu. */
+    [NODE_ID.AGENDA_RESERVA]: {
+      id: NODE_ID.AGENDA_RESERVA,
+      type: 'action',
+      actionKind: SCHEDULING_FLOW_ACTION_KIND.BOOK,
+      actionParams: { [SCHEDULING_FLOW_PARAM.RETRY_NEXT]: NODE_ID.AGENDA_HORARIOS },
     },
   },
 };
