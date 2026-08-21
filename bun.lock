@@ -13,6 +13,7 @@
       "name": "@ada/api",
       "version": "0.0.1",
       "dependencies": {
+        "@ada/user-sdk": "workspace:*",
         "@adatechnology/audio-transcription-provider": "^0.1.0-rc.1",
         "@adatechnology/catalog-contracts": "0.1.0-rc.2",
         "@adatechnology/catalog-image-storage-provider": "0.1.0-rc.0",
@@ -42,6 +43,7 @@
       "name": "@ada/frontend-panel",
       "version": "0.0.1",
       "dependencies": {
+        "@ada/user-sdk": "workspace:*",
         "@adatechnology/conversations-ui": "0.1.0-rc.35",
         "@adatechnology/products-ui": "0.1.0-rc.12",
         "@tanstack/react-query": "^5.62.8",
@@ -83,6 +85,17 @@
         "vite": "^6.0.0",
       },
     },
+    "packages/user-sdk": {
+      "name": "@ada/user-sdk",
+      "version": "0.0.1",
+      "dependencies": {
+        "zod": "^3.24.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.3",
+      },
+    },
   },
   "packages": {
     "@ada/api": ["@ada/api@workspace:apps/api-ada"],
@@ -90,6 +103,8 @@
     "@ada/frontend-panel": ["@ada/frontend-panel@workspace:apps/frontend-panel"],
 
     "@ada/frontend-site": ["@ada/frontend-site@workspace:apps/frontend-site"],
+
+    "@ada/user-sdk": ["@ada/user-sdk@workspace:packages/user-sdk"],
 
     "@adatechnology/audio-transcription-provider": ["@adatechnology/audio-transcription-provider@0.1.0-rc.1", "", {}, "sha512-v46OyWwj/H5gGdhYixiA43faXpihDpYtCVizVmTcejOGdSu6eMS3zmWI1zdyVvwi+BjHVHBz3jU5C31lcJGiKQ=="],
 
@@ -1201,7 +1216,13 @@
 
     "zustand": ["zustand@5.0.14", "", { "peerDependencies": { "@types/react": ">=18.0.0", "immer": ">=9.0.6", "react": ">=18.0.0", "use-sync-external-store": ">=1.2.0" }, "optionalPeers": ["@types/react", "immer", "react", "use-sync-external-store"] }, "sha512-/8tAspM5LMPr28b3fwLYrtdj77ECpfZviaP75CMTnwO8ISyaE4GDIG/9rDDYq/cH9D2Xw2A2RXglLInmVBQB/g=="],
 
+    "@ada/api/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
+
+    "@ada/frontend-panel/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
+
     "@ada/frontend-site/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
+
+    "@ada/user-sdk/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
 
     "@adatechnology/meta-catalog-provider/@adatechnology/meta-graph-core": ["@adatechnology/meta-graph-core@0.2.0-rc.2", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-IW2EeIBAFTflhOCiePp2LlrhLsA/2bW76ZUD8G0HSHbh0VFVLQnCXLrEiSiV3KFmNgyyQSn3PkGbCFnUnYoYpA=="],
 
@@ -1235,7 +1256,13 @@
 
     "workbox-build/pretty-bytes": ["pretty-bytes@5.6.0", "", {}, "sha512-FFw039TmrBqFK8ma/7OL3sDz/VytdtJr044/QUJtH0wK9lb9jLq9tJyIxUwtQJHwar2BqtiA4iCWSwo9JLkzFg=="],
 
+    "@ada/api/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
+
+    "@ada/frontend-panel/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
+
     "@ada/frontend-site/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
+
+    "@ada/user-sdk/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 
     "@esbuild-kit/core-utils/esbuild/@esbuild/android-arm": ["@esbuild/android-arm@0.18.20", "", { "os": "android", "cpu": "arm" }, "sha512-fyi7TDI/ijKKNZTUJAQqiG5T7YjJXgnzkURqmGj13C6dCqckZBLdl4h7bkhHt/t0WP+zO9/zwroDvANaOqO5Sw=="],
 

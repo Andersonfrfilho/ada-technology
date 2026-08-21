@@ -4,16 +4,19 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "typecheck": "bun run typecheck:scripts && bun run typecheck:api && bun run typecheck:panel && bun run typecheck:site",
+    "typecheck": "bun run typecheck:scripts && bun run typecheck:user-sdk && bun run typecheck:api && bun run typecheck:panel && bun run typecheck:site",
     "typecheck:scripts": "tsc --noEmit -p scripts",
+    "typecheck:user-sdk": "cd packages/user-sdk && bun run typecheck",
     "typecheck:api": "cd apps/api-ada && bun run typecheck",
     "typecheck:panel": "cd apps/frontend-panel && bun run typecheck",
     "typecheck:site": "cd apps/frontend-site && bun run typecheck",
-    "test": "bun run test:scripts && bun run test:api && bun run test:panel",
+    "test": "bun run test:scripts && bun run test:user-sdk && bun run test:api && bun run test:panel",
     "test:scripts": "bun test scripts",
+    "test:user-sdk": "cd packages/user-sdk && bun run test",
     "test:api": "cd apps/api-ada && bun run test",
     "test:panel": "cd apps/frontend-panel && bun run test"
   },

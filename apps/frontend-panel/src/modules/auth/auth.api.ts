@@ -6,7 +6,9 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import { AUTH_PATH, HTTP_METHOD } from '@/modules/shared/http/http.constant';
+import { AUTH_ROUTE } from '@ada/user-sdk';
+
+import { HTTP_METHOD } from '@/modules/shared/http/http.constant';
 import { panelRequest } from '@/modules/shared/http/panelHttpClient';
 import type { PanelSession } from '@/modules/shared/session/types/session.types';
 
@@ -17,14 +19,14 @@ export type SignInParams = {
 
 export async function signInAgent({ email, password }: SignInParams): Promise<PanelSession> {
   return panelRequest<PanelSession>({
-    path: AUTH_PATH.LOGIN,
+    path: AUTH_ROUTE.LOGIN,
     method: HTTP_METHOD.POST,
     body: { email, password },
   });
 }
 
 export async function signOutAgent(): Promise<void> {
-  await panelRequest<void>({ path: AUTH_PATH.LOGOUT, method: HTTP_METHOD.POST });
+  await panelRequest<void>({ path: AUTH_ROUTE.LOGOUT, method: HTTP_METHOD.POST });
 }
 
 /**
@@ -34,5 +36,5 @@ export async function signOutAgent(): Promise<void> {
  * de saber se ainda ha sessao, porque o cookie e `HttpOnly` e a pagina nao consegue olhar para ele.
  */
 export async function restoreSession(): Promise<PanelSession> {
-  return panelRequest<PanelSession>({ path: AUTH_PATH.REFRESH, method: HTTP_METHOD.POST });
+  return panelRequest<PanelSession>({ path: AUTH_ROUTE.REFRESH, method: HTTP_METHOD.POST });
 }

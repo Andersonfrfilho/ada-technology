@@ -6,7 +6,7 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import { eq, sql } from 'drizzle-orm';
+import { asc, eq, sql } from 'drizzle-orm';
 
 import { database } from '@/infra/database/client';
 import { agents } from '@/infra/database/schema';
@@ -55,6 +55,27 @@ export class DrizzleAgentRepository implements AgentRepositoryInterface {
     if (!row?.isActive) return undefined;
 
     return { id: row.id, email: row.email, name: row.name, role: row.role as AgentRole };
+  }
+
+  /**
+   * Quem pode receber atendimento e aparecer numa agenda.
+   *
+   * Sem senha e sem `lastSeenAt`: a lista existe para montar grade de horario e escolher titular,
+   * nao para inspecionar conta de colega.
+   */
+  async listActive(): Promise<readonly AgentProfile[]> {
+    const rows = await database
+      .select({
+        id: agents.id,
+        email: agents.email,
+        name: agents.name,
+        role: agents.role,
+      })
+      .from(agents)
+      .where(eq(agents.isActive, true))
+      .orderBy(asc(agents.name));
+
+    return rows.map((row) => ({ ...row, role: row.role as AgentRole }));
   }
 
   async create(record: CreateAgentRecord): Promise<AgentProfile> {

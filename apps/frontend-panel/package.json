@@ -12,6 +12,7 @@
     "copy:ort": "bash scripts/copy-ort-runtime.sh"
   },
   "dependencies": {
+    "@ada/user-sdk": "workspace:*",
     "@adatechnology/conversations-ui": "0.1.0-rc.35",
     "@adatechnology/products-ui": "0.1.0-rc.12",
     "@tanstack/react-query": "^5.62.8",

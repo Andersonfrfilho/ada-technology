@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ada/user-sdk": "workspace:*",
     "@adatechnology/audio-transcription-provider": "^0.1.0-rc.1",
     "@adatechnology/catalog-contracts": "0.1.0-rc.2",
     "@adatechnology/catalog-image-storage-provider": "0.1.0-rc.0",

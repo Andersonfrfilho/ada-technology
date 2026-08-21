@@ -6,20 +6,15 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-export type AgentProfile = {
-  readonly id: string;
-  readonly email: string;
-  readonly name: string;
-  readonly role: string;
-};
+import type { SessionStatus as UserSessionStatus, UserProfile, UserSession } from '@ada/user-sdk';
 
-export type PanelSession = {
-  readonly accessToken: string;
-  readonly expiresInSeconds: number;
-  readonly agent: AgentProfile;
-};
+/** Alias de `UserProfile` do `@ada/user-sdk` — mesmo shape, nome do dominio local. */
+export type AgentProfile = UserProfile;
 
-export type SessionStatus = 'unknown' | 'anonymous' | 'authenticated';
+/** Alias de `UserSession` do `@ada/user-sdk` — mesmo shape que o JSON de `/v1/auth/*` devolve. */
+export type PanelSession = UserSession;
+
+export type SessionStatus = UserSessionStatus;
 
 /** `| undefined` explicito: `exactOptionalPropertyTypes` separa chave ausente de chave zerada, e o
  * logout precisa da segunda forma para apagar o que ja estava la. */

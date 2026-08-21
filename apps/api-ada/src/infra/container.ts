@@ -6,6 +6,12 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import {
+  authProvidersConfigSchema,
+  buildLocalOnlyAuthProvidersConfig,
+  type AuthProviderInterface,
+  type LocalCredentials,
+} from '@ada/user-sdk';
 import type { LoggerPort as CatalogLoggerPort } from '@adatechnology/catalog-contracts';
 import { createS3ProductImageStorage } from '@adatechnology/catalog-image-storage-provider';
 import { createCatalogModule } from '@adatechnology/catalog-module';
@@ -23,6 +29,7 @@ import { database } from '@/infra/database/client';
 import { RedisRelay } from '@/infra/realtime/RedisRelay';
 import { AuthenticateAgentUseCase } from '@/modules/agent/authenticateAgent.use-case';
 import { DrizzleAgentRepository } from '@/modules/agent/DrizzleAgentRepository';
+import { createLocalAgentAuthProvider } from '@/modules/agent/localAuthProvider';
 import { RedisRefreshTokenStore } from '@/modules/agent/RedisRefreshTokenStore';
 import { RefreshAgentSessionUseCase } from '@/modules/agent/refreshAgentSession.use-case';
 import { SignOutAgentUseCase } from '@/modules/agent/signOutAgent.use-case';
@@ -267,6 +274,20 @@ export const refreshAgentSession = new RefreshAgentSessionUseCase({
 
 export const signOutAgent = new SignOutAgentUseCase({ refreshTokens, recordAudit: recordAuditLog });
 
+/**
+ * Config validada do `@ada/user-sdk`, hoje so com o provedor local — ponto de extensao para quando
+ * um segundo provedor (OAuth2/OIDC) for implementado.
+ */
+export const authProvidersConfig = authProvidersConfigSchema.parse(buildLocalOnlyAuthProvidersConfig());
+
+/**
+ * Mapa aditivo de provedores de auth. Os handlers de `agent.controller.ts` continuam chamando
+ * `authenticateAgent` diretamente — nada no login em producao passa por aqui nesta entrega.
+ */
+export const authProviders: ReadonlyMap<string, AuthProviderInterface<LocalCredentials>> = new Map([
+  ['local', createLocalAgentAuthProvider(authenticateAgent)],
+]);
+
 export const panelConversations = new DrizzlePanelConversationRepository();
 export const transcriptMessages = new DrizzleTranscriptRepository();
 export const panelLeads = new DrizzlePanelLeadRepository();
@@ -459,6 +480,8 @@ export const container = {
   authenticateAgent,
   refreshAgentSession,
   signOutAgent,
+  authProvidersConfig,
+  authProviders,
   widgetChannel,
   transcribedWhatsAppChannel,
   advanceConversation,

@@ -6,8 +6,10 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import { AUTH_ROUTE } from '@ada/user-sdk';
+
 import { environment } from '@/modules/shared/config/environment';
-import { AUTH_PATH, HTTP_METHOD, HTTP_STATUS, type HttpMethod } from '@/modules/shared/http/http.constant';
+import { HTTP_METHOD, HTTP_STATUS, type HttpMethod } from '@/modules/shared/http/http.constant';
 import { PanelApiError, toNetworkError } from '@/modules/shared/http/http.error';
 import { useSessionStore } from '@/modules/shared/session/session.store';
 import type { PanelSession } from '@/modules/shared/session/types/session.types';
@@ -125,7 +127,7 @@ async function refreshSession(): Promise<boolean> {
 async function rotateSession(): Promise<boolean> {
   const response = await (async () => {
     try {
-      return await fetch(buildUrl(AUTH_PATH.REFRESH), {
+      return await fetch(buildUrl(AUTH_ROUTE.REFRESH), {
         method: HTTP_METHOD.POST,
         credentials: 'include',
       });

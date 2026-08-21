@@ -14,6 +14,12 @@ arquivo no mesmo commit.
 Stack: Bun + TypeScript, PostgreSQL + Drizzle, Redis (cache, nonce, pub/sub de tempo real),
 `@adatechnology/meta-whatsapp-module` como motor de conversa (ver `docs/adr/0001`).
 
+## Packages
+
+| Package | Papel |
+|---|---|
+| `packages/user-sdk` (`@ada/user-sdk`) | Contratos de usuário/autenticação compartilhados entre `api-ada` e `frontend-panel` (`UserProfile`, `UserSession`, `localCredentialsSchema`, `USER_ERROR_CODE`, `AUTH_ROUTE`) e ponto de extensão tipado para provedores de auth (`AuthProviderInterface`, mapeamento de atributos). Só o provedor local está implementado; nenhum OAuth/OIDC/SSO real existe ainda. |
+
 ## Como o bot funciona
 
 O grafo de fluxo do módulo é o cérebro. **Nada gera texto para o cliente:** o que o grafo não previu
@@ -99,6 +105,7 @@ headers de segurança e `X-Trace-Id`. Rate limit por IP declarado na própria ro
 | `PUT` | `/v1/panel/bot-messages` | 🔒 `agent`. Auditado (`settings.changed`). |
 | `GET` | `/v1/panel/template-settings` | 🔒 `agent`. Template de reengajamento escolhido. |
 | `PUT` | `/v1/panel/template-settings` | 🔒 `agent`. Auditado (`settings.changed`). |
+| `GET` | `/v1/panel/agents` | 🔒 `agent`. Atendentes ativos (id, nome, papel) para montar a grade da agenda. |
 | `GET` | `/v1/panel/schedule` | 🔒 `agent`. Configuração da agenda e a grade semanal por atendente. |
 | `PUT` | `/v1/panel/schedule` | 🔒 `admin`. Salva as duas de uma vez. Auditado (`schedule.changed`). |
 | `GET` | `/v1/panel/schedule/slots` | 🔒 `agent`. `?agentId=a,b` — horários livres para **todos** os selecionados. `422` com a agenda desligada. |
@@ -147,6 +154,15 @@ porta, não o cadeado — quem mexe em recurso de terceiro ainda confere o dono 
 Primeiro administrador: `bun run db:seed --email <e-mail> --name "<nome>"` com a senha pela **entrada
 padrão** (argumento apareceria em `ps` e no histórico). Repetir o seed não quebra: e-mail já existente
 é ignorado.
+
+- **Tipos e schema de login** (`AgentProfile`, `AgentSessionResult`, `agentLoginSchema`) vêm de
+  `@ada/user-sdk` (`packages/user-sdk`), o mesmo pacote que o `frontend-panel` consome — um único
+  lugar define o shape do perfil e as regras de senha para os dois lados.
+- **Provedor de auth**: `container.ts` registra um mapa `authProviders` (hoje só `local`, via
+  `localAuthProvider.ts`) implementando `AuthProviderInterface` do SDK. Os handlers de
+  `agent.controller.ts` ainda chamam os use-cases (`authenticateAgent`, `refreshAgentSession`,
+  `signOutAgent`) diretamente — o mapa é o ponto de extensão para um segundo provedor, não está no
+  caminho de execução das rotas ainda.
 
 ### Regras não óbvias das rotas do widget
 
@@ -216,6 +232,7 @@ de carregamento aparece clara antes de a aplicação montar.
 | Seção | Tela | Nota |
 |---|---|---|
 | Conversas | `ConversationsWorkspace` | Inbox + transcript + takeover. |
+| Agenda | `Schedule.page` | Configuração do agendamento, grade semanal por atendente e lista de agendamentos. O `PUT` é 🔒 `admin`; a grade é salva inteira de uma vez, para não publicar estado intermediário. Hora exibida no fuso da agenda, nunca no do navegador. |
 | Fluxos | `Flows.page` | Editor do grafo do bot. |
 | Mensagens | `MessagesWorkspace` | Só `getMessages`/`saveMessages`; sem tópicos, templates nem transcrição a tela colapsa na aba do bot e some a barra de abas. |
 | Templates | `WhatsAppTemplatesSettings` | Componente é presentacional — todo o estado vive em `templateSettings.hook.ts`. |

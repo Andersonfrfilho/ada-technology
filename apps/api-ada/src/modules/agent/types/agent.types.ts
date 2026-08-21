@@ -6,6 +6,8 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import type { UserProfile, UserSession } from '@ada/user-sdk';
+
 import type { RecordAuditLogParams } from '@/modules/audit/types/audit.types';
 import type { AgentRole } from '@/shared/constants/domain.constant';
 
@@ -20,12 +22,8 @@ export type AuthenticatedAgent = {
   readonly role: AgentRole;
 };
 
-export type AgentProfile = {
-  readonly id: string;
-  readonly email: string;
-  readonly name: string;
-  readonly role: AgentRole;
-};
+/** Alias de `UserProfile` do `@ada/user-sdk` — mesmo shape, nome do dominio local. */
+export type AgentProfile = UserProfile;
 
 export type AgentCredentials = AgentProfile & {
   readonly passwordHash: string;
@@ -42,6 +40,7 @@ export type CreateAgentRecord = {
 export type AgentRepositoryInterface = {
   findByEmail(email: string): Promise<AgentCredentials | undefined>;
   findById(agentId: string): Promise<AgentProfile | undefined>;
+  listActive(): Promise<readonly AgentProfile[]>;
   touchLastSeen(agentId: string): Promise<void>;
   create(record: CreateAgentRecord): Promise<AgentProfile>;
 };
@@ -84,12 +83,14 @@ export type AuthenticateAgentParams = {
   readonly ipAddress: string;
 };
 
-export type AgentSessionResult = {
-  readonly accessToken: string;
-  readonly expiresInSeconds: number;
+/**
+ * `UserSession` do SDK e o shape que o JSON de `/v1/auth/*` expoe; refresh token e o TTL dele
+ * nunca vao no corpo (viajam so no cookie `HttpOnly`, ver `sessionResponse` no controller), entao
+ * ficam como campos extras aqui, internos ao backend, em vez de entrar no tipo compartilhado.
+ */
+export type AgentSessionResult = UserSession & {
   readonly refreshToken: string;
   readonly refreshExpiresInSeconds: number;
-  readonly agent: AgentProfile;
 };
 
 export type AuthenticateAgentDependencies = {

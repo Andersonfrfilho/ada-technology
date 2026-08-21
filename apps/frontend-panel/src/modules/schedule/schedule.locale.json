@@ -1,0 +1,61 @@
+{
+  "title": "Agenda",
+  "subtitle": "Quando o bot pode oferecer horário e quem atende em cada faixa.",
+  "loading": "Carregando agenda…",
+  "loadError": "Não foi possível carregar a agenda.",
+  "saveError": "Não foi possível salvar a agenda.",
+  "saved": "Agenda salva.",
+  "save": "Salvar agenda",
+  "saving": "Salvando…",
+  "settings": {
+    "title": "Configuração",
+    "isEnabled": "Oferecer agendamento no bot",
+    "isEnabledHint": "Desligado, o bot não mostra horário nenhum — nem os já configurados.",
+    "timezone": "Fuso horário",
+    "slotMinutes": "Duração do atendimento (minutos)",
+    "minimumNoticeMinutes": "Antecedência mínima (minutos)",
+    "minimumNoticeHint": "Quanto tempo entre agora e o horário mais próximo que o bot oferece.",
+    "horizonDays": "Quantos dias à frente oferecer"
+  },
+  "grid": {
+    "title": "Horários por atendente",
+    "empty": "Nenhum atendente ativo para montar a grade.",
+    "addRange": "Adicionar faixa",
+    "removeRange": "Remover faixa",
+    "from": "das",
+    "to": "às",
+    "noRanges": "Sem atendimento"
+  },
+  "weekdays": {
+    "0": "Domingo",
+    "1": "Segunda",
+    "2": "Terça",
+    "3": "Quarta",
+    "4": "Quinta",
+    "5": "Sexta",
+    "6": "Sábado"
+  },
+  "appointments": {
+    "title": "Agendamentos",
+    "empty": "Nenhum agendamento na janela.",
+    "loadError": "Não foi possível carregar os agendamentos.",
+    "when": "Quando",
+    "who": "Atendentes",
+    "channel": "Canal",
+    "status": "Situação",
+    "actions": "Ações",
+    "cancel": "Cancelar",
+    "canceling": "Cancelando…",
+    "cancelError": "Não foi possível cancelar o agendamento.",
+    "openConversation": "Abrir conversa"
+  },
+  "status": {
+    "scheduled": "Agendado",
+    "canceled": "Cancelado",
+    "completed": "Concluído"
+  },
+  "channel": {
+    "widget": "Site",
+    "whatsapp": "WhatsApp"
+  }
+}

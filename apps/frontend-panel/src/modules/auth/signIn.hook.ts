@@ -8,6 +8,8 @@
 
 import { type FormEvent, useState } from 'react';
 
+import { localCredentialsSchema } from '@ada/user-sdk';
+
 import { signInAgent } from '@/modules/auth/auth.api';
 import authLocale from '@/modules/auth/auth.locale.json';
 import { API_ERROR_CODE } from '@/modules/shared/http/http.constant';
@@ -32,13 +34,20 @@ export function useSignIn(): UseSignInResult {
     event.preventDefault();
 
     const form = new FormData(event.currentTarget);
-    const email = String(form.get(EMAIL_FIELD) ?? '');
-    const password = String(form.get(PASSWORD_FIELD) ?? '');
+    const rawEmail = String(form.get(EMAIL_FIELD) ?? '');
+    const rawPassword = String(form.get(PASSWORD_FIELD) ?? '');
 
-    setIsSubmitting(true);
     setErrorMessage(undefined);
 
-    signInAgent({ email, password })
+    const parsed = localCredentialsSchema.safeParse({ email: rawEmail, password: rawPassword });
+    if (!parsed.success) {
+      setErrorMessage(authLocale.signIn.invalidCredentials);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    signInAgent(parsed.data)
       .then(signIn)
       .catch((error: unknown) => setErrorMessage(messageOf(error)))
       .finally(() => setIsSubmitting(false));

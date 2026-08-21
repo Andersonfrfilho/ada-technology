@@ -6,6 +6,10 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import { AUTH_ROUTE } from '@ada/user-sdk';
+
+const AGENTS_PATH = '/v1/panel/agents';
+
 import { agentRepository, authenticateAgent, refreshAgentSession, signOutAgent } from '@/infra/container';
 import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
 import { readJsonBody } from '@/infra/http/requestBody';
@@ -19,11 +23,6 @@ import {
   readRefreshCookie,
 } from '@/modules/agent/refreshCookie';
 import type { AgentSessionResult } from '@/modules/agent/types/agent.types';
-
-const LOGIN_PATH = '/v1/auth/login';
-const REFRESH_PATH = '/v1/auth/refresh';
-const LOGOUT_PATH = '/v1/auth/logout';
-const ME_PATH = '/v1/auth/me';
 
 /**
  * O refresh token sai so no cookie, nunca no corpo.
@@ -50,7 +49,7 @@ function sessionResponse(session: AgentSessionResult): Response {
 
 const loginRoute: Route = {
   method: HTTP_METHOD.POST,
-  path: LOGIN_PATH,
+  path: AUTH_ROUTE.LOGIN,
   rateLimit: RATE_LIMIT.PANEL_LOGIN,
   handler: async ({ request, clientAddress }) => {
     const { email, password } = agentLoginSchema.parse(await readJsonBody(request));
@@ -63,7 +62,7 @@ const loginRoute: Route = {
 
 const refreshRoute: Route = {
   method: HTTP_METHOD.POST,
-  path: REFRESH_PATH,
+  path: AUTH_ROUTE.REFRESH,
   rateLimit: RATE_LIMIT.PANEL_REFRESH,
   handler: async ({ request }) => {
     const refreshToken = readRefreshCookie(request);
@@ -75,7 +74,7 @@ const refreshRoute: Route = {
 
 const logoutRoute: Route = {
   method: HTTP_METHOD.POST,
-  path: LOGOUT_PATH,
+  path: AUTH_ROUTE.LOGOUT,
   auth: AUTH_REQUIREMENT.AGENT,
   rateLimit: RATE_LIMIT.PANEL_WRITE,
   handler: async (context) => {
@@ -94,7 +93,7 @@ const logoutRoute: Route = {
 /** Onde o nome e o e-mail vivem: fora do token, atras de autenticacao, e so para o proprio dono. */
 const meRoute: Route = {
   method: HTTP_METHOD.GET,
-  path: ME_PATH,
+  path: AUTH_ROUTE.ME,
   auth: AUTH_REQUIREMENT.AGENT,
   rateLimit: RATE_LIMIT.PANEL_READ,
   handler: async (context) => {
@@ -107,4 +106,23 @@ const meRoute: Route = {
   },
 };
 
-export const agentRoutes: readonly Route[] = [loginRoute, refreshRoute, logoutRoute, meRoute];
+/** A lista que a agenda usa para montar a grade: id e nome, sem conta nem sessao de ninguem. */
+const listAgentsRoute: Route = {
+  method: HTTP_METHOD.GET,
+  path: AGENTS_PATH,
+  auth: AUTH_REQUIREMENT.AGENT,
+  rateLimit: RATE_LIMIT.PANEL_READ,
+  handler: async () => {
+    const profiles = await agentRepository.listActive();
+
+    return jsonData(profiles.map(({ id, name, role }) => ({ id, name, role })));
+  },
+};
+
+export const agentRoutes: readonly Route[] = [
+  loginRoute,
+  refreshRoute,
+  logoutRoute,
+  meRoute,
+  listAgentsRoute,
+];

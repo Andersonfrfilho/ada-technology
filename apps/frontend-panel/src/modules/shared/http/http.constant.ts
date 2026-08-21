@@ -6,12 +6,7 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-export const AUTH_PATH = {
-  LOGIN: '/v1/auth/login',
-  REFRESH: '/v1/auth/refresh',
-  LOGOUT: '/v1/auth/logout',
-  ME: '/v1/auth/me',
-} as const;
+import { USER_ERROR_CODE } from '@ada/user-sdk';
 
 export const PANEL_PATH = {
   CONVERSATIONS: '/v1/panel/conversations',
@@ -40,9 +35,13 @@ export const HTTP_STATUS = {
   UNAUTHORIZED: 401,
 } as const;
 
-/** Codigo estavel do envelope de erro da API — a mensagem e para gente, o codigo e para codigo. */
+/**
+ * Codigo estavel do envelope de erro da API — a mensagem e para gente, o codigo e para codigo.
+ *
+ * Subconjunto de `USER_ERROR_CODE` do `@ada/user-sdk`: so os codigos que o painel trata hoje.
+ */
 export const API_ERROR_CODE = {
-  INVALID_CREDENTIALS: 'AGENT_INVALID_CREDENTIALS',
-  NOT_AUTHENTICATED: 'AGENT_NOT_AUTHENTICATED',
-  NETWORK_UNREACHABLE: 'NETWORK_UNREACHABLE',
+  INVALID_CREDENTIALS: USER_ERROR_CODE.INVALID_CREDENTIALS,
+  NOT_AUTHENTICATED: USER_ERROR_CODE.NOT_AUTHENTICATED,
+  NETWORK_UNREACHABLE: USER_ERROR_CODE.NETWORK_UNREACHABLE,
 } as const;
