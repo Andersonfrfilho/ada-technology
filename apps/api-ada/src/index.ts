@@ -26,6 +26,7 @@ import { panelConversationActionRoutes } from '@/modules/panel/conversationActio
 import { panelDocumentRoutes } from '@/modules/panel/document.controller';
 import { panelLeadRoutes } from '@/modules/panel/lead.controller';
 import { panelRealtimeRoutes } from '@/modules/panel/realtime.controller';
+import { panelSchedulingRoutes } from '@/modules/scheduling/scheduling.controller';
 import { panelSettingsRoutes } from '@/modules/settings/settings.controller';
 import { panelTemplateRoutes } from '@/modules/settings/template.controller';
 import { panelSimulationRoutes } from '@/modules/simulation/simulation.controller';
@@ -46,6 +47,7 @@ const routes: readonly Route[] = [
   ...panelDocumentRoutes,
   ...panelRealtimeRoutes,
   ...panelFlowRoutes,
+  ...panelSchedulingRoutes,
   ...panelSettingsRoutes,
   ...panelTemplateRoutes,
   ...panelSimulationRoutes,

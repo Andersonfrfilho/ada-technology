@@ -1,6 +1,6 @@
 # Agendamento pelo bot — especificação
 
-Status: em implementação (Fase 1)
+Status: em implementação (fases 1 e 2 entregues)
 Decisões tomadas com o Anderson em 2026-08-21.
 
 ## O que o cliente vai poder fazer
@@ -42,7 +42,7 @@ Sem ENUM nativo (`code-standart.md` §8): status em `varchar`.
 | Fase | Entrega | 🤖 Modelo |
 |---|---|---|
 | 1 | Schema, migration e cálculo de disponibilidade (função pura, testada) | `opus` 🧠 |
-| 2 | Rotas: configuração, horários livres, reservar, cancelar | `sonnet` |
+| 2 | Rotas: configuração, horários livres, reservar, cancelar | `sonnet` (feito em `opus`, por decisão do Anderson) |
 | 3 | Painel: tela de configuração da agenda e lista de agendamentos | `sonnet` |
 | 4 | Fluxo: nós de escolha de pessoa/dia/horário e `actionKind: 'book_appointment'` | `opus` 🧠 |
 | 5 | Provider de ocupação externa (Google Calendar por atendente) | `sonnet` |

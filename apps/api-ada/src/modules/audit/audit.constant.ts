@@ -26,6 +26,9 @@ export const AUDIT_ACTION = {
   FLOW_DELETED: 'flow.deleted',
   KNOWLEDGE_ITEM_CHANGED: 'knowledge.item_changed',
   LEAD_CHANGED: 'lead.changed',
+  SCHEDULE_CHANGED: 'schedule.changed',
+  APPOINTMENT_BOOKED: 'appointment.booked',
+  APPOINTMENT_CANCELED: 'appointment.canceled',
   SETTINGS_CHANGED: 'settings.changed',
   TEMPLATE_CREATED: 'template.created',
 } as const;
@@ -33,10 +36,12 @@ export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
 
 export const AUDIT_TARGET = {
   AGENT: 'agent',
+  APPOINTMENT: 'appointment',
   CONVERSATION: 'conversation',
   FLOW: 'flow',
   KNOWLEDGE_ITEM: 'knowledge_item',
   LEAD: 'lead',
+  SCHEDULE: 'schedule',
   SETTINGS: 'settings',
   TEMPLATE: 'template',
 } as const;

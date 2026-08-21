@@ -99,6 +99,11 @@ headers de segurança e `X-Trace-Id`. Rate limit por IP declarado na própria ro
 | `PUT` | `/v1/panel/bot-messages` | 🔒 `agent`. Auditado (`settings.changed`). |
 | `GET` | `/v1/panel/template-settings` | 🔒 `agent`. Template de reengajamento escolhido. |
 | `PUT` | `/v1/panel/template-settings` | 🔒 `agent`. Auditado (`settings.changed`). |
+| `GET` | `/v1/panel/schedule` | 🔒 `agent`. Configuração da agenda e a grade semanal por atendente. |
+| `PUT` | `/v1/panel/schedule` | 🔒 `admin`. Salva as duas de uma vez. Auditado (`schedule.changed`). |
+| `GET` | `/v1/panel/schedule/slots` | 🔒 `agent`. `?agentId=a,b` — horários livres para **todos** os selecionados. `422` com a agenda desligada. |
+| `GET` | `/v1/panel/appointments` | 🔒 `agent`. `?from&to&agentId`. |
+| `DELETE` | `/v1/panel/appointments/:id` | 🔒 `agent`. Cancela e libera o horário. Auditado (`appointment.canceled`). |
 | `GET` | `/v1/panel/templates` | 🔒 `agent`. Catálogo da Meta. `503` sem WhatsApp configurado. |
 | `POST` | `/v1/panel/templates` | 🔒 `agent`. Submete template à aprovação. Auditado (`template.created`). |
 | `POST` | `/v1/panel/conversations/:id/takeover` | 🔒 `agent`. Cala o bot. Auditado. `204`. |
