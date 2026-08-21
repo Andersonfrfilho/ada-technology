@@ -61,7 +61,10 @@ export type LeadStatus = (typeof LEAD_STATUS)[keyof typeof LEAD_STATUS];
  */
 export const LEAD_CONTEXT_KEY = {
   NAME: 'leadName',
+  /** O contato unico das conversas anteriores a separacao entre WhatsApp e e-mail. */
   CONTACT: 'leadContact',
+  PHONE: 'leadPhone',
+  EMAIL: 'leadEmail',
   INTEREST: 'leadInterest',
 } as const;
 

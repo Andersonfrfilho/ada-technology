@@ -15,6 +15,7 @@ import { PANEL_CHANNEL, type PanelChannel } from '@/modules/panel/panel.constant
 import { toPanelLead } from '@/modules/panel/lead.mapper';
 import {
   LEAD_CONTACT_FIELD,
+  LEAD_EMAIL_FIELD,
   LEAD_INTEREST_FIELD,
   LEAD_NAME_FIELD,
 } from '@/modules/panel/leadContext.field';
@@ -29,6 +30,7 @@ import { LEAD_CONTEXT_KEY } from '@/shared/constants/domain.constant';
 
 const NAME_FIELD = LEAD_NAME_FIELD;
 const CONTACT_FIELD = LEAD_CONTACT_FIELD;
+const EMAIL_FIELD = LEAD_EMAIL_FIELD;
 const INTEREST_FIELD = LEAD_INTEREST_FIELD;
 
 /** `~` casa expressao regular no Postgres; o padrao vem do mesmo lugar que o gerador do id. */
@@ -66,6 +68,7 @@ export class DrizzlePanelLeadRepository implements PanelLeadRepositoryInterface 
         whatsappNumber: sessions.whatsappNumber,
         name: NAME_FIELD,
         contact: CONTACT_FIELD,
+        email: EMAIL_FIELD,
         interest: INTEREST_FIELD,
         mode: sessions.mode,
         createdAt: sessions.createdAt,

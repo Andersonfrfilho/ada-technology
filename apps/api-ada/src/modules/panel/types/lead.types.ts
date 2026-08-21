@@ -20,6 +20,7 @@ export type PanelLead = {
   readonly conversationId: string;
   readonly name: string | null;
   readonly contact: string | null;
+  readonly email: string | null;
   readonly interest: string | null;
   readonly channel: PanelChannel;
   readonly firstContactAt: string;

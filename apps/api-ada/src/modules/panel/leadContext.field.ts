@@ -19,5 +19,13 @@ import { LEAD_CONTEXT_KEY } from '@/shared/constants/domain.constant';
  * a chave vai ligada como parametro; nada aqui e montado por concatenacao.
  */
 export const LEAD_NAME_FIELD = sql<string | null>`${sessions.context}->>${LEAD_CONTEXT_KEY.NAME}`;
-export const LEAD_CONTACT_FIELD = sql<string | null>`${sessions.context}->>${LEAD_CONTEXT_KEY.CONTACT}`;
+/**
+ * O telefone atual, ou o contato unico que as conversas antigas gravaram.
+ *
+ * Ate a separacao entre WhatsApp e e-mail o fluxo perguntava "e-mail ou telefone" e guardava tudo
+ * em `leadContact`. Trocar a chave sem o `COALESCE` faria a coluna Contato da tela de Clientes ficar
+ * vazia para todo lead ja capturado — o dado continua no jsonb, e continua sendo o que a pessoa deu.
+ */
+export const LEAD_CONTACT_FIELD = sql<string | null>`coalesce(${sessions.context}->>${LEAD_CONTEXT_KEY.PHONE}, ${sessions.context}->>${LEAD_CONTEXT_KEY.CONTACT})`;
+export const LEAD_EMAIL_FIELD = sql<string | null>`${sessions.context}->>${LEAD_CONTEXT_KEY.EMAIL}`;
 export const LEAD_INTEREST_FIELD = sql<string | null>`${sessions.context}->>${LEAD_CONTEXT_KEY.INTEREST}`;

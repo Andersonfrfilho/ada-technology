@@ -17,6 +17,7 @@ export type LeadRow = {
   readonly whatsappNumber: string;
   readonly name: string | null;
   readonly contact: string | null;
+  readonly email: string | null;
   readonly interest: string | null;
   readonly mode: string;
   readonly createdAt: Date;
@@ -35,6 +36,7 @@ export function toPanelLead(row: LeadRow): PanelLead {
     conversationId: row.id,
     name: row.name,
     contact: row.contact,
+    email: row.email,
     interest: row.interest,
     channel: isWidgetSessionId(row.whatsappNumber) ? PANEL_CHANNEL.WEBCHAT : PANEL_CHANNEL.WHATSAPP,
     firstContactAt: row.createdAt.toISOString(),

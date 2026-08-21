@@ -26,6 +26,7 @@ const NODE_ID = {
   INTEGRACOES: 'produto_integracoes',
   NOME: 'pergunta_nome',
   CONTATO: 'pergunta_contato',
+  EMAIL: 'pergunta_email',
   HANDOFF: 'acao_handoff',
 } as const;
 
@@ -105,7 +106,8 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
           [OPTION_ID.ATENDIMENTO]: NODE_ID.ATENDIMENTO,
           [OPTION_ID.DADOS]: NODE_ID.DADOS,
           [OPTION_ID.INTEGRACOES]: NODE_ID.INTEGRACOES,
-          [OPTION_ID.PESSOA]: NODE_ID.HANDOFF,
+          // Quem pede uma pessoa no menu tambem esta aceitando falar: passa pelo contato antes.
+          [OPTION_ID.PESSOA]: NODE_ID.CONTATO,
         },
         default: NODE_ID.HANDOFF,
       },
@@ -154,12 +156,28 @@ export const DEFAULT_FLOW_GRAPH: FlowGraphData = {
       next: CONTINUE_NEXT,
     },
 
+    /**
+     * WhatsApp e e-mail so sao pedidos depois do "sim, quero falar".
+     *
+     * Dois contatos e mais do que o minimo para o retorno, e pedi-los a quem so estava lendo o
+     * menu custaria a conversa; depois do aceite eles deixam de ser interrogatorio e viram o
+     * combinado. Uma pergunta por no, porque duas na mesma mensagem so recebem uma resposta.
+     */
     [NODE_ID.CONTATO]: {
       id: NODE_ID.CONTATO,
       type: 'question',
       questionType: 'text',
-      contextKey: CONTEXT_KEY.CONTACT,
-      question: 'Combinado! 📩 Qual o melhor e-mail ou telefone para retorno?',
+      contextKey: CONTEXT_KEY.PHONE,
+      question: 'Combinado! 📱 Qual seu WhatsApp com DDD para retorno?',
+      next: NODE_ID.EMAIL,
+    },
+
+    [NODE_ID.EMAIL]: {
+      id: NODE_ID.EMAIL,
+      type: 'question',
+      questionType: 'text',
+      contextKey: CONTEXT_KEY.EMAIL,
+      question: 'Perfeito! 📩 E qual o melhor e-mail?',
       next: NODE_ID.HANDOFF,
     },
 

@@ -43,6 +43,9 @@ export function LeadTable({ leads, sortBy, sortDirection, onSort, onOpenConversa
               {leadsLocale.columns.contact}
             </th>
             <th scope="col" className={`px-3 py-2 text-left text-xs font-medium ${HEAD}`}>
+              {leadsLocale.columns.email}
+            </th>
+            <th scope="col" className={`px-3 py-2 text-left text-xs font-medium ${HEAD}`}>
               {leadsLocale.columns.interest}
             </th>
             <th scope="col" className={`px-3 py-2 text-left text-xs font-medium ${HEAD}`}>
@@ -96,6 +99,7 @@ function LeadRow({ lead, onOpenConversation }: LeadRowProps) {
         ) : null}
       </td>
       <td className={CELL}>{lead.contact ?? leadsLocale.noValue}</td>
+      <td className={CELL}>{lead.email ?? leadsLocale.noValue}</td>
       <td className={CELL}>{lead.interest ?? leadsLocale.noValue}</td>
       <td className={CELL}>{channelLabel(lead.channel)}</td>
       <td className={CELL}>{formatDateTime(lead.firstContactAt)}</td>

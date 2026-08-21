@@ -13,6 +13,7 @@ export type Lead = {
   readonly conversationId: string;
   readonly name: string | null;
   readonly contact: string | null;
+  readonly email: string | null;
   readonly interest: string | null;
   readonly channel: string;
   readonly firstContactAt: string;

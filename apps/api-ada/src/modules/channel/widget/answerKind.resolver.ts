@@ -20,6 +20,8 @@ import { LEAD_CONTEXT_KEY } from '@/shared/constants/domain.constant';
 const ANSWER_KIND_BY_CONTEXT_KEY: Readonly<Record<string, string>> = {
   [LEAD_CONTEXT_KEY.NAME]: 'name',
   [LEAD_CONTEXT_KEY.CONTACT]: 'contact',
+  [LEAD_CONTEXT_KEY.PHONE]: 'phone',
+  [LEAD_CONTEXT_KEY.EMAIL]: 'email',
 } as const;
 
 const ANSWER_KIND_BY_QUESTION_TYPE: Readonly<Record<string, string>> = {
