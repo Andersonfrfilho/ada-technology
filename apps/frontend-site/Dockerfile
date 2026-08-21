@@ -17,8 +17,12 @@ COPY apps/frontend-site/ apps/frontend-site/
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
-# Ausente vira producao no schema: so dev e staging recebem a faixa e o simbolo no favicon.
-ARG VITE_APP_ENV
+# Producao e o default aqui tambem, e nao so no schema.
+#
+# `ARG` sem valor nao produz "variavel ausente": produz `ENV VITE_APP_ENV=`, e o Vite inlina a
+# string vazia — que nao e o mesmo que `undefined` para o `.default()` do Zod. Foi assim que uma
+# faixa de ambiente interno derrubou o JS da landing inteira. So dev e staging sobrescrevem.
+ARG VITE_APP_ENV=production
 ENV VITE_APP_ENV=$VITE_APP_ENV
 
 RUN cd apps/frontend-site && bun run build
