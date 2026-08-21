@@ -13,6 +13,8 @@ import { useSignIn } from '@/modules/auth/signIn.hook';
 
 const locale = authLocale.signIn;
 
+const BRAND_LOGO_SRC = '/ada-logo.png';
+
 const FIELD_CLASS =
   'w-full rounded-panel border border-brand-100 bg-white px-4 py-3 text-base text-ink-900 outline-none placeholder:text-ink-500 focus:border-brand-500';
 const LABEL_CLASS = 'mb-2 block text-sm font-medium text-ink-900';
@@ -24,9 +26,10 @@ export function SignInPage() {
     <main className="flex min-h-full items-center justify-center bg-brand-50 p-6">
       <section className="w-full max-w-md rounded-panel bg-white p-8 shadow-lg shadow-brand-900/5">
         <header className="flex flex-col items-center text-center">
-          <img alt="" className="mb-4 size-12" src="/ada-icon-192.png" />
-          <p className="text-sm font-semibold tracking-widest text-brand-500 uppercase">{locale.brand}</p>
-          <h1 className="mt-2 text-2xl font-semibold text-brand-900">{locale.title}</h1>
+          {/* O logo ja traz o nome da marca: repeti-lo abaixo em caixa alta seria dizer duas vezes,
+              e o `alt` mantem o nome para quem usa leitor de tela. */}
+          <img alt={locale.brand} className="mb-5 h-24 w-auto" src={BRAND_LOGO_SRC} />
+          <h1 className="text-2xl font-semibold text-brand-900">{locale.title}</h1>
           <p className="mt-2 text-sm text-ink-500">{locale.subtitle}</p>
         </header>
 
