@@ -19,8 +19,9 @@ COPY apps/frontend-panel/ apps/frontend-panel/
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
-# Ausente vira producao no schema: so dev e staging recebem a faixa e o simbolo no favicon.
-ARG VITE_APP_ENV
+# Producao e o default aqui tambem, e nao so no schema: `ARG` sem valor produz `ENV VITE_APP_ENV=`,
+# e a string vazia inlinada no bundle nao e o mesmo que `undefined` para o `.default()` do Zod.
+ARG VITE_APP_ENV=production
 ENV VITE_APP_ENV=$VITE_APP_ENV
 
 # `build` roda `tsc --noEmit` antes do vite: bundle nao sai de codigo que nao tipa.
