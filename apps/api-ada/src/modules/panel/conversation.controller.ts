@@ -28,6 +28,7 @@ import {
   PANEL_DOCUMENTS_DEFAULT_LIMIT,
   PANEL_TRANSCRIPT_DEFAULT_LIMIT,
 } from '@/modules/panel/panel.constant';
+import { resolveClientNames, withClientName } from '@/modules/panel/clientName.resolver';
 import { toPanelConversation, toPanelMessage } from '@/modules/panel/panel.mapper';
 import {
   conversationIdSchema,
@@ -65,7 +66,14 @@ const listRoute: Route = {
       filters: toConversationFilters(query),
     });
 
-    return jsonData(conversations.map(toPanelConversation));
+    const names = await resolveClientNames({
+      companyId,
+      conversationKeys: conversations.map((conversation) => conversation.whatsappNumber),
+    });
+
+    return jsonData(
+      conversations.map((summary) => toPanelConversation(withClientName({ summary, names }))),
+    );
   },
 };
 

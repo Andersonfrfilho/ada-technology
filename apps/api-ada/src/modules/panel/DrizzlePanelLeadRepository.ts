@@ -14,6 +14,11 @@ import { WIDGET_SESSION_ID_PATTERN } from '@/modules/channel/widget/widget.const
 import { PANEL_CHANNEL, type PanelChannel } from '@/modules/panel/panel.constant';
 import { toPanelLead } from '@/modules/panel/lead.mapper';
 import {
+  LEAD_CONTACT_FIELD,
+  LEAD_INTEREST_FIELD,
+  LEAD_NAME_FIELD,
+} from '@/modules/panel/leadContext.field';
+import {
   LEAD_SORT_FIELD,
   type LeadPage,
   type LeadSortField,
@@ -22,9 +27,9 @@ import {
 } from '@/modules/panel/types/lead.types';
 import { LEAD_CONTEXT_KEY } from '@/shared/constants/domain.constant';
 
-const NAME_FIELD = sql<string | null>`${sessions.context}->>${LEAD_CONTEXT_KEY.NAME}`;
-const CONTACT_FIELD = sql<string | null>`${sessions.context}->>${LEAD_CONTEXT_KEY.CONTACT}`;
-const INTEREST_FIELD = sql<string | null>`${sessions.context}->>${LEAD_CONTEXT_KEY.INTEREST}`;
+const NAME_FIELD = LEAD_NAME_FIELD;
+const CONTACT_FIELD = LEAD_CONTACT_FIELD;
+const INTEREST_FIELD = LEAD_INTEREST_FIELD;
 
 /** `~` casa expressao regular no Postgres; o padrao vem do mesmo lugar que o gerador do id. */
 const IS_WIDGET = sql`${sessions.whatsappNumber} ~ ${WIDGET_SESSION_ID_PATTERN}`;
