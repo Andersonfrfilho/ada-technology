@@ -5,7 +5,7 @@
     "dockerfilePath": "apps/api-ada/Dockerfile"
   },
   "deploy": {
-    "preDeployCommand": ["bun run db:migrate"],
+    "preDeployCommand": ["bun run deploy:pre"],
     "healthcheckPath": "/health/ready",
     "healthcheckTimeout": 60,
     "restartPolicyType": "ON_FAILURE",

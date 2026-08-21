@@ -215,7 +215,7 @@ de carregamento aparece clara antes de a aplicação montar.
 | Mensagens | `MessagesWorkspace` | Só `getMessages`/`saveMessages`; sem tópicos, templates nem transcrição a tela colapsa na aba do bot e some a barra de abas. |
 | Templates | `WhatsAppTemplatesSettings` | Componente é presentacional — todo o estado vive em `templateSettings.hook.ts`. |
 | Documentos | `DocumentsWorkspace` | `dateFilter={false}` e `categories={[]}`: a rota só entende `search`, `source`, `sortDirection` e paginação. Filtro que o servidor descarta faria lista crua parecer filtrada. |
-| Clientes | `LeadsPage` | Leads capturados pelo bot: nome, contato, interesse, origem, quando, link para a conversa. |
+| Clientes | `LeadsPage` | Leads capturados pelo bot: nome, contato, e-mail, interesse, origem, quando, link para a conversa. A coluna Contato lê `coalesce(leadPhone, leadContact)` — `leadContact` é o campo único de antes da separação entre WhatsApp e e-mail. |
 
 **A tela composta é o padrão de consumo** (`pluggable-module.md` §4): o pacote entra inteiro,
 customizado por `labels` e slots. Nada de fork.
@@ -266,8 +266,12 @@ Postgres e Redis. Passo a passo, tabela de variáveis e verificação pós-deplo
 - **`VITE_API_BASE_URL` é build arg, não variável de runtime** — o Vite inlina o literal no bundle.
   Trocar o domínio da API exige rebuild dos dois frontends, e é por isso que ele aparece duas vezes
   no serviço: uma para o bundle, outra (`API_ORIGIN`) para o `connect-src` do Caddy.
-- **Migration roda no `preDeployCommand`**, antes de a versão nova entrar no ar. Seed e
-  `seed-flow` são manuais, uma vez, pelo shell do serviço.
+- **Migration e publicação do fluxo rodam no `preDeployCommand`** (`bun run deploy:pre`), antes de a
+  versão nova entrar no ar. O `flow:republish` sem `--confirm` publica em ambiente novo e, onde já
+  há fluxo publicado, apenas compara: silêncio quando o banco já é o do código, `WARN` quando
+  divergem. **Substituir o que foi editado pelo painel exige `--confirm` a mão** — texto alterado em
+  `defaultFlow.constant.ts` não chega sozinho a um ambiente que já publicou. Seed é manual, uma vez,
+  pelo shell do serviço.
 - `style-src` ainda carrega `'unsafe-inline'` nos dois frontends — divergência registrada em
   `docs/SECURITY.md` com o encaminhamento.
 

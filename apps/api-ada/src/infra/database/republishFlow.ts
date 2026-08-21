@@ -6,6 +6,8 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import type { FlowNodeData } from '@adatechnology/meta-whatsapp-contracts';
+
 import { ACTOR_TYPE, AUDIT_ACTION, AUDIT_TARGET } from '@/modules/audit/audit.constant';
 import { closeRedis } from '@/infra/cache/redisClient';
 import { environment } from '@/infra/config/environment';
@@ -48,9 +50,20 @@ async function republishFlow(): Promise<void> {
     return;
   }
 
+  // Nada a dizer quando o publicado ja e o do codigo: rodando a cada deploy, o silencio e o normal,
+  // e um aviso repetido em toda subida treina todo mundo a ignorar o aviso que importa.
+  if (isSameGraph({ published: existing.nodes, code: graph.nodes })) {
+    logger.info({
+      message: 'Fluxo publicado ja e o do codigo',
+      source: SOURCE,
+      meta: { flowKey: graph.key, publishedVersion: existing.version },
+    });
+    return;
+  }
+
   if (!process.argv.includes(CONFIRM_FLAG)) {
     logger.warn({
-      message: `Fluxo ja publicado — rode com ${CONFIRM_FLAG} para substituir a versao do painel`,
+      message: `Fluxo publicado diverge do codigo — rode com ${CONFIRM_FLAG} para substituir a versao do painel`,
       source: SOURCE,
       meta: { flowKey: graph.key, publishedVersion: existing.version },
     });
@@ -69,6 +82,31 @@ async function republishFlow(): Promise<void> {
     source: SOURCE,
     meta: { flowKey: saved.key, previousVersion: existing.version, version: saved.version },
   });
+}
+
+/**
+ * Comparacao pelo conteudo dos nos, e nao pelo numero da versao.
+ *
+ * A versao do banco sobe a cada edicao no painel, entao ela nao diz de onde o texto veio; o que
+ * responde "alguem mexeu por fora?" e o proprio grafo. `position` fica de fora de proposito: mover
+ * um no no fluxograma nao muda uma palavra do que o cliente le.
+ */
+function isSameGraph(params: {
+  readonly published: Record<string, FlowNodeData>;
+  readonly code: Record<string, FlowNodeData>;
+}): boolean {
+  return toComparable(params.published) === toComparable(params.code);
+}
+
+function toComparable(nodes: Record<string, FlowNodeData>): string {
+  const entries = Object.entries(nodes)
+    .map(([id, node]) => {
+      const { position: _position, ...rest } = node;
+      return [id, rest] as const;
+    })
+    .sort(([left], [right]) => left.localeCompare(right));
+
+  return JSON.stringify(entries);
 }
 
 function recordChange(params: { flowKey: string; version: number }): Promise<unknown> {

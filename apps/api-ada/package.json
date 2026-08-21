@@ -8,6 +8,7 @@
     "start": "bun run src/index.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run src/infra/database/migrate.ts",
+    "deploy:pre": "bun run db:migrate && bun run flow:republish",
     "db:seed": "bun run src/infra/database/seeds/index.ts",
     "flow:republish": "bun run src/infra/database/republishFlow.ts",
     "test": "bun test --env-file=../../envs/env.test",
