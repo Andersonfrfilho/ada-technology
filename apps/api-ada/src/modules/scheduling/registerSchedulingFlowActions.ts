@@ -14,15 +14,16 @@ import {
   type FlowNodeData,
 } from '@adatechnology/meta-whatsapp-contracts';
 
-import { resolveSourceChannel } from '@/modules/channel/sourceChannel.util';
+import { SlotUnavailableError } from '@adatechnology/scheduling-contracts';
+
 import {
   SCHEDULING_CONTEXT_KEY,
   SCHEDULING_FLOW_ACTION_KIND,
   SCHEDULING_FLOW_MESSAGE,
   SCHEDULING_FLOW_PARAM,
   SCHEDULING_FLOW_TERMINAL,
+  SCHEDULING_RESOURCE_TIMEZONE as SCHEDULING_FALLBACK_TIMEZONE,
 } from '@/modules/scheduling/scheduling.constant';
-import { SchedulingDisabledError, SlotUnavailableError } from '@/modules/scheduling/scheduling.error';
 import {
   formatSlotLabel,
   readOfferedOptions,
@@ -70,13 +71,10 @@ async function sayAndGo(params: {
  */
 export function registerSchedulingFlowActions({
   registry,
-  repository,
-  listSchedulableAgents,
-  listAvailableSlots,
-  bookAppointment,
+  agenda,
 }: RegisterSchedulingFlowActionsParams): void {
   async function listAgents({ node, session, channel }: ActionParams): Promise<FlowActionResult> {
-    const agents = await listSchedulableAgents.execute();
+    const agents = await agenda.listAttendants();
 
     if (agents.length === 0) {
       return sayAndGo({
@@ -117,13 +115,8 @@ export function registerSchedulingFlowActions({
       });
     }
 
-    const [settings, slots] = await Promise.all([
-      repository.getSettings(),
-      listAvailableSlots.execute({ agentIds: [agentId] }).catch((error: unknown) => {
-        if (error instanceof SchedulingDisabledError) return [];
-        throw error;
-      }),
-    ]);
+    const [attendants, slots] = await Promise.all([agenda.listAttendants(), agenda.listSlots(agentId)]);
+    const timezone = attendants.find((attendant) => attendant.id === agentId)?.timezone ?? SCHEDULING_FALLBACK_TIMEZONE;
 
     if (slots.length === 0) {
       return sayAndGo({
@@ -140,16 +133,16 @@ export function registerSchedulingFlowActions({
       to: session.whatsappNumber,
       body: SCHEDULING_FLOW_MESSAGE.SLOTS_QUESTION,
       buttonLabel: SCHEDULING_FLOW_MESSAGE.SLOTS_BUTTON,
-      rows: offered.map((slot) => ({
-        id: slot.startsAt.toISOString(),
-        title: formatSlotLabel({ startsAt: slot.startsAt, timezone: settings.timezone }),
+      rows: offered.map((startsAt) => ({
+        id: startsAt.toISOString(),
+        title: formatSlotLabel({ startsAt, timezone }),
       })),
     });
 
     return {
       context: {
         [SCHEDULING_CONTEXT_KEY.AGENT_ID]: agentId,
-        [SCHEDULING_CONTEXT_KEY.SLOT_OPTIONS]: offered.map((slot) => slot.startsAt.toISOString()),
+        [SCHEDULING_CONTEXT_KEY.SLOT_OPTIONS]: offered.map((startsAt) => startsAt.toISOString()),
       },
     };
   }
@@ -173,14 +166,11 @@ export function registerSchedulingFlowActions({
     const startsAt = new Date(chosen);
 
     try {
-      const appointment = await bookAppointment.execute({
-        sessionId: session.id,
-        agentIds: [agentId],
-        startsAt,
-        sourceChannel: resolveSourceChannel(channel),
-      });
-      const settings = await repository.getSettings();
-      const when = formatSlotLabel({ startsAt: appointment.startsAt, timezone: settings.timezone });
+      const booking = await agenda.book({ sessionId: session.id, resourceId: agentId, startsAt });
+      const attendants = await agenda.listAttendants();
+      const timezone =
+        attendants.find((attendant) => attendant.id === agentId)?.timezone ?? SCHEDULING_FALLBACK_TIMEZONE;
+      const when = formatSlotLabel({ startsAt: booking.startsAt, timezone });
 
       await channel.sendText(
         session.whatsappNumber,

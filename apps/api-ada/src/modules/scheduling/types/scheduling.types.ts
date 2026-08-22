@@ -8,11 +8,22 @@
 
 import type { FlowActionRegistry } from '@adatechnology/meta-whatsapp-contracts';
 
-import type { BookAppointmentUseCase } from '@/modules/scheduling/bookAppointment.use-case';
-import type { ListAvailableSlotsUseCase } from '@/modules/scheduling/listAvailableSlots.use-case';
-import type { ListSchedulableAgentsUseCase } from '@/modules/scheduling/listSchedulableAgents.use-case';
+import type { SchedulingAgenda } from '@/modules/scheduling/SchedulingAgenda';
 import type { AppointmentStatus } from '@/modules/scheduling/scheduling.constant';
 import type { ConversationChannel } from '@/shared/constants/domain.constant';
+
+/** Quem a conversa oferece: id do recurso, nome que o cliente le, e o fuso para formatar a hora. */
+export type AgendaAttendant = {
+  readonly id: string;
+  readonly name: string;
+  readonly timezone: string;
+};
+
+export type BookAgendaParams = {
+  readonly sessionId: string;
+  readonly resourceId: string;
+  readonly startsAt: Date;
+};
 
 export type ScheduleSettings = {
   readonly timezone: string;
@@ -124,8 +135,5 @@ export type SchedulableAgent = {
 
 export type RegisterSchedulingFlowActionsParams = {
   readonly registry: FlowActionRegistry;
-  readonly repository: SchedulingRepositoryInterface;
-  readonly listSchedulableAgents: ListSchedulableAgentsUseCase;
-  readonly listAvailableSlots: ListAvailableSlotsUseCase;
-  readonly bookAppointment: BookAppointmentUseCase;
+  readonly agenda: SchedulingAgenda;
 };

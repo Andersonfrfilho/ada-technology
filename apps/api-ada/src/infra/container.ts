@@ -69,6 +69,7 @@ import { DrizzleSchedulingRepository } from '@/modules/scheduling/DrizzleSchedul
 import { ListAvailableSlotsUseCase } from '@/modules/scheduling/listAvailableSlots.use-case';
 import { ListSchedulableAgentsUseCase } from '@/modules/scheduling/listSchedulableAgents.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
+import { SchedulingAgenda } from '@/modules/scheduling/SchedulingAgenda';
 import { ProvisionSchedulingResourcesUseCase } from '@/modules/scheduling/provisionSchedulingResources.use-case';
 import { SaveScheduleUseCase } from '@/modules/scheduling/saveSchedule.use-case';
 import { SCHEDULING_MODULE_CONFIG } from '@/modules/scheduling/scheduling.constant';
@@ -317,13 +318,6 @@ export const listSchedulableAgents = new ListSchedulableAgentsUseCase(
   schedulingRepository,
 );
 
-registerSchedulingFlowActions({
-  registry: flows.interpreter,
-  repository: schedulingRepository,
-  listSchedulableAgents,
-  listAvailableSlots,
-  bookAppointment,
-});
 export const realtimeTickets = new RedisRealtimeTicketStore();
 
 export const resolvePanelConversation = new ResolveConversationUseCase({
@@ -515,6 +509,11 @@ export const schedulingModule = createSchedulingModule({
   },
 });
 
+export const schedulingAgenda = new SchedulingAgenda(schedulingModule, environment.ADA_COMPANY_ID);
+
+// Depois do modulo, e nao junto do resto do fluxo la em cima: a agenda so existe a partir daqui.
+registerSchedulingFlowActions({ registry: flows.interpreter, agenda: schedulingAgenda });
+
 export const provisionSchedulingResources = new ProvisionSchedulingResourcesUseCase(
   schedulingModule,
   agentRepository,
@@ -560,6 +559,7 @@ export const container = {
   catalogMetaSync,
   schedulingModule,
   provisionSchedulingResources,
+  schedulingAgenda,
 } as const;
 
 export type Container = typeof container;

@@ -13,27 +13,19 @@ import type {
   FlowActionKind,
   FlowNodeData,
 } from '@adatechnology/meta-whatsapp-contracts';
+import { SlotUnavailableError, type Booking } from '@adatechnology/scheduling-contracts';
 import { describe, expect, test } from 'bun:test';
 
-import type { AgentProfile, AgentRepositoryInterface } from '@/modules/agent/types/agent.types';
-import { BookAppointmentUseCase } from '@/modules/scheduling/bookAppointment.use-case';
-import { ListAvailableSlotsUseCase } from '@/modules/scheduling/listAvailableSlots.use-case';
-import { ListSchedulableAgentsUseCase } from '@/modules/scheduling/listSchedulableAgents.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
+import type { SchedulingAgenda } from '@/modules/scheduling/SchedulingAgenda';
 import {
-  APPOINTMENT_STATUS,
   SCHEDULING_CONTEXT_KEY,
   SCHEDULING_FLOW_ACTION_KIND,
   SCHEDULING_FLOW_MESSAGE,
   SCHEDULING_FLOW_PARAM,
+  SCHEDULING_RESOURCE_TIMEZONE,
 } from '@/modules/scheduling/scheduling.constant';
-import type {
-  Appointment,
-  BookAppointmentParams,
-  ScheduleSettings,
-  SchedulingRepositoryInterface,
-  WeeklyRule,
-} from '@/modules/scheduling/types/scheduling.types';
+import type { AgendaAttendant, BookAgendaParams } from '@/modules/scheduling/types/scheduling.types';
 
 const ANA = 'a0000000-0000-4000-8000-000000000001';
 const BRUNO = 'a0000000-0000-4000-8000-000000000002';
@@ -43,26 +35,13 @@ const HANDOFF_NODE = 'acao_handoff';
 const AGENTS_NODE = 'acao_agenda_pessoas';
 const SLOTS_NODE = 'acao_agenda_horarios';
 
-/** Sexta-feira, 8h em Sao Paulo. A agenda da Ana e das 9h as 12h; Bruno nao tem faixa. */
-const NOW = new Date('2026-08-21T11:00:00Z');
+/** Sexta-feira. Os tres horarios sao os que a agenda da Ana ofereceria das 9h as 12h. */
 const FIRST_SLOT = '2026-08-21T12:00:00.000Z';
+const SLOTS = [FIRST_SLOT, '2026-08-21T13:00:00.000Z', '2026-08-21T14:00:00.000Z'] as const;
 
-const SETTINGS: ScheduleSettings = {
-  timezone: 'America/Sao_Paulo',
-  slotMinutes: 60,
-  minimumNoticeMinutes: 0,
-  horizonDays: 1,
-  isEnabled: true,
-};
-
-const RULES: readonly WeeklyRule[] = [
-  { agentId: ANA, weekday: 5, startMinute: 9 * 60, endMinute: 12 * 60 },
+const ATTENDANTS: readonly AgendaAttendant[] = [
+  { id: ANA, name: 'Ana', timezone: SCHEDULING_RESOURCE_TIMEZONE },
 ];
-
-const PROFILES: readonly AgentProfile[] = [
-  { id: ANA, email: 'ana@ada.test', name: 'Ana', role: 'agent' },
-  { id: BRUNO, email: 'bruno@ada.test', name: 'Bruno', role: 'agent' },
-] as readonly AgentProfile[];
 
 type SentList = { readonly body: string; readonly rows: readonly { id: string; title: string }[] };
 
@@ -87,59 +66,41 @@ function fakeChannel() {
   return { channel, texts, lists };
 }
 
-function fakeRepository(overrides: Partial<{ settings: ScheduleSettings; rules: readonly WeeklyRule[] }> = {}) {
-  const stored: Appointment[] = [];
-  const taken = new Set<string>();
+type AgendaOverrides = {
+  readonly attendants?: readonly AgendaAttendant[];
+  readonly slots?: readonly string[];
+  readonly taken?: readonly string[];
+};
 
-  const repository: SchedulingRepositoryInterface = {
-    getSettings: async () => overrides.settings ?? SETTINGS,
-    saveSettings: async (settings) => settings,
-    listRules: async () => overrides.rules ?? RULES,
-    replaceRules: async () => undefined,
-    listBusy: async () => [],
-    book: async (params: BookAppointmentParams & { readonly endsAt: Date }) => {
-      const key = `${params.agentIds.join(',')}@${params.startsAt.toISOString()}`;
-      if (taken.has(key)) return undefined;
+function fakeAgenda(overrides: AgendaOverrides = {}) {
+  const booked: BookAgendaParams[] = [];
+  const taken = new Set(overrides.taken ?? []);
+
+  const agenda = {
+    listAttendants: async () => overrides.attendants ?? ATTENDANTS,
+    listSlots: async () => (overrides.slots ?? SLOTS).map((iso) => new Date(iso)),
+    book: async (params: BookAgendaParams): Promise<Booking> => {
+      const key = `${params.resourceId}@${params.startsAt.toISOString()}`;
+      if (taken.has(key)) throw new SlotUnavailableError(params.resourceId, {
+          start: params.startsAt,
+          end: params.startsAt,
+        });
       taken.add(key);
+      booked.push(params);
 
-      const appointment: Appointment = {
-        id: `appointment-${stored.length + 1}`,
-        sessionId: params.sessionId,
-        startsAt: params.startsAt,
-        endsAt: params.endsAt,
-        status: APPOINTMENT_STATUS.SCHEDULED,
-        sourceChannel: params.sourceChannel,
-        agentIds: params.agentIds,
-      };
-      stored.push(appointment);
-
-      return appointment;
+      return { id: 'booking-1', startsAt: params.startsAt } as Booking;
     },
-    findBySessionAndStart: async ({ sessionId, startsAt }) =>
-      stored.find(
-        (item) => item.sessionId === sessionId && item.startsAt.getTime() === startsAt.getTime(),
-      ),
-    findById: async (appointmentId) => stored.find((item) => item.id === appointmentId),
-    cancel: async () => undefined,
-    list: async () => stored,
-  };
+  } as unknown as SchedulingAgenda;
 
-  return { repository, stored, taken };
+  return { agenda, booked };
 }
 
-function handlersOf(repository: SchedulingRepositoryInterface): Map<FlowActionKind, FlowActionHandler> {
+function handlersOf(agenda: SchedulingAgenda): Map<FlowActionKind, FlowActionHandler> {
   const handlers = new Map<FlowActionKind, FlowActionHandler>();
-  const agents = {
-    listActive: async () => PROFILES,
-  } as unknown as AgentRepositoryInterface;
-  const listAvailableSlots = new ListAvailableSlotsUseCase(repository, () => NOW);
 
   registerSchedulingFlowActions({
     registry: { registerFlowAction: (kind, handler) => handlers.set(kind, handler) },
-    repository,
-    listSchedulableAgents: new ListSchedulableAgentsUseCase(agents, repository),
-    listAvailableSlots,
-    bookAppointment: new BookAppointmentUseCase(repository, listAvailableSlots, () => NOW),
+    agenda,
   });
 
   return handlers;
@@ -152,13 +113,13 @@ function nodeOf(actionKind: string, actionParams: Record<string, unknown> = {}):
 }
 
 async function run(params: {
-  readonly repository: SchedulingRepositoryInterface;
+  readonly agenda: SchedulingAgenda;
   readonly kind: FlowActionKind;
   readonly channel: ChannelAdapterInterface;
   readonly context?: Record<string, unknown>;
   readonly actionParams?: Record<string, unknown>;
 }) {
-  const handler = handlersOf(params.repository).get(params.kind);
+  const handler = handlersOf(params.agenda).get(params.kind);
   if (!handler) throw new Error(`acao nao registrada: ${params.kind}`);
 
   return handler({
@@ -170,23 +131,23 @@ async function run(params: {
 }
 
 describe('list_schedule_agents', () => {
-  test('oferece so quem tem faixa cadastrada e guarda o que ofereceu', async () => {
-    const { repository } = fakeRepository();
+  test('oferece quem atende e guarda o que ofereceu', async () => {
+    const { agenda } = fakeAgenda();
     const { channel, lists } = fakeChannel();
 
-    const result = await run({ repository, kind: SCHEDULING_FLOW_ACTION_KIND.LIST_AGENTS, channel });
+    const result = await run({ agenda, kind: SCHEDULING_FLOW_ACTION_KIND.LIST_AGENTS, channel });
 
     expect(lists[0]?.rows).toEqual([{ id: ANA, title: 'Ana' }]);
     expect(result?.context?.[SCHEDULING_CONTEXT_KEY.AGENT_OPTIONS]).toEqual([ANA]);
     expect(result?.next).toBeUndefined();
   });
 
-  test('agenda desligada chama uma pessoa em vez de listar', async () => {
-    const { repository } = fakeRepository({ settings: { ...SETTINGS, isEnabled: false } });
+  test('agenda sem ninguem cadastrado chama uma pessoa em vez de listar', async () => {
+    const { agenda } = fakeAgenda({ attendants: [] });
     const { channel, texts, lists } = fakeChannel();
 
     const result = await run({
-      repository,
+      agenda,
       kind: SCHEDULING_FLOW_ACTION_KIND.LIST_AGENTS,
       channel,
       actionParams: { [SCHEDULING_FLOW_PARAM.UNAVAILABLE_NEXT]: HANDOFF_NODE },
@@ -202,31 +163,27 @@ describe('list_available_slots', () => {
   const offered = { [SCHEDULING_CONTEXT_KEY.AGENT_OPTIONS]: [ANA] };
 
   test('lista os horarios da pessoa escolhida', async () => {
-    const { repository } = fakeRepository();
+    const { agenda } = fakeAgenda();
     const { channel, lists } = fakeChannel();
 
     const result = await run({
-      repository,
+      agenda,
       kind: SCHEDULING_FLOW_ACTION_KIND.LIST_SLOTS,
       channel,
       context: { ...offered, [SCHEDULING_CONTEXT_KEY.AGENT_ID]: ANA },
     });
 
-    expect(lists[0]?.rows.map((row) => row.id)).toEqual([
-      FIRST_SLOT,
-      '2026-08-21T13:00:00.000Z',
-      '2026-08-21T14:00:00.000Z',
-    ]);
+    expect(lists[0]?.rows.map((row) => row.id)).toEqual([...SLOTS]);
     expect(result?.context?.[SCHEDULING_CONTEXT_KEY.SLOT_OPTIONS]).toHaveLength(3);
   });
 
   /** Quem digita responde "1", e a posicao vale tanto quanto o id da linha tocada. */
   test('aceita a posicao na lista como escolha', async () => {
-    const { repository } = fakeRepository();
+    const { agenda } = fakeAgenda();
     const { channel } = fakeChannel();
 
     const result = await run({
-      repository,
+      agenda,
       kind: SCHEDULING_FLOW_ACTION_KIND.LIST_SLOTS,
       channel,
       context: { ...offered, [SCHEDULING_CONTEXT_KEY.AGENT_ID]: '1' },
@@ -237,11 +194,11 @@ describe('list_available_slots', () => {
 
   /** Id que nunca foi oferecido nao vira consulta a agenda de outra pessoa. */
   test('recusa escolha que nao estava na lista', async () => {
-    const { repository } = fakeRepository();
+    const { agenda } = fakeAgenda();
     const { channel, texts } = fakeChannel();
 
     const result = await run({
-      repository,
+      agenda,
       kind: SCHEDULING_FLOW_ACTION_KIND.LIST_SLOTS,
       channel,
       context: { ...offered, [SCHEDULING_CONTEXT_KEY.AGENT_ID]: BRUNO },
@@ -253,11 +210,11 @@ describe('list_available_slots', () => {
   });
 
   test('sem horario livre a conversa vai para uma pessoa', async () => {
-    const { repository } = fakeRepository({ rules: [] });
+    const { agenda } = fakeAgenda({ slots: [] });
     const { channel, texts } = fakeChannel();
 
     const result = await run({
-      repository,
+      agenda,
       kind: SCHEDULING_FLOW_ACTION_KIND.LIST_SLOTS,
       channel,
       context: { ...offered, [SCHEDULING_CONTEXT_KEY.AGENT_ID]: ANA },
@@ -277,54 +234,50 @@ describe('book_appointment', () => {
   };
 
   test('reserva o horario escolhido e confirma', async () => {
-    const { repository, stored } = fakeRepository();
+    const { agenda, booked } = fakeAgenda();
     const { channel, texts } = fakeChannel();
 
-    const result = await run({
-      repository,
-      kind: SCHEDULING_FLOW_ACTION_KIND.BOOK,
-      channel,
-      context: chosen,
-    });
+    const result = await run({ agenda, kind: SCHEDULING_FLOW_ACTION_KIND.BOOK, channel, context: chosen });
 
-    expect(stored).toHaveLength(1);
-    expect(stored[0]?.sessionId).toBe(SESSION);
+    expect(booked).toHaveLength(1);
+    expect(booked[0]?.sessionId).toBe(SESSION);
+    expect(booked[0]?.resourceId).toBe(ANA);
     expect(texts[0]).toContain(SCHEDULING_FLOW_MESSAGE.BOOKED);
     // Sem `next`: reservado, a conversa termina no proprio no.
     expect(result?.next).toBeUndefined();
   });
 
   test('horario tomado no meio do caminho volta para a lista', async () => {
-    const { repository, taken } = fakeRepository();
-    taken.add(`${ANA}@${FIRST_SLOT}`);
+    const { agenda, booked } = fakeAgenda({ taken: [`${ANA}@${FIRST_SLOT}`] });
     const { channel, texts } = fakeChannel();
 
     const result = await run({
-      repository,
+      agenda,
       kind: SCHEDULING_FLOW_ACTION_KIND.BOOK,
       channel,
       context: chosen,
       actionParams: { [SCHEDULING_FLOW_PARAM.RETRY_NEXT]: SLOTS_NODE },
     });
 
+    expect(booked).toHaveLength(0);
     expect(texts).toEqual([SCHEDULING_FLOW_MESSAGE.TAKEN]);
     expect(result?.next).toBe(SLOTS_NODE);
   });
 
   /** Instante que ninguem ofereceu nao vira reserva, mesmo sendo um horario valido da agenda. */
   test('recusa horario que nao estava na lista oferecida', async () => {
-    const { repository, stored } = fakeRepository();
+    const { agenda, booked } = fakeAgenda();
     const { channel, texts } = fakeChannel();
 
     const result = await run({
-      repository,
+      agenda,
       kind: SCHEDULING_FLOW_ACTION_KIND.BOOK,
       channel,
       context: { ...chosen, [SCHEDULING_CONTEXT_KEY.SLOT]: '2026-08-21T13:00:00.000Z' },
       actionParams: { [SCHEDULING_FLOW_PARAM.RETRY_NEXT]: SLOTS_NODE },
     });
 
-    expect(stored).toHaveLength(0);
+    expect(booked).toHaveLength(0);
     expect(texts).toEqual([SCHEDULING_FLOW_MESSAGE.NOT_UNDERSTOOD]);
     expect(result?.next).toBe(SLOTS_NODE);
   });

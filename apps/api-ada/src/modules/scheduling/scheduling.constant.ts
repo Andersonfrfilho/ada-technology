@@ -39,6 +39,14 @@ export const SCHEDULING_DEFAULT_SERVICE = {
 /** Fuso do recurso novo. O time e daqui; quem atende de outro lugar troca na tela. */
 export const SCHEDULING_RESOURCE_TIMEZONE = 'America/Sao_Paulo';
 
+/**
+ * Ate onde a conversa procura horario.
+ *
+ * Bem menor que o teto de consulta do modulo de proposito: dez linhas e o que cabe numa lista do
+ * WhatsApp, e oferecer o mes inteiro so faria o cliente escolher entre os dez primeiros mesmo.
+ */
+export const SCHEDULING_FLOW_HORIZON_DAYS = 7;
+
 /** Teto de pagina do modulo. O time cabe numa pagina, e o provisionamento le tudo de uma vez. */
 export const SCHEDULING_PROVISION_PAGE_SIZE = 100;
 
