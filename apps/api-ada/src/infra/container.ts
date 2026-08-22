@@ -63,15 +63,9 @@ import { SaveFlowGraphUseCase } from '@/modules/flow/saveFlowGraph.use-case';
 import type { FlowGraphPort } from '@/modules/flow/types/flow.types';
 import { DrizzlePanelConversationRepository } from '@/modules/panel/DrizzlePanelConversationRepository';
 import { DrizzlePanelLeadRepository } from '@/modules/panel/DrizzlePanelLeadRepository';
-import { BookAppointmentUseCase } from '@/modules/scheduling/bookAppointment.use-case';
-import { CancelAppointmentUseCase } from '@/modules/scheduling/cancelAppointment.use-case';
-import { DrizzleSchedulingRepository } from '@/modules/scheduling/DrizzleSchedulingRepository';
-import { ListAvailableSlotsUseCase } from '@/modules/scheduling/listAvailableSlots.use-case';
-import { ListSchedulableAgentsUseCase } from '@/modules/scheduling/listSchedulableAgents.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
 import { SchedulingAgenda } from '@/modules/scheduling/SchedulingAgenda';
 import { ProvisionSchedulingResourcesUseCase } from '@/modules/scheduling/provisionSchedulingResources.use-case';
-import { SaveScheduleUseCase } from '@/modules/scheduling/saveSchedule.use-case';
 import { SCHEDULING_MODULE_CONFIG } from '@/modules/scheduling/scheduling.constant';
 import { ExportConversationTranscriptUseCase } from '@/modules/panel/exportConversationTranscript.use-case';
 import { RedisRealtimeTicketStore } from '@/modules/panel/RedisRealtimeTicketStore';
@@ -307,16 +301,6 @@ export const authProviders: ReadonlyMap<string, AuthProviderInterface<LocalCrede
 export const panelConversations = new DrizzlePanelConversationRepository();
 export const transcriptMessages = new DrizzleTranscriptRepository();
 export const panelLeads = new DrizzlePanelLeadRepository();
-
-export const schedulingRepository = new DrizzleSchedulingRepository();
-export const listAvailableSlots = new ListAvailableSlotsUseCase(schedulingRepository);
-export const bookAppointment = new BookAppointmentUseCase(schedulingRepository, listAvailableSlots);
-export const cancelAppointment = new CancelAppointmentUseCase(schedulingRepository);
-export const saveSchedule = new SaveScheduleUseCase(schedulingRepository, recordAuditLog);
-export const listSchedulableAgents = new ListSchedulableAgentsUseCase(
-  agentRepository,
-  schedulingRepository,
-);
 
 export const realtimeTickets = new RedisRealtimeTicketStore();
 

@@ -34,10 +34,13 @@ nasce `false`.
 - caso contrário apresenta o próximo nó pelo `ChannelAdapterInterface` recebido.
 
 Agendar pelo bot são três ações de fluxo, e não nós de escolha: quem atende e quais horários sobraram
-só se sabe no meio da conversa, e `options` no grafo é estático. `list_schedule_agents` monta a lista
-de quem tem faixa semanal cadastrada, `list_available_slots` a dos horários livres da pessoa
-escolhida, e `book_appointment` reserva chamando `BookAppointmentUseCase` **em processo** — não existe
-rota HTTP pública de reserva, que seria porta anônima para ocupar a agenda inteira do time. Cada ação
+só se sabe no meio da conversa, e `options` no grafo é estático. As três falam com `SchedulingAgenda`,
+a tradução fina entre o vocabulário do produto (atendente) e o do módulo publicado
+`@adatechnology/scheduling-module` (recurso + serviço, ligados pelo `externalRef` que guarda o id do
+atendente). `list_schedule_agents` monta a lista de quem tem recurso ativo, `list_available_slots` a
+dos horários livres da pessoa escolhida, e `book_appointment` reserva chamando `RequestBookingUseCase`
+**em processo** — não existe rota HTTP pública de reserva, que seria porta anônima para ocupar a
+agenda inteira do time. Cada ação
 guarda no contexto o que ofereceu (`scheduleAgentOptions`, `scheduleSlotOptions`) e a seguinte só
 aceita resposta que esteja nessa lista; o nó de pergunta entre elas não declara `question`, porque o
 texto já foi o corpo da lista interativa. Sem agenda ligada, sem ninguém com faixa ou sem horário
@@ -116,11 +119,7 @@ headers de segurança e `X-Trace-Id`. Rate limit por IP declarado na própria ro
 | `GET` | `/v1/panel/template-settings` | 🔒 `agent`. Template de reengajamento escolhido. |
 | `PUT` | `/v1/panel/template-settings` | 🔒 `agent`. Auditado (`settings.changed`). |
 | `GET` | `/v1/panel/agents` | 🔒 `agent`. Atendentes ativos (id, nome, papel) para montar a grade da agenda. |
-| `GET` | `/v1/panel/schedule` | 🔒 `agent`. Configuração da agenda e a grade semanal por atendente. |
-| `PUT` | `/v1/panel/schedule` | 🔒 `admin`. Salva as duas de uma vez. Auditado (`schedule.changed`). |
-| `GET` | `/v1/panel/schedule/slots` | 🔒 `agent`. `?agentId=a,b` — horários livres para **todos** os selecionados. `422` com a agenda desligada. |
-| `GET` | `/v1/panel/appointments` | 🔒 `agent`. `?from&to&agentId`. |
-| `DELETE` | `/v1/panel/appointments/:id` | 🔒 `agent`. Cancela e libera o horário. Auditado (`appointment.canceled`). |
+| `*` | `/v1/panel/scheduling/*` | 🔒 `admin`. Rotas do `scheduling-module`, uma rota-ponte da Ada por rota do módulo (`schedulingRouteBridge.ts`) — sem curinga, para não entregar rate limit e papel de mão beijada. A empresa vem do ambiente no `schedulingAuthResolver`, nunca do corpo. |
 | `GET` | `/v1/panel/templates` | 🔒 `agent`. Catálogo da Meta. `503` sem WhatsApp configurado. |
 | `POST` | `/v1/panel/templates` | 🔒 `agent`. Submete template à aprovação. Auditado (`template.created`). |
 | `POST` | `/v1/panel/conversations/:id/takeover` | 🔒 `agent`. Cala o bot. Auditado. `204`. |
@@ -242,7 +241,7 @@ de carregamento aparece clara antes de a aplicação montar.
 | Seção | Tela | Nota |
 |---|---|---|
 | Conversas | `ConversationsWorkspace` | Inbox + transcript + takeover. |
-| Agenda | `Schedule.page` | Configuração do agendamento, grade semanal por atendente e lista de agendamentos. O `PUT` é 🔒 `admin`; a grade é salva inteira de uma vez, para não publicar estado intermediário. Hora exibida no fuso da agenda, nunca no do navegador. |
+| Agenda | `SchedulingWorkspace` | Tela inteira do `@adatechnology/scheduling-ui`: agenda, reservas, atendentes, serviços e disponibilidade. O produto só injeta a `SchedulingApi` (rotas `/v1/panel/scheduling`), o vocabulário por `labels` e a área aberta na query string. |
 | Fluxos | `Flows.page` | Editor do grafo do bot. |
 | Mensagens | `MessagesWorkspace` | Só `getMessages`/`saveMessages`; sem tópicos, templates nem transcrição a tela colapsa na aba do bot e some a barra de abas. |
 | Templates | `WhatsAppTemplatesSettings` | Componente é presentacional — todo o estado vive em `templateSettings.hook.ts`. |

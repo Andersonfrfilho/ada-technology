@@ -10,7 +10,7 @@
 export const SCHEDULING_BASE_PATH = '/v1/panel/scheduling';
 
 /** Escopo do modulo esperado por `dispatchRoute` nas rotas de agenda. */
-export const SCHEDULING_ADMIN_SCOPE = 'admin';
+export const SCHEDULING_ADMIN_SCOPE = 'scheduling:admin';
 
 /**
  * A janela e a tolerancia que o modulo aplica.

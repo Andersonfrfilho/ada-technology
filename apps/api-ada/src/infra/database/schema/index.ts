@@ -14,10 +14,3 @@ export {
   knowledgeItems,
 } from '@/infra/database/schema/knowledge.schema';
 export { leads } from '@/infra/database/schema/lead.schema';
-export {
-  agentSchedules,
-  agentTimeOff,
-  appointmentAgents,
-  appointments,
-  scheduleSettings,
-} from '@/infra/database/schema/scheduling.schema';
