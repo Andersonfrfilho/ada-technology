@@ -38,10 +38,9 @@ header (`security.md` §2).
 - `@adatechnology/scheduling-contracts`, `-module` e (no painel) `-ui` no `package.json`.
 - `runSchedulingMigrations` em `infra/database/migrate.ts`, antes das migrations da Ada, no mesmo
   molde do catálogo (journal e `pgSchema` próprios).
-- Migration `0002` **derruba** as quatro tabelas locais (`appointment_agents`, `appointments`,
-  `agent_time_off`, `agent_schedules`, `schedule_settings`). Destrutiva por definição: só é segura
-  porque a agenda nunca chegou a receber reserva real — nenhuma delas tem linha em produção.
-  Confirmar isso no banco antes de aplicar, e não depois.
+- A migration que **derruba** as tabelas locais fica na F7, onde o arquivo de schema some e o
+  `drizzle-kit generate` a produz a partir do snapshot. Escrevê-la à mão agora deixaria o snapshot
+  desalinhado, e o próximo `generate` emitiria o `DROP` de novo.
 - **Aceite:** `bun run db:migrate` sobe do zero e num banco que já tem a `0001`.
 
 ### F2 — Container
@@ -89,7 +88,10 @@ header (`security.md` §2).
 - Apagar `modules/scheduling/{availability,timezone,DrizzleSchedulingRepository,*.use-case,
   scheduling.controller,scheduling.error,scheduling.schema}.ts` e seus testes; fica o registro das
   ações de fluxo e as constantes que o fluxo usa.
-- `infra/database/schema/scheduling.schema.ts` sai.
+- `infra/database/schema/scheduling.schema.ts` sai, e o `drizzle-kit generate` gera a migration
+  que derruba `appointment_agents`, `appointments`, `agent_time_off`, `agent_schedules` e
+  `schedule_settings`. Destrutiva por definição: só é segura porque a agenda nunca chegou a
+  receber reserva real. Conferir no banco antes de aplicar, não depois.
 - `ai-context.md` atualizado (`code-standart.md` §14).
 - **Aceite:** `rg "modules/scheduling/(availability|timezone)"` não acha nada; `bun test` verde.
 

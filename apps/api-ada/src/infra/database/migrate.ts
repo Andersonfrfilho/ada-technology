@@ -8,6 +8,7 @@
 
 import { runCatalogMigrations } from '@adatechnology/catalog-module';
 import { runMetaWhatsAppMigrations } from '@adatechnology/meta-whatsapp-module';
+import { runSchedulingMigrations } from '@adatechnology/scheduling-module';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 
 import { closeDatabase, database } from '@/infra/database/client';
@@ -27,6 +28,12 @@ async function runMigrations(): Promise<void> {
   logger.info({ message: 'Aplicando migrations do modulo de catalogo', source: SOURCE });
 
   await runCatalogMigrations({ db: database as never, migrate: migrate as never });
+
+  // Idem: schema `scheduling` proprio. O recurso da agenda referencia o atendente por id, e nao
+  // por FK, justamente para o modulo nao depender do schema deste produto.
+  logger.info({ message: 'Aplicando migrations do modulo de agendamento', source: SOURCE });
+
+  await runSchedulingMigrations({ db: database as never, migrate: migrate as never });
 
   logger.info({ message: 'Aplicando migrations da Ada', source: SOURCE });
 
