@@ -6,6 +6,24 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+/** Prefixo das rotas do modulo. Como no catalogo, o painel e o unico consumidor. */
+export const SCHEDULING_BASE_PATH = '/v1/panel/scheduling';
+
+/** Escopo do modulo esperado por `dispatchRoute` nas rotas de agenda. */
+export const SCHEDULING_ADMIN_SCOPE = 'admin';
+
+/**
+ * A janela e a tolerancia que o modulo aplica.
+ *
+ * `maxLookaheadDays` e teto de consulta, nao horizonte de oferta: quem pergunta a disponibilidade
+ * de um ano inteiro varre a agenda a toa. O passado nao e perdoado em nenhum minuto — reserva
+ * retroativa e sempre erro de quem chamou, nunca gentileza.
+ */
+export const SCHEDULING_MODULE_CONFIG = {
+  maxLookaheadDays: 90,
+  pastBookingToleranceMinutes: 0,
+} as const;
+
 export const APPOINTMENT_STATUS = {
   SCHEDULED: 'scheduled',
   CANCELED: 'canceled',

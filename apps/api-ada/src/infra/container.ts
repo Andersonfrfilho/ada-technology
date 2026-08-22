@@ -16,6 +16,8 @@ import type { LoggerPort as CatalogLoggerPort } from '@adatechnology/catalog-con
 import { createS3ProductImageStorage } from '@adatechnology/catalog-image-storage-provider';
 import { createCatalogModule } from '@adatechnology/catalog-module';
 import { MetaCatalogProvider } from '@adatechnology/meta-catalog-provider';
+import type { LoggerPort as SchedulingLoggerPort } from '@adatechnology/scheduling-contracts';
+import { createSchedulingModule } from '@adatechnology/scheduling-module';
 import { createObjectStorageProvider } from '@adatechnology/object-storage-provider';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
 import { WhatsAppTemplateProvider } from '@adatechnology/meta-whatsapp-provider';
@@ -68,6 +70,7 @@ import { ListAvailableSlotsUseCase } from '@/modules/scheduling/listAvailableSlo
 import { ListSchedulableAgentsUseCase } from '@/modules/scheduling/listSchedulableAgents.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
 import { SaveScheduleUseCase } from '@/modules/scheduling/saveSchedule.use-case';
+import { SCHEDULING_MODULE_CONFIG } from '@/modules/scheduling/scheduling.constant';
 import { ExportConversationTranscriptUseCase } from '@/modules/panel/exportConversationTranscript.use-case';
 import { RedisRealtimeTicketStore } from '@/modules/panel/RedisRealtimeTicketStore';
 import { ReleaseConversationUseCase } from '@/modules/panel/releaseConversation.use-case';
@@ -87,6 +90,7 @@ import { logger } from '@/shared/logger';
 export const START_STATE = 'start';
 
 const CATALOG_SOURCE = 'modules.catalog';
+const SCHEDULING_SOURCE = 'modules.scheduling';
 
 /** O modulo loga por assinatura propria; a mascara e o nivel continuam sendo os da Ada. */
 const catalogLogger: CatalogLoggerPort = {
@@ -94,6 +98,14 @@ const catalogLogger: CatalogLoggerPort = {
   info: (message, meta) => logger.info({ message, source: CATALOG_SOURCE, ...(meta ? { meta } : {}) }),
   warn: (message, meta) => logger.warn({ message, source: CATALOG_SOURCE, ...(meta ? { meta } : {}) }),
   error: (message, meta) => logger.error({ message, source: CATALOG_SOURCE, ...(meta ? { meta } : {}) }),
+};
+
+/** Mesma razao do logger do catalogo: assinatura do pacote, mascara e nivel da Ada. */
+const schedulingLogger: SchedulingLoggerPort = {
+  debug: (message, meta) => logger.debug({ message, source: SCHEDULING_SOURCE, ...(meta ? { meta } : {}) }),
+  info: (message, meta) => logger.info({ message, source: SCHEDULING_SOURCE, ...(meta ? { meta } : {}) }),
+  warn: (message, meta) => logger.warn({ message, source: SCHEDULING_SOURCE, ...(meta ? { meta } : {}) }),
+  error: (message, meta) => logger.error({ message, source: SCHEDULING_SOURCE, ...(meta ? { meta } : {}) }),
 };
 
 export const realtime = new SseHub(new RedisRelay());
@@ -486,6 +498,22 @@ export const catalogModule = createCatalogModule({
   },
 });
 
+/**
+ * A agenda.
+ *
+ * Sem `calendarSync` de proposito: a capacidade e opcional por ausencia, e ligar o espelho no
+ * Google e plugar o provider depois, sem tocar em nenhuma chamada. O relogio entra pela porta
+ * para o teste nao depender do dia em que roda.
+ */
+export const schedulingModule = createSchedulingModule({
+  db: database as never,
+  config: SCHEDULING_MODULE_CONFIG,
+  providers: {
+    logger: schedulingLogger,
+    clock: { now: () => new Date() },
+  },
+});
+
 export const container = {
   realtime,
   metaWhatsApp,
@@ -523,6 +551,7 @@ export const container = {
   createWhatsAppTemplate,
   catalogModule,
   catalogMetaSync,
+  schedulingModule,
 } as const;
 
 export type Container = typeof container;
