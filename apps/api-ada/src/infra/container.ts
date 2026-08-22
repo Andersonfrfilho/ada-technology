@@ -69,6 +69,7 @@ import { DrizzleSchedulingRepository } from '@/modules/scheduling/DrizzleSchedul
 import { ListAvailableSlotsUseCase } from '@/modules/scheduling/listAvailableSlots.use-case';
 import { ListSchedulableAgentsUseCase } from '@/modules/scheduling/listSchedulableAgents.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
+import { ProvisionSchedulingResourcesUseCase } from '@/modules/scheduling/provisionSchedulingResources.use-case';
 import { SaveScheduleUseCase } from '@/modules/scheduling/saveSchedule.use-case';
 import { SCHEDULING_MODULE_CONFIG } from '@/modules/scheduling/scheduling.constant';
 import { ExportConversationTranscriptUseCase } from '@/modules/panel/exportConversationTranscript.use-case';
@@ -514,6 +515,12 @@ export const schedulingModule = createSchedulingModule({
   },
 });
 
+export const provisionSchedulingResources = new ProvisionSchedulingResourcesUseCase(
+  schedulingModule,
+  agentRepository,
+  environment.ADA_COMPANY_ID,
+);
+
 export const container = {
   realtime,
   metaWhatsApp,
@@ -552,6 +559,7 @@ export const container = {
   catalogModule,
   catalogMetaSync,
   schedulingModule,
+  provisionSchedulingResources,
 } as const;
 
 export type Container = typeof container;

@@ -24,6 +24,24 @@ export const SCHEDULING_MODULE_CONFIG = {
   pastBookingToleranceMinutes: 0,
 } as const;
 
+/**
+ * O servico unico do produto.
+ *
+ * A agenda daqui nao vende procedimento com duracao propria: e conversa com atendente. Um servico
+ * so mantem a tela simples e ainda deixa o dia em que houver dois ser cadastro, nao migracao.
+ */
+export const SCHEDULING_DEFAULT_SERVICE = {
+  name: 'Atendimento',
+  durationMinutes: 30,
+  requiresConfirmation: false,
+} as const;
+
+/** Fuso do recurso novo. O time e daqui; quem atende de outro lugar troca na tela. */
+export const SCHEDULING_RESOURCE_TIMEZONE = 'America/Sao_Paulo';
+
+/** Teto de pagina do modulo. O time cabe numa pagina, e o provisionamento le tudo de uma vez. */
+export const SCHEDULING_PROVISION_PAGE_SIZE = 100;
+
 export const APPOINTMENT_STATUS = {
   SCHEDULED: 'scheduled',
   CANCELED: 'canceled',
