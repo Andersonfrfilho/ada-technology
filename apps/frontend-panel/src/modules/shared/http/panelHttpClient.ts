@@ -26,6 +26,8 @@ export type PanelRequest = {
   readonly binary?: { readonly blob: Blob; readonly contentType: string };
   /** Multipart (audio do simulador). Sem `Content-Type` nosso: quem escreve o boundary e o navegador. */
   readonly form?: FormData;
+  /** Cabecalho extra da rota (ex: `Idempotency-Key`). Nunca segredo: quem autentica e o Bearer. */
+  readonly headers?: Readonly<Record<string, string>>;
 };
 
 /**
@@ -103,6 +105,7 @@ async function send(request: PanelRequest): Promise<Response> {
       credentials: 'include',
       headers: {
         ...payload.headers,
+        ...request.headers,
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
       ...('body' in payload ? { body: payload.body } : {}),

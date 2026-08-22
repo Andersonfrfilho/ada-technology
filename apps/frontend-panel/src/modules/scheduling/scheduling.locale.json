@@ -1,0 +1,11 @@
+{
+  "workspace": {
+    "title": "Agendamento",
+    "areaNav": "Areas do agendamento",
+    "agendaTab": "Agenda",
+    "bookingsTab": "Reservas",
+    "resourcesTab": "Atendentes",
+    "servicesTab": "Servicos",
+    "availabilityTab": "Disponibilidade"
+  }
+}

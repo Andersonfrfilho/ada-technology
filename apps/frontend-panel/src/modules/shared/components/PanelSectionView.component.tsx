@@ -11,7 +11,7 @@ import { DocumentsPage } from '@/modules/documents/Documents.page';
 import { FlowsPage } from '@/modules/flows/Flows.page';
 import { InboxPage } from '@/modules/inbox/Inbox.page';
 import { LeadsPage } from '@/modules/leads/Leads.page';
-import { SchedulePage } from '@/modules/schedule/Schedule.page';
+import { SchedulingPage } from '@/modules/scheduling/Scheduling.page';
 import { MessagesPage } from '@/modules/settings/Messages.page';
 import { TemplatesPage } from '@/modules/settings/Templates.page';
 import { PANEL_SECTION, type PanelSection } from '@/modules/shared/navigation/panelSection.constant';
@@ -31,7 +31,7 @@ export function PanelSectionView({ section }: PanelSectionViewProps) {
     case PANEL_SECTION.CONVERSATIONS:
       return <InboxPage />;
     case PANEL_SECTION.SCHEDULE:
-      return <SchedulePage />;
+      return <SchedulingPage />;
     case PANEL_SECTION.FLOWS:
       return <FlowsPage />;
     case PANEL_SECTION.MESSAGES:
