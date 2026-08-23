@@ -9,9 +9,12 @@ COPY package.json bun.lock tsconfig.json ./
 COPY apps/api-ada/package.json apps/api-ada/
 COPY apps/frontend-panel/package.json apps/frontend-panel/
 COPY apps/frontend-site/package.json apps/frontend-site/
+# O `@ada/user-sdk` e workspace: sem o manifest dele aqui, o `bun install` recusa a resolver.
+COPY packages/user-sdk/package.json packages/user-sdk/
 
 RUN bun install --frozen-lockfile
 
+COPY packages/ packages/
 COPY apps/frontend-site/ apps/frontend-site/
 
 ARG VITE_API_BASE_URL
