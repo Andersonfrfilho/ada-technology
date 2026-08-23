@@ -70,6 +70,14 @@ const environmentSchema = z
     // O bucket do Railway serve por subdominio; o MinIO do compose, por caminho.
     OBJECT_STORAGE_FORCE_PATH_STYLE: booleanFromString.default('true'),
 
+    // Vazio desliga o envio por ausencia: o modulo de usuario nao recebe `providers.email` e o
+    // pedido de redefinicao de senha so dispara o hook, sem mensagem.
+    EMAIL_DRIVER: z.enum(['', 'smtp', 'resend', 'ses']).default(''),
+    EMAIL_FROM: z.string().default(''),
+    EMAIL_SMTP_URL: z.string().default(''),
+    EMAIL_RESEND_API_KEY: z.string().default(''),
+    EMAIL_SES_REGION: z.string().default('us-east-1'),
+
     INTENT_CLASSIFIER_ENABLED: booleanFromString,
     GROQ_API_KEY: z.string().default(''),
     GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
@@ -127,6 +135,25 @@ const environmentSchema = z
           code: z.ZodIssueCode.custom,
           path: [key],
           message: `${key} precisa ser uma URL valida`,
+        });
+      }
+    }
+  })
+  .superRefine((value, context) => {
+    if (value.EMAIL_DRIVER === '') return;
+
+    const requiredByDriver = {
+      smtp: ['EMAIL_FROM', 'EMAIL_SMTP_URL'],
+      resend: ['EMAIL_FROM', 'EMAIL_RESEND_API_KEY'],
+      ses: ['EMAIL_FROM', 'EMAIL_SES_REGION'],
+    } as const;
+
+    for (const key of requiredByDriver[value.EMAIL_DRIVER]) {
+      if (value[key].length === 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `${key} e obrigatorio quando EMAIL_DRIVER=${value.EMAIL_DRIVER}`,
         });
       }
     }

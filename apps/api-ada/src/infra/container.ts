@@ -30,6 +30,7 @@ import { createGroqTranscriber, GROQ_BASE_URL } from '@adatechnology/audio-trans
 
 import { environment } from '@/infra/config/environment';
 import { database } from '@/infra/database/client';
+import { createConfiguredEmailDriver } from '@/infra/email/emailDriver';
 import { RedisRelay } from '@/infra/realtime/RedisRelay';
 import { ACCESS_TOKEN_AUDIENCE, ACCESS_TOKEN_ISSUER } from '@/modules/agent/agent.constant';
 import { AuthenticateAgentUseCase } from '@/modules/agent/authenticateAgent.use-case';
@@ -308,12 +309,12 @@ export const signOutAgent = new SignOutAgentUseCase({ refreshTokens, recordAudit
  * convivem, o token de um precisa passar pelo `authenticateRequest` do outro — sem isso as rotas
  * novas de escopo `user`/`admin` responderiam 401 antes de o modulo rodar.
  *
- * Sem `providers.email`: nenhum driver do `@adatechnology/email-provider` tem o mesmo formato de
- * `EmailDriverPort` que o `user-contracts` espera (`SendEmailParams`/`DeliveryAttemptResult`
- * divergem entre os dois pacotes). Ate um adapter de traducao ser escrito, o hook
- * `onPasswordResetRequested` e quem precisa levar o e-mail — capacidade por ausencia, `hasEmail`
- * fica falso.
+ * `providers.email` vem de `EMAIL_DRIVER` (ver `infra/email/emailDriver.ts`): vazio desliga o envio
+ * por ausencia e sobra o hook `onPasswordResetRequested` para quem quiser notificar por conta
+ * propria.
  */
+const emailDriver = createConfiguredEmailDriver();
+
 export const userModule = await createUserModule({
   db: database as never,
   config: {
@@ -328,6 +329,9 @@ export const userModule = await createUserModule({
   },
   providers: {
     refreshTokenStore: new RedisUserRefreshTokenStore(),
+    // Espalhado em vez de `email: undefined`: com `exactOptionalPropertyTypes`, a chave presente
+    // com `undefined` nao e a mesma coisa que a chave ausente, e e a ausencia que desliga.
+    ...(emailDriver ? { email: emailDriver } : {}),
     logger: userLogger,
   },
   hooks: {
