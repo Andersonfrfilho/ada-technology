@@ -124,10 +124,32 @@ default silencioso para segredo.
 | `WIDGET_ALLOWED_ORIGINS` | `<site>` do ambiente | idem | so a landing; o widget e publico e nao autentica |
 | `PANEL_JWT_SECRET` | proprio, ≥32 chars | **outro**, proprio | `railway-secrets.sh` |
 | `PANEL_ACCESS_TOKEN_TTL_MINUTES` | `15` | `15` | teto do schema |
+| `PANEL_RESET_URL_TEMPLATE` | `https://<painel>/reset-password?token={token}` | idem, dominio de staging | **obrigatoria**, sem default; precisa conter `{token}` ou o modulo falha no boot |
+| `EMAIL_DRIVER` | `resend` \| `ses` | `smtp` | vazio desliga o envio; o pedido de reset so dispara o hook |
+| `EMAIL_FROM` | `Ada <nao-responda@adatechnology.com.br>` | `Ada <nao-responda@ada.local>` | remetente; exigido por qualquer driver |
+| `EMAIL_SMTP_URL` | — | `smtp://<mailpit>.railway.internal:1025` | so com `EMAIL_DRIVER=smtp` |
+| `EMAIL_RESEND_API_KEY` | chave do Resend | — | `railway-secrets.sh`; so com `EMAIL_DRIVER=resend` |
+| `EMAIL_SES_REGION` | `us-east-1` | — | so com `EMAIL_DRIVER=ses` (credencial AWS pelo ambiente padrao do SDK) |
 | `WHATSAPP_ENABLED` | `false` ate ter credencial | `false` | |
 | `WHATSAPP_GRAPH_BASE_URL` | `https://graph.facebook.com` | idem | em dev aponta para o mock |
 | `INTENT_CLASSIFIER_ENABLED` | `false` | `false` | ligado exige `GROQ_API_KEY` |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` | idem | so importa com o classificador ligado |
+
+### E-mail transacional
+
+**A Railway nao tem produto de e-mail transacional.** Subir um servidor de e-mail proprio la e
+armadilha de entregabilidade: IP compartilhado sem reputacao, sem dominio verificado com DKIM, e a
+porta 25 de saida normalmente bloqueada — a mensagem sai e cai em spam, ou nem sai.
+
+- **Producao** usa provedor externo: `EMAIL_DRIVER=resend` (recomendado — API HTTP, sem SMTP de
+  saida, dominio verificado no painel deles) ou `EMAIL_DRIVER=ses`.
+- **Staging** nao manda e-mail para fora. Suba um servico extra a partir da imagem
+  `axllent/mailpit:v1.31.0` (sem dominio publico, so rede privada), aponte `EMAIL_SMTP_URL` para
+  `smtp://<nome-do-servico>.railway.internal:1025` e leia a caixa pelo proxy do Railway na 8025.
+  Endereco de cliente em staging costuma ser real: um envio de verdade queimaria reputacao por
+  engano.
+- **Deixar `EMAIL_DRIVER` vazio e uma opcao valida** — o modulo responde `hasEmail: false`, o token
+  de reset continua sendo criado e o hook `onPasswordResetRequested` dispara. So nao ha mensagem.
 
 ### Bucket da imagem de produto (opcional)
 

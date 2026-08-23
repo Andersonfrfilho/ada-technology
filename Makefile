@@ -29,7 +29,7 @@ install: ## Instala dependencias e materializa o .env.development dos frontends
 		test -f apps/$$app/.env.development || cp apps/$$app/.env.example apps/$$app/.env.development; \
 	done
 
-up: ## Sobe postgres, redis e o mock da Graph API
+up: ## Sobe postgres, redis, o mock da Graph API e a caixa de entrada local
 	$(COMPOSE) up -d
 	@echo "infra de $(PROJECT_NAME)-$(ENV) no ar"
 
