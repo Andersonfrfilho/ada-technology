@@ -51,6 +51,8 @@ fi
 PROJECT_NAME="ada"
 COMPANY_ID="fb2298b4-084d-4f12-bd98-df5b46a13bb1"
 APP_SERVICES=(api panel site)
+MAILPIT_SERVICE="mailpit"
+MAILPIT_IMAGE="axllent/mailpit:v1.31.0"
 
 # Dominios proprios de cada ambiente. Criar o dominio no Railway e trabalho de
 # `railway-domains.py`; aqui eles so entram nas variaveis.
@@ -65,6 +67,13 @@ if [[ "$ENVIRONMENT_NAME" == "production" ]]; then
   CUSTOM_SITE="https://adatechnology.com.br"
   CUSTOM_SITE_ALTERNATE="https://www.adatechnology.com.br"
   WHATSAPP_PHONE_NUMBER_ID="1129051206965973"
+  EMAIL_FROM="Ada <nao-responda@adatechnology.com.br>"
+  # A Railway nao tem produto de e-mail transacional, e servidor de e-mail proprio la nao entrega:
+  # IP compartilhado sem reputacao, sem dominio verificado com DKIM, porta 25 de saida bloqueada.
+  # Producao espera provedor externo — vazio ate a chave existir, e o modulo responde
+  # `hasEmail: false` em vez de a API subir quebrada.
+  EMAIL_DRIVER=""
+  EMAIL_SMTP_URL=""
 else
   CUSTOM_API="https://api.staging.adatechnology.com.br"
   CUSTOM_PANEL="https://painel.staging.adatechnology.com.br"
@@ -73,6 +82,11 @@ else
   # Numero de teste da Meta (WhatsApp -> Configuracao da API -> seletor "De"). Preencher aqui e o
   # unico passo que liga o canal no staging.
   WHATSAPP_PHONE_NUMBER_ID=""
+  EMAIL_FROM="Ada <nao-responda@staging.adatechnology.com.br>"
+  # Endereco de cliente em staging costuma ser real: um envio de verdade queimaria reputacao de
+  # dominio por engano. Tudo cai na caixa interna, que nao tem rota para fora.
+  EMAIL_DRIVER="smtp"
+  EMAIL_SMTP_URL="smtp://${MAILPIT_SERVICE}.railway.internal:1025"
 fi
 
 # Os 4 numeros vivem na mesma conta de negocio, entao a WABA e a mesma nos dois ambientes.
@@ -118,9 +132,33 @@ ensure_service() {
   railway add --service "$service" --json >/dev/null
 }
 
+variable_exists() {
+  local service="$1" key="$2"
+  railway variable list --service "$service" --json 2>/dev/null |
+    /usr/bin/python3 -c "
+import json, sys
+try:
+    print(bool(json.load(sys.stdin).get(sys.argv[1])))
+except Exception:
+    print(False)
+" "$key" |
+    /usr/bin/grep -q True
+}
+
+ensure_image_service() {
+  local service="$1" image="$2"
+  if service_exists "$service"; then
+    echo "--> servico $service (ja existe)"
+    return
+  fi
+  echo "--> servico $service ($image)"
+  railway add --service "$service" --image "$image" --json >/dev/null
+}
+
 read_domain() {
   local service="$1"
-  railway domain --service "$service" --port 8080 --json 2>/dev/null |
+  local port="${2:-8080}"
+  railway domain --service "$service" --port "$port" --json 2>/dev/null |
     /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("domain") or d["domains"][0])'
 }
 
@@ -136,6 +174,7 @@ set_variables() {
 ensure_database postgres Postgres
 ensure_database redis Redis
 for service in "${APP_SERVICES[@]}"; do ensure_service "$service"; done
+if [[ "$EMAIL_DRIVER" == "smtp" ]]; then ensure_image_service "$MAILPIT_SERVICE" "$MAILPIT_IMAGE"; fi
 
 API_URL="$(read_domain api)"
 PANEL_URL="$(read_domain panel)"
@@ -155,8 +194,14 @@ fi
 
 if [[ "$PRIMARY_DOMAIN_KIND" == "custom" ]]; then
   API_URL="$CUSTOM_API"
+  PANEL_URL="$CUSTOM_PANEL"
 fi
 echo "    api principal: $API_URL"
+
+# O link do e-mail de redefinicao e clicado pelo usuario, entao sai no dominio principal do painel,
+# nao no `*.up.railway.app`. `{token}` e literal: o modulo troca na hora do envio, e se o
+# marcador sumir a API recusa subir (`ConfigMissingError`).
+PANEL_RESET_URL_TEMPLATE="$PANEL_URL/reset-password?token={token}"
 
 # `PORT` e o que o Railway injeta e o que o Caddy le; `API_PORT` e o nome no schema zod da API.
 # Os dois precisam existir e coincidir, senao o healthcheck bate numa porta onde ninguem escuta.
@@ -175,6 +220,11 @@ set_variables api \
   "CORS_ALLOWED_ORIGINS=$CORS_ORIGINS" \
   "WIDGET_ALLOWED_ORIGINS=$WIDGET_ORIGINS" \
   "PANEL_ACCESS_TOKEN_TTL_MINUTES=15" \
+  "PANEL_RESET_URL_TEMPLATE=$PANEL_RESET_URL_TEMPLATE" \
+  "EMAIL_DRIVER=$EMAIL_DRIVER" \
+  "EMAIL_FROM=$EMAIL_FROM" \
+  "EMAIL_SMTP_URL=$EMAIL_SMTP_URL" \
+  "EMAIL_SES_REGION=us-east-1" \
   "WHATSAPP_ENABLED=$WHATSAPP_ENABLED" \
   "WHATSAPP_PHONE_NUMBER_ID=$WHATSAPP_PHONE_NUMBER_ID" \
   "WHATSAPP_BUSINESS_ACCOUNT_ID=$WHATSAPP_BUSINESS_ACCOUNT_ID" \
@@ -191,8 +241,31 @@ for service in panel site; do
     "API_ORIGIN=$API_URL"
 done
 
+if [[ "$EMAIL_DRIVER" == "smtp" ]]; then
+  # Rede privada da Railway e IPv6: escutando so em 0.0.0.0 o `mailpit.railway.internal` nao
+  # resolve para nada e o envio falha por timeout, nao por erro claro.
+  set_variables "$MAILPIT_SERVICE" \
+    "MP_SMTP_BIND_ADDR=[::]:1025" \
+    "MP_UI_BIND_ADDR=[::]:8025" \
+    "MP_MAX_MESSAGES=500" \
+    "MP_SMTP_AUTH_ACCEPT_ANY=1" \
+    "MP_SMTP_AUTH_ALLOW_INSECURE=1"
+
+  # A caixa guarda e-mail de cliente. Fail-closed: o dominio publico so nasce depois que a senha
+  # existe, senao a primeira execucao deixaria a UI aberta ate alguem lembrar do outro script.
+  if variable_exists "$MAILPIT_SERVICE" MP_UI_AUTH; then
+    MAILPIT_URL="$(read_domain "$MAILPIT_SERVICE" 8025)"
+    echo "    caixa de entrada: $MAILPIT_URL"
+  else
+    echo "--> caixa de entrada sem dominio: rode ./scripts/railway-secrets.sh $ENVIRONMENT_NAME mailpit-ui e repita"
+  fi
+fi
+
 echo
 echo "==> proximos passos:"
 echo "    1. ./scripts/railway-secrets.sh $ENVIRONMENT_NAME   (gera o PANEL_JWT_SECRET sem imprimir)"
+if [[ "$EMAIL_DRIVER" == "smtp" ]]; then
+  echo "       ./scripts/railway-secrets.sh $ENVIRONMENT_NAME mailpit-ui   (senha da caixa de entrada)"
+fi
 echo "    2. ./scripts/railway-domains.py              (dominios proprios + registros de DNS)"
 echo "    3. ./scripts/railway-redeploy.py $ENVIRONMENT_NAME   (as variaveis acima so valem na proxima build)"

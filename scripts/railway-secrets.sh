@@ -19,10 +19,18 @@
 #   ./scripts/railway-secrets.sh production            # PANEL_JWT_SECRET
 #   ./scripts/railway-secrets.sh production whatsapp   # WHATSAPP_WEBHOOK_VERIFY_TOKEN
 #
-# `groq` e a excecao: a chave e emitida pela Groq, entao ela entra pelo pipe em vez de ser gerada.
+# `groq` e `resend` sao a excecao: a chave e emitida por terceiro, entao ela entra pelo pipe em vez
+# de ser gerada. O pipe e obrigatorio — passar como argumento aborta.
 #
 #   textutil -convert txt -stdout chave.rtf | grep -o 'gsk_[A-Za-z0-9]*' |
 #     ./scripts/railway-secrets.sh staging groq
+#
+#   pbpaste | ./scripts/railway-secrets.sh production resend
+#
+# `mailpit-ui` protege a caixa de entrada do staging, que fica num dominio publico e guarda e-mail
+# de cliente. O `railway-provision.sh` so cria esse dominio depois que a senha existe.
+#
+#   ./scripts/railway-secrets.sh staging mailpit-ui
 #
 # Trocar o `PANEL_JWT_SECRET` invalida os tokens em circulacao, que e exatamente o que se quer numa
 # rotacao — todo mundo faz login de novo. Trocar o verify token do WhatsApp obriga a colar o valor
@@ -37,34 +45,45 @@ ENVIRONMENT_NAME="${1:-}"
 SECRET_NAME="${2:-panel-jwt}"
 
 if [[ "$ENVIRONMENT_NAME" != "production" && "$ENVIRONMENT_NAME" != "staging" ]]; then
-  echo "uso: $0 <production|staging> [panel-jwt|whatsapp]" >&2
+  echo "uso: $0 <production|staging> [panel-jwt|whatsapp|groq|resend|mailpit-ui]" >&2
   exit 1
 fi
+
+SERVICE_NAME="api"
+GENERATED="true"
 
 case "$SECRET_NAME" in
   panel-jwt) VARIABLE_NAME="PANEL_JWT_SECRET" ;;
   whatsapp) VARIABLE_NAME="WHATSAPP_WEBHOOK_VERIFY_TOKEN" ;;
   # Segredo de terceiro nao se gera: ele chega pelo pipe, e o mesmo cuidado vale — nunca argumento.
-  groq) VARIABLE_NAME="GROQ_API_KEY" ;;
+  groq) VARIABLE_NAME="GROQ_API_KEY"; GENERATED="false" ;;
+  resend) VARIABLE_NAME="EMAIL_RESEND_API_KEY"; GENERATED="false" ;;
+  # A caixa de entrada do staging fica num dominio publico e guarda e-mail de cliente. A senha e
+  # lida de volta com `railway variables --service mailpit` quando alguem precisar abrir.
+  mailpit-ui) VARIABLE_NAME="MP_UI_AUTH"; SERVICE_NAME="mailpit" ;;
   *)
-    echo "uso: $0 <production|staging> [panel-jwt|whatsapp|groq]" >&2
+    echo "uso: $0 <production|staging> [panel-jwt|whatsapp|groq|resend|mailpit-ui]" >&2
     exit 1
     ;;
 esac
 
 railway environment "$ENVIRONMENT_NAME" >/dev/null
 
-if [[ "$SECRET_NAME" == "groq" ]]; then
+if [[ "$GENERATED" == "false" ]]; then
   if [ -t 0 ]; then
     echo "$VARIABLE_NAME vem de fora: passe o valor pelo pipe, nunca como argumento" >&2
     exit 1
   fi
   tr -d '\n' <&0 |
-    railway variable set "$VARIABLE_NAME" --stdin --service api --skip-deploys >/dev/null
+    railway variable set "$VARIABLE_NAME" --stdin --service "$SERVICE_NAME" --skip-deploys >/dev/null
+elif [[ "$SECRET_NAME" == "mailpit-ui" ]]; then
+  # `usuario:senha` — o Mailpit aceita a senha em texto, e `+/=` do base64 atrapalham copiar da URL.
+  { printf 'ada:'; openssl rand -base64 24 | tr -d '\n+/='; } |
+    railway variable set "$VARIABLE_NAME" --stdin --service "$SERVICE_NAME" --skip-deploys >/dev/null
 else
   # 48 bytes crus -> 64 caracteres em base64, bem acima do minimo de 32 do schema da API.
   openssl rand -base64 48 | tr -d '\n' |
-    railway variable set "$VARIABLE_NAME" --stdin --service api --skip-deploys >/dev/null
+    railway variable set "$VARIABLE_NAME" --stdin --service "$SERVICE_NAME" --skip-deploys >/dev/null
 fi
 
-echo "$VARIABLE_NAME definido em $ENVIRONMENT_NAME (valor nunca impresso)"
+echo "$VARIABLE_NAME definido em $ENVIRONMENT_NAME / $SERVICE_NAME (valor nunca impresso)"
