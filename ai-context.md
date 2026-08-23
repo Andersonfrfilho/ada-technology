@@ -173,6 +173,25 @@ padrão** (argumento apareceria em `ps` e no histórico). Repetir o seed não qu
   `signOutAgent`) diretamente — o mapa é o ponto de extensão para um segundo provedor, não está no
   caminho de execução das rotas ainda.
 
+### E-mail
+
+`EMAIL_DRIVER` decide qual driver o `user-module` recebe em `providers.email`; **vazio desliga o
+envio por ausência** e o pedido de redefinição de senha só cria o token e dispara o hook
+`onPasswordResetRequested`. Montagem em `infra/email/emailDriver.ts`, sobre
+`@adatechnology/email-provider`.
+
+- **Local**: `smtp` apontando para o Mailpit do `infra/docker-compose.yml`. Nada sai da máquina, e o
+  link de redefinição fica clicável na caixa de entrada em <http://localhost:8026> (SMTP em 1026).
+- **Staging**: mesmo `smtp`, contra um Mailpit próprio na rede privada do Railway — endereço de
+  cliente em staging costuma ser real, e um envio de verdade queimaria reputação de domínio por
+  engano.
+- **Produção**: `resend` ou `ses`. **A Railway não tem produto de e-mail transacional**, e hospedar
+  servidor de e-mail lá é armadilha de entregabilidade: IP compartilhado sem reputação, sem domínio
+  verificado com DKIM, e a porta 25 de saída costuma estar bloqueada.
+- As dependências dos drivers (`nodemailer`, `resend`) são peers opcionais do `email-provider`,
+  carregados por import dinâmico. Estão instaladas de propósito: sem elas, um driver configurado só
+  falharia no primeiro envio, não no boot.
+
 ### Regras não óbvias das rotas do widget
 
 - **`isWidgetSessionId()` em toda rota com `:sessionId`.** Sessão de widget e de WhatsApp dividem a
@@ -316,7 +335,7 @@ de copyright em todo arquivo-fonte; nenhuma PII em log.
 ## Comandos
 
 ```bash
-make up            # postgres, redis e mock da Graph API
+make up            # postgres, redis, mock da Graph API e Mailpit
 make migrate       # migrations do módulo e depois as da Ada
 make seed-flow     # publica o fluxo inicial do bot (não sobrescreve edição do painel)
 make dev-api       # API em watch                        → http://localhost:3401
