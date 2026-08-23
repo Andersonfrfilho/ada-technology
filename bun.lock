@@ -28,6 +28,8 @@
         "@adatechnology/object-storage-provider": "0.2.0-rc.0",
         "@adatechnology/scheduling-contracts": "0.1.0-rc.2",
         "@adatechnology/scheduling-module": "0.1.0-rc.4",
+        "@adatechnology/user-contracts": "0.1.0-rc.1",
+        "@adatechnology/user-module": "0.1.0-rc.1",
         "drizzle-orm": "0.45.2",
         "ioredis": "5.11.1",
         "jose": "^6.2.8",
@@ -112,6 +114,8 @@
 
     "@adatechnology/audio-transcription-provider": ["@adatechnology/audio-transcription-provider@0.1.0-rc.1", "", {}, "sha512-v46OyWwj/H5gGdhYixiA43faXpihDpYtCVizVmTcejOGdSu6eMS3zmWI1zdyVvwi+BjHVHBz3jU5C31lcJGiKQ=="],
 
+    "@adatechnology/auth-keycloak": ["@adatechnology/auth-keycloak@1.0.0-rc.1", "", { "peerDependencies": { "@adatechnology/logger": "0.1.0-rc.1" } }, "sha512-to4fJmMptgs1naSGj8m8gu8rkiXfiy8IJF4X/xnSZSnyNNvtO2AdYrmIQlQRvFOrmv1+sZiUDB1rxIb+k5Hbnw=="],
+
     "@adatechnology/catalog-contracts": ["@adatechnology/catalog-contracts@0.1.0-rc.2", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-6itC0cF30hQOi70NNIjIkQ9jMrn3eM8XvI4DywGJXFfdSo0ABmExk5D5kfSst5iI+cVHTjJqqyaASUrAn1F3lw=="],
 
     "@adatechnology/catalog-image-storage-provider": ["@adatechnology/catalog-image-storage-provider@0.1.0-rc.0", "", { "dependencies": { "@adatechnology/catalog-contracts": "0.1.0-rc.2", "@adatechnology/object-storage-provider": "0.2.0-rc.0" } }, "sha512-9uJdmMFluziNequ5veHhccjUrgbdX9L5U9WCGBIYx7rASLXWTBl5Mszy2C1Ft/Ui/+udXtziQxAs6hhdirRIxw=="],
@@ -119,6 +123,8 @@
     "@adatechnology/catalog-module": ["@adatechnology/catalog-module@0.1.0-rc.3", "", { "dependencies": { "@adatechnology/catalog-contracts": "0.1.0-rc.2", "@adatechnology/module-http": "0.1.0-rc.1", "zod": "^3.24.1" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <1" } }, "sha512-No6yKEUgrOyUFqcnplNPCgELXQGDiY3SQcKl8kRoLJtbZdSaeNZWkwn2cdXeDMJwppS3rCiql9AcbWee79s/uA=="],
 
     "@adatechnology/conversations-ui": ["@adatechnology/conversations-ui@0.1.0-rc.35", "", { "dependencies": { "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.12", "clsx": "^2.1.1", "lucide-react": "^1.21.0", "tailwind-merge": "^3.6.0" }, "peerDependencies": { "@xyflow/react": "^12", "react": "^18 || ^19", "react-dom": "^18 || ^19" }, "optionalPeers": ["@xyflow/react"] }, "sha512-/ep5DVXr7MWS8q4zfHpImvh0Kb2aoVrFIFAx/bzIF0DA43tFB5HB6+5FvvLpnzxz+kKtd4mMSqdBUeKE9+KYsA=="],
+
+    "@adatechnology/logger": ["@adatechnology/logger@0.1.0-rc.1", "", {}, "sha512-fyP5NxVy1FcHQaPq8k5mSK2lNQ7z+BZNOnVAejWzXnObiFQRklgZyakf0W0wvsd9GfqCmmHd6MGo4pyTy+X3GQ=="],
 
     "@adatechnology/meta-catalog-provider": ["@adatechnology/meta-catalog-provider@0.2.0-rc.2", "", { "dependencies": { "@adatechnology/meta-graph-core": "0.2.0-rc.2", "zod": "^3.24.1" } }, "sha512-Eb34Hgv2fV2p0jpb8d59Vu6oIrVbMg5Odj/Zi0c2bjG0/JrB0RGbbXywu6E9wS30ZLoHfJ59uwhvC4iUb9uZpQ=="],
 
@@ -143,6 +149,10 @@
     "@adatechnology/scheduling-module": ["@adatechnology/scheduling-module@0.1.0-rc.4", "", { "dependencies": { "@adatechnology/module-http": "0.1.0-rc.3", "@adatechnology/scheduling-contracts": "0.1.0-rc.2", "zod": "^3.24.1" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <1" } }, "sha512-y/EWdC3/YvUjaiB4bhUfBymj/TPJZLWanBm7L59kj4BHzJ2RW+r/AY4me4Isj5QWssIHF+H0h4eKnQqr7ajb7g=="],
 
     "@adatechnology/scheduling-ui": ["@adatechnology/scheduling-ui@0.1.0-rc.3", "", { "dependencies": { "@adatechnology/scheduling-contracts": "0.1.0-rc.1", "clsx": "^2.1.1", "lucide-react": "^1.21.0" }, "peerDependencies": { "@tanstack/react-query": "^5", "react": "^18 || ^19", "react-dom": "^18 || ^19" } }, "sha512-sdcrCdHKqjet+yKJGo50gTIp3RcaC6PewhBg+LV2z4s6mNvRqRWwjzxBLtxD3tvOrVFg6aokmcWjiECSe5SM8w=="],
+
+    "@adatechnology/user-contracts": ["@adatechnology/user-contracts@0.1.0-rc.1", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-LaJsfNFA+5WHhFwvu+7MRTrqw+WDo9Fag5dCXfdT5JYX/Gz93jDi59XWyby4vjm3imln3WQqOV7j45qTiWi/wQ=="],
+
+    "@adatechnology/user-module": ["@adatechnology/user-module@0.1.0-rc.1", "", { "dependencies": { "@adatechnology/module-http": "0.1.0-rc.3", "@adatechnology/user-contracts": "0.1.0-rc.1", "jose": "^5.9.6", "zod": "^3.24.1" }, "optionalDependencies": { "@adatechnology/auth-keycloak": "1.0.0-rc.1" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <1" } }, "sha512-OuLwUWqqttX4NO5m9M+gY+NQ5O8+Jp2/kYpZetGVEA1HWvnxx5A0yTqeU9yoa40+ldZnfLw0FnrAAtQ+avD+QA=="],
 
     "@adatechnology/web-chat-widget": ["@adatechnology/web-chat-widget@0.1.0-rc.3", "", {}, "sha512-HX8CdlXG6XaOAXJK7LU/SlLxe3qOboI/zEZKC6kYt/YbgEZVzCNn1i4Nnqv2iLcqdojt07NH5Ohop/o9v9R77Q=="],
 
@@ -1243,6 +1253,8 @@
     "@adatechnology/meta-whatsapp-provider/@adatechnology/meta-graph-core": ["@adatechnology/meta-graph-core@0.2.0-rc.2", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-IW2EeIBAFTflhOCiePp2LlrhLsA/2bW76ZUD8G0HSHbh0VFVLQnCXLrEiSiV3KFmNgyyQSn3PkGbCFnUnYoYpA=="],
 
     "@adatechnology/scheduling-ui/@adatechnology/scheduling-contracts": ["@adatechnology/scheduling-contracts@0.1.0-rc.1", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-TUK/BnX710FyJ0R7jIsLgvTigom2upjd//o1mwwrcixTpx3VdUAAAJgnDM4x0TAnoHwqQowE+BxItqR690bbXg=="],
+
+    "@adatechnology/user-module/jose": ["jose@5.10.0", "", {}, "sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg=="],
 
     "@esbuild-kit/core-utils/esbuild": ["esbuild@0.18.20", "", { "optionalDependencies": { "@esbuild/android-arm": "0.18.20", "@esbuild/android-arm64": "0.18.20", "@esbuild/android-x64": "0.18.20", "@esbuild/darwin-arm64": "0.18.20", "@esbuild/darwin-x64": "0.18.20", "@esbuild/freebsd-arm64": "0.18.20", "@esbuild/freebsd-x64": "0.18.20", "@esbuild/linux-arm": "0.18.20", "@esbuild/linux-arm64": "0.18.20", "@esbuild/linux-ia32": "0.18.20", "@esbuild/linux-loong64": "0.18.20", "@esbuild/linux-mips64el": "0.18.20", "@esbuild/linux-ppc64": "0.18.20", "@esbuild/linux-riscv64": "0.18.20", "@esbuild/linux-s390x": "0.18.20", "@esbuild/linux-x64": "0.18.20", "@esbuild/netbsd-x64": "0.18.20", "@esbuild/openbsd-x64": "0.18.20", "@esbuild/sunos-x64": "0.18.20", "@esbuild/win32-arm64": "0.18.20", "@esbuild/win32-ia32": "0.18.20", "@esbuild/win32-x64": "0.18.20" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-ceqxoedUrcayh7Y7ZX6NdbbDzGROiyVBgC4PriJThBKSVPWnnFHZAkfI1lJT8QFkOwH4qOS2SJkS4wvpGl8BpA=="],
 

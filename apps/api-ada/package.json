@@ -30,6 +30,8 @@
     "@adatechnology/object-storage-provider": "0.2.0-rc.0",
     "@adatechnology/scheduling-contracts": "0.1.0-rc.2",
     "@adatechnology/scheduling-module": "0.1.0-rc.4",
+    "@adatechnology/user-contracts": "0.1.0-rc.1",
+    "@adatechnology/user-module": "0.1.0-rc.1",
     "drizzle-orm": "0.45.2",
     "ioredis": "5.11.1",
     "jose": "^6.2.8",
