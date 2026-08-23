@@ -9,6 +9,7 @@
 import { runCatalogMigrations } from '@adatechnology/catalog-module';
 import { runMetaWhatsAppMigrations } from '@adatechnology/meta-whatsapp-module';
 import { runSchedulingMigrations } from '@adatechnology/scheduling-module';
+import { runUserMigrations } from '@adatechnology/user-module';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 
 import { closeDatabase, database } from '@/infra/database/client';
@@ -34,6 +35,13 @@ async function runMigrations(): Promise<void> {
   logger.info({ message: 'Aplicando migrations do modulo de agendamento', source: SOURCE });
 
   await runSchedulingMigrations({ db: database as never, migrate: migrate as never });
+
+  // Antes das migrations da Ada, e nao depois: a FK de `scheduling` para `"user".users` (Fase C do
+  // plano de migracao) so pode ser criada com o schema `user` ja no lugar. Travar a ordem aqui e o
+  // que evita depender de disciplina humana no deploy.
+  logger.info({ message: 'Aplicando migrations do modulo de usuario', source: SOURCE });
+
+  await runUserMigrations({ db: database as never, migrate: migrate as never });
 
   logger.info({ message: 'Aplicando migrations da Ada', source: SOURCE });
 

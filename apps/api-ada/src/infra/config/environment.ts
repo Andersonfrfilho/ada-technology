@@ -39,6 +39,9 @@ const environmentSchema = z
 
     PANEL_JWT_SECRET: z.string().min(32),
     PANEL_ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().max(15),
+    // Template da URL de redefinicao de senha enviada por e-mail. Precisa conter o literal
+    // `{token}` — o `user-module` substitui antes de disparar o hook `onPasswordResetRequested`.
+    PANEL_RESET_URL_TEMPLATE: z.string().min(1),
 
     WHATSAPP_ENABLED: booleanFromString,
     WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),

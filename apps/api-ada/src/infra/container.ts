@@ -21,6 +21,8 @@ import { createSchedulingModule } from '@adatechnology/scheduling-module';
 import { createObjectStorageProvider } from '@adatechnology/object-storage-provider';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
 import { WhatsAppTemplateProvider } from '@adatechnology/meta-whatsapp-provider';
+import type { LoggerPort as UserLoggerPort } from '@adatechnology/user-contracts';
+import { createUserModule } from '@adatechnology/user-module';
 
 import { RedisCache } from '@/infra/cache/RedisCache';
 import { RedisNonceStore } from '@/infra/cache/RedisNonceStore';
@@ -29,12 +31,14 @@ import { createGroqTranscriber, GROQ_BASE_URL } from '@adatechnology/audio-trans
 import { environment } from '@/infra/config/environment';
 import { database } from '@/infra/database/client';
 import { RedisRelay } from '@/infra/realtime/RedisRelay';
+import { ACCESS_TOKEN_AUDIENCE, ACCESS_TOKEN_ISSUER } from '@/modules/agent/agent.constant';
 import { AuthenticateAgentUseCase } from '@/modules/agent/authenticateAgent.use-case';
 import { DrizzleAgentRepository } from '@/modules/agent/DrizzleAgentRepository';
 import { createLocalAgentAuthProvider } from '@/modules/agent/localAuthProvider';
 import { RedisRefreshTokenStore } from '@/modules/agent/RedisRefreshTokenStore';
 import { RefreshAgentSessionUseCase } from '@/modules/agent/refreshAgentSession.use-case';
 import { SignOutAgentUseCase } from '@/modules/agent/signOutAgent.use-case';
+import { ACTOR_TYPE, AUDIT_ACTION, AUDIT_TARGET } from '@/modules/audit/audit.constant';
 import { RecordAuditLogUseCase } from '@/modules/audit/recordAuditLog.use-case';
 import {
   CATALOG_CURRENCY,
@@ -80,6 +84,7 @@ import { SaveTemplateSettingsUseCase } from '@/modules/settings/saveTemplateSett
 import { DrizzleTranscriptRepository } from '@/modules/shared/DrizzleTranscriptRepository';
 import { SimulateInboundMessageUseCase } from '@/modules/simulation/simulateInboundMessage.use-case';
 import { WhatsAppInboundSimulator } from '@/modules/simulation/WhatsAppInboundSimulator';
+import { RedisUserRefreshTokenStore } from '@/modules/user/RedisUserRefreshTokenStore';
 import { logger } from '@/shared/logger';
 
 // Estado inicial de sessao nova. O modulo nao conhece a maquina de estados do produto.
@@ -87,6 +92,7 @@ export const START_STATE = 'start';
 
 const CATALOG_SOURCE = 'modules.catalog';
 const SCHEDULING_SOURCE = 'modules.scheduling';
+const USER_SOURCE = 'modules.user';
 
 /** O modulo loga por assinatura propria; a mascara e o nivel continuam sendo os da Ada. */
 const catalogLogger: CatalogLoggerPort = {
@@ -102,6 +108,14 @@ const schedulingLogger: SchedulingLoggerPort = {
   info: (message, meta) => logger.info({ message, source: SCHEDULING_SOURCE, ...(meta ? { meta } : {}) }),
   warn: (message, meta) => logger.warn({ message, source: SCHEDULING_SOURCE, ...(meta ? { meta } : {}) }),
   error: (message, meta) => logger.error({ message, source: SCHEDULING_SOURCE, ...(meta ? { meta } : {}) }),
+};
+
+/** Mesma razao do logger do catalogo: assinatura do pacote, mascara e nivel da Ada. */
+const userLogger: UserLoggerPort = {
+  debug: (message, meta) => logger.debug({ message, source: USER_SOURCE, ...(meta ? { meta } : {}) }),
+  info: (message, meta) => logger.info({ message, source: USER_SOURCE, ...(meta ? { meta } : {}) }),
+  warn: (message, meta) => logger.warn({ message, source: USER_SOURCE, ...(meta ? { meta } : {}) }),
+  error: (message, meta) => logger.error({ message, source: USER_SOURCE, ...(meta ? { meta } : {}) }),
 };
 
 export const realtime = new SseHub(new RedisRelay());
@@ -283,6 +297,60 @@ export const refreshAgentSession = new RefreshAgentSessionUseCase({
 });
 
 export const signOutAgent = new SignOutAgentUseCase({ refreshTokens, recordAudit: recordAuditLog });
+
+/**
+ * `@adatechnology/user-module`, rodando em paralelo ao `agents`/`@ada/user-sdk` acima (Fase A da
+ * migracao — `delightful-noodling-hare.md` §4.3). O store de refresh e proprio: o do `agents` tem
+ * outro contrato e indexa pelo token cru, enquanto o modulo entrega o sha256 (ver
+ * `RedisUserRefreshTokenStore`).
+ *
+ * `issuer`/`audience` repetem os do `agent/accessToken.ts` de proposito: enquanto os dois sistemas
+ * convivem, o token de um precisa passar pelo `authenticateRequest` do outro — sem isso as rotas
+ * novas de escopo `user`/`admin` responderiam 401 antes de o modulo rodar.
+ *
+ * Sem `providers.email`: nenhum driver do `@adatechnology/email-provider` tem o mesmo formato de
+ * `EmailDriverPort` que o `user-contracts` espera (`SendEmailParams`/`DeliveryAttemptResult`
+ * divergem entre os dois pacotes). Ate um adapter de traducao ser escrito, o hook
+ * `onPasswordResetRequested` e quem precisa levar o e-mail — capacidade por ausencia, `hasEmail`
+ * fica falso.
+ */
+export const userModule = await createUserModule({
+  db: database as never,
+  config: {
+    tenancy: { mode: 'single', defaultCompanyId: environment.ADA_COMPANY_ID },
+    accessToken: {
+      secret: environment.PANEL_JWT_SECRET,
+      expiresInSeconds: environment.PANEL_ACCESS_TOKEN_TTL_MINUTES * 60,
+      issuer: ACCESS_TOKEN_ISSUER,
+      audience: ACCESS_TOKEN_AUDIENCE,
+    },
+    passwordReset: { resetUrlTemplate: environment.PANEL_RESET_URL_TEMPLATE },
+  },
+  providers: {
+    refreshTokenStore: new RedisUserRefreshTokenStore(),
+    logger: userLogger,
+  },
+  hooks: {
+    onLoginSucceeded: (event) =>
+      recordAuditLog.execute({
+        actorType: ACTOR_TYPE.AGENT,
+        actorId: event.userId,
+        action: AUDIT_ACTION.AGENT_SIGNED_IN,
+        targetType: AUDIT_TARGET.AGENT,
+        targetId: event.userId,
+        ipAddress: event.ipAddress,
+      }),
+    // `LoginFailedEvent` nao carrega `userId` — defesa contra enumeracao de conta por desenho do
+    // modulo, entao a trilha de auditoria de falha nao tem ator/alvo, so o IP.
+    onLoginFailed: (event) =>
+      recordAuditLog.execute({
+        actorType: ACTOR_TYPE.AGENT,
+        action: AUDIT_ACTION.AGENT_SIGN_IN_FAILED,
+        targetType: AUDIT_TARGET.AGENT,
+        ipAddress: event.ipAddress,
+      }),
+  },
+});
 
 /**
  * Config validada do `@ada/user-sdk`, hoje so com o provedor local — ponto de extensao para quando
@@ -514,6 +582,7 @@ export const container = {
   signOutAgent,
   authProvidersConfig,
   authProviders,
+  userModule,
   widgetChannel,
   transcribedWhatsAppChannel,
   advanceConversation,

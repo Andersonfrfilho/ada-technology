@@ -30,6 +30,7 @@ import { schedulingRoutes } from '@/modules/scheduling/scheduling.controller';
 import { panelSettingsRoutes } from '@/modules/settings/settings.controller';
 import { panelTemplateRoutes } from '@/modules/settings/template.controller';
 import { panelSimulationRoutes } from '@/modules/simulation/simulation.controller';
+import { userRoutes } from '@/modules/user/user.controller';
 import { logger } from '@/shared/logger';
 
 const SOURCE = 'index';
@@ -53,6 +54,7 @@ const routes: readonly Route[] = [
   ...panelSimulationRoutes,
   ...catalogRoutes,
   ...productImageRoutes,
+  ...userRoutes,
 ];
 
 const handleRequest = createRouter({ routes, authenticate: authenticateRequest });
