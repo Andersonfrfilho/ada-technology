@@ -26,8 +26,8 @@
         "@adatechnology/module-http": "0.1.0-rc.3",
         "@adatechnology/notification-contracts": "0.1.0-rc.2",
         "@adatechnology/object-storage-provider": "0.2.0-rc.0",
-        "@adatechnology/scheduling-contracts": "0.1.0-rc.1",
-        "@adatechnology/scheduling-module": "0.1.0-rc.3",
+        "@adatechnology/scheduling-contracts": "0.1.0-rc.2",
+        "@adatechnology/scheduling-module": "0.1.0-rc.4",
         "drizzle-orm": "0.45.2",
         "ioredis": "5.11.1",
         "jose": "^6.2.8",
@@ -48,7 +48,7 @@
         "@ada/user-sdk": "workspace:*",
         "@adatechnology/conversations-ui": "0.1.0-rc.35",
         "@adatechnology/products-ui": "0.1.0-rc.12",
-        "@adatechnology/scheduling-contracts": "0.1.0-rc.1",
+        "@adatechnology/scheduling-contracts": "0.1.0-rc.2",
         "@adatechnology/scheduling-ui": "0.1.0-rc.3",
         "@tanstack/react-query": "^5.62.8",
         "@tanstack/react-router": "^1.95.1",
@@ -138,9 +138,9 @@
 
     "@adatechnology/products-ui": ["@adatechnology/products-ui@0.1.0-rc.12", "", { "dependencies": { "lucide-react": "^1.21.0" }, "peerDependencies": { "react": "^18 || ^19", "react-dom": "^18 || ^19" } }, "sha512-eLOhZw6ZKyRV4cJnNeK+XhU0G6V/6SkRdt1F1adkmMgpwrOdBEOb99UCMmgP4REKoXTV4bW+gG26z6S6HNmxaA=="],
 
-    "@adatechnology/scheduling-contracts": ["@adatechnology/scheduling-contracts@0.1.0-rc.1", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-TUK/BnX710FyJ0R7jIsLgvTigom2upjd//o1mwwrcixTpx3VdUAAAJgnDM4x0TAnoHwqQowE+BxItqR690bbXg=="],
+    "@adatechnology/scheduling-contracts": ["@adatechnology/scheduling-contracts@0.1.0-rc.2", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-HjNwfZQUEVa5fNrQ3S05IuoiuUivu36FamMx+3JNzYuAdWpXwZ5djHbELKATWsNYmwm0GPIdkj5PZlUgdkcpDg=="],
 
-    "@adatechnology/scheduling-module": ["@adatechnology/scheduling-module@0.1.0-rc.3", "", { "dependencies": { "@adatechnology/module-http": "0.1.0-rc.3", "@adatechnology/scheduling-contracts": "0.1.0-rc.1", "zod": "^3.24.1" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <1" } }, "sha512-GVw8b7T9C+cjsOReH/fcSIFoLctku9FMRQdrdt0l7M43KVbb5nhPfs76YMXM/UjEU0u6qgcMo8wAKgsU+I/Wlw=="],
+    "@adatechnology/scheduling-module": ["@adatechnology/scheduling-module@0.1.0-rc.4", "", { "dependencies": { "@adatechnology/module-http": "0.1.0-rc.3", "@adatechnology/scheduling-contracts": "0.1.0-rc.2", "zod": "^3.24.1" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <1" } }, "sha512-y/EWdC3/YvUjaiB4bhUfBymj/TPJZLWanBm7L59kj4BHzJ2RW+r/AY4me4Isj5QWssIHF+H0h4eKnQqr7ajb7g=="],
 
     "@adatechnology/scheduling-ui": ["@adatechnology/scheduling-ui@0.1.0-rc.3", "", { "dependencies": { "@adatechnology/scheduling-contracts": "0.1.0-rc.1", "clsx": "^2.1.1", "lucide-react": "^1.21.0" }, "peerDependencies": { "@tanstack/react-query": "^5", "react": "^18 || ^19", "react-dom": "^18 || ^19" } }, "sha512-sdcrCdHKqjet+yKJGo50gTIp3RcaC6PewhBg+LV2z4s6mNvRqRWwjzxBLtxD3tvOrVFg6aokmcWjiECSe5SM8w=="],
 
@@ -1241,6 +1241,8 @@
     "@adatechnology/meta-whatsapp-module/@adatechnology/meta-graph-core": ["@adatechnology/meta-graph-core@0.2.0-rc.2", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-IW2EeIBAFTflhOCiePp2LlrhLsA/2bW76ZUD8G0HSHbh0VFVLQnCXLrEiSiV3KFmNgyyQSn3PkGbCFnUnYoYpA=="],
 
     "@adatechnology/meta-whatsapp-provider/@adatechnology/meta-graph-core": ["@adatechnology/meta-graph-core@0.2.0-rc.2", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-IW2EeIBAFTflhOCiePp2LlrhLsA/2bW76ZUD8G0HSHbh0VFVLQnCXLrEiSiV3KFmNgyyQSn3PkGbCFnUnYoYpA=="],
+
+    "@adatechnology/scheduling-ui/@adatechnology/scheduling-contracts": ["@adatechnology/scheduling-contracts@0.1.0-rc.1", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-TUK/BnX710FyJ0R7jIsLgvTigom2upjd//o1mwwrcixTpx3VdUAAAJgnDM4x0TAnoHwqQowE+BxItqR690bbXg=="],
 
     "@esbuild-kit/core-utils/esbuild": ["esbuild@0.18.20", "", { "optionalDependencies": { "@esbuild/android-arm": "0.18.20", "@esbuild/android-arm64": "0.18.20", "@esbuild/android-x64": "0.18.20", "@esbuild/darwin-arm64": "0.18.20", "@esbuild/darwin-x64": "0.18.20", "@esbuild/freebsd-arm64": "0.18.20", "@esbuild/freebsd-x64": "0.18.20", "@esbuild/linux-arm": "0.18.20", "@esbuild/linux-arm64": "0.18.20", "@esbuild/linux-ia32": "0.18.20", "@esbuild/linux-loong64": "0.18.20", "@esbuild/linux-mips64el": "0.18.20", "@esbuild/linux-ppc64": "0.18.20", "@esbuild/linux-riscv64": "0.18.20", "@esbuild/linux-s390x": "0.18.20", "@esbuild/linux-x64": "0.18.20", "@esbuild/netbsd-x64": "0.18.20", "@esbuild/openbsd-x64": "0.18.20", "@esbuild/sunos-x64": "0.18.20", "@esbuild/win32-arm64": "0.18.20", "@esbuild/win32-ia32": "0.18.20", "@esbuild/win32-x64": "0.18.20" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-ceqxoedUrcayh7Y7ZX6NdbbDzGROiyVBgC4PriJThBKSVPWnnFHZAkfI1lJT8QFkOwH4qOS2SJkS4wvpGl8BpA=="],
 
