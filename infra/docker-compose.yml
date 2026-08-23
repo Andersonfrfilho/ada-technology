@@ -79,6 +79,24 @@ services:
         mc mb --ignore-existing local/ada-products
         mc anonymous set download local/ada-products
 
+  # Caixa de entrada local: captura tudo que a API envia por SMTP e serve numa UI em :8026.
+  # Nenhum e-mail sai da maquina em dev — e o link de redefinicao de senha fica clicavel ali.
+  mailpit:
+    image: axllent/mailpit:v1.31.0
+    container_name: ${PROJECT_NAME:-ada}-${ENV:-dev}-mailpit
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      - '1026:1025'
+      - '8026:8025'
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   postgres-data:
   redis-data:
