@@ -11,7 +11,7 @@ import { environment } from '@/infra/config/environment';
 import { closeDatabase } from '@/infra/database/client';
 import { createRouter, type Route } from '@/infra/http/router';
 import { startScheduler } from '@/infra/scheduler/scheduler';
-import { catalogModule } from '@/infra/container';
+import { catalogModule, notificationWorker, seedNotificationTemplates } from '@/infra/container';
 import { agentRoutes } from '@/modules/agent/agent.controller';
 import { authenticateRequest } from '@/modules/agent/authenticateRequest';
 import { catalogRoutes } from '@/modules/catalog/catalog.controller';
@@ -78,6 +78,26 @@ const scheduler = startScheduler({
   companyId: environment.ADA_COMPANY_ID,
 });
 
+/**
+ * A fila de notificacao e em processo (ver `container.ts`): sem este `start`, a entrega nasce
+ * `queued`, fica no backlog da fila e o e-mail nunca sai.
+ */
+await notificationWorker.start();
+
+/**
+ * Semeia so o que falta, entao rodar a cada boot e barato e nao pisa na copy editada pelo painel.
+ * Falha aqui nao derruba a API: sem template, a redefinicao de senha ainda sai pelo envio direto
+ * de emergencia — degradado, nao morto.
+ */
+try {
+  const seeded = await seedNotificationTemplates.execute();
+  if (seeded > 0) {
+    logger.info({ message: 'Templates de notificacao semeados', source: SOURCE, meta: { count: seeded } });
+  }
+} catch (error) {
+  logger.error({ message: 'Falha ao semear templates de notificacao', source: SOURCE, meta: { error: String(error) } });
+}
+
 logger.info({
   message: 'API no ar',
   source: SOURCE,
@@ -100,6 +120,7 @@ async function shutdown(signal: string): Promise<void> {
   forceExit.unref();
 
   scheduler.stop();
+  await notificationWorker.stop();
   await server.stop(false);
   await Promise.allSettled([closeDatabase(), closeRedis()]);
 

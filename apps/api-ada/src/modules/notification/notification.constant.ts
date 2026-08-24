@@ -21,3 +21,14 @@ export const NOTIFICATION_ADMIN_SCOPE = 'notification:admin';
 /** Idioma e fuso do produto, os mesmos que a agenda ja assume para o time daqui. */
 export const NOTIFICATION_DEFAULT_LOCALE = 'pt-BR';
 export const NOTIFICATION_DEFAULT_TIMEZONE = 'America/Sao_Paulo';
+
+/**
+ * Assunto e chave de template da redefinicao de senha.
+ *
+ * A categoria e o vocabulario que o painel mostra em "Roteamento"; a chave e o que o
+ * `sendNotification` procura na tabela de templates. Ambas sao string estavel: elas entram no
+ * historico de entrega e na politica de canal, e renomear depois quebra conversa em andamento
+ * (`code-standart.md` §16 — literal repetido vira constante).
+ */
+export const NOTIFICATION_CATEGORY_AUTH = 'auth.password_reset';
+export const NOTIFICATION_TEMPLATE_PASSWORD_RESET = 'auth.password_reset';

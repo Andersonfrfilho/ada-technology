@@ -21,9 +21,16 @@ import { createSchedulingModule } from '@adatechnology/scheduling-module';
 import { createObjectStorageProvider } from '@adatechnology/object-storage-provider';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
 import type { LoggerPort as NotificationLoggerPort } from '@adatechnology/notification-contracts';
-import { createNotificationModule } from '@adatechnology/notification-module';
+import {
+  createInProcessQueue,
+  createNotificationModule,
+  createNotificationWorker,
+} from '@adatechnology/notification-module';
 import { WhatsAppTemplateProvider } from '@adatechnology/meta-whatsapp-provider';
-import type { LoggerPort as UserLoggerPort } from '@adatechnology/user-contracts';
+import type {
+  LoggerPort as UserLoggerPort,
+  PasswordResetRequestedEvent,
+} from '@adatechnology/user-contracts';
 import { createUserModule } from '@adatechnology/user-module';
 
 import { RedisCache } from '@/infra/cache/RedisCache';
@@ -76,6 +83,9 @@ import {
 } from '@/modules/notification/notification.constant';
 import { notificationAuthResolver } from '@/modules/notification/notificationAuthResolver';
 import { notificationRecipientResolver } from '@/modules/notification/notificationRecipientResolver';
+import { createPasswordResetNotifier } from '@/modules/notification/passwordResetNotifier';
+import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
+import { SeedNotificationTemplatesUseCase } from '@/modules/notification/seedNotificationTemplates.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
 import { SchedulingAgenda } from '@/modules/scheduling/SchedulingAgenda';
 import { ProvisionSchedulingResourcesUseCase } from '@/modules/scheduling/provisionSchedulingResources.use-case';
@@ -370,6 +380,13 @@ export const userModule = await createUserModule({
         targetType: AUDIT_TARGET.AGENT,
         ipAddress: event.ipAddress,
       }),
+    /**
+     * O e-mail de redefinicao passa a sair pelo `notification-module`, para a copy ser editavel
+     * pelo painel. A funcao e declarada depois de `notificationModule` (mais abaixo neste arquivo)
+     * e chega ate aqui por hoisting: o corpo dela so roda quando alguem pede o reset, muito depois
+     * do boot terminar.
+     */
+    onPasswordResetRequested: (event) => notifyPasswordResetRequested(event),
   },
 });
 
@@ -378,28 +395,63 @@ export const userModule = await createUserModule({
  * nesta entrega — o reset de senha continua saindo pelo `user-module`. O modulo sobe agora para as
  * rotas de template e de preferencia existirem antes de o fluxo migrar para elas.
  *
- * Sem `providers.queue` de proposito: o `ada-technology` nao tem app de worker, e uma fila em
- * broker so acumularia job que ninguem consome. A fila em processo do modulo entrega na mesma
- * instancia, que e onde o despacho roda.
+ * Fila em processo EXPLICITA, e nao a implicita do modulo: o `ada-technology` nao tem app de
+ * worker, e um broker so acumularia job que ninguem consome. Mas a fila em processo tambem nao
+ * entrega sozinha — ela guarda os jobs num backlog ate alguem registrar o consumidor. Por isso a
+ * instancia e criada aqui e passada NAS DUAS pontas: para o modulo produzir, e para
+ * `notificationWorker` consumir, logo abaixo. Deixar o modulo criar a dele internamente esconderia
+ * a fila do host, e todo e-mail ficaria enfileirado para sempre.
  *
  * So o canal de e-mail, e ele e o mesmo objeto que o `user-module` recebe (ver
  * `infra/email/emailDriver.ts`): `EMAIL_DRIVER` vazio devolve `undefined` e o canal some por
  * ausencia, em vez de existir quebrado.
  */
+const notificationQueue = createInProcessQueue();
+
 export const notificationModule = createNotificationModule({
   db: database as never,
   config: {
     defaultLocale: NOTIFICATION_DEFAULT_LOCALE,
     defaultTimezone: NOTIFICATION_DEFAULT_TIMEZONE,
     suppressionHmacKey: environment.NOTIFICATION_SUPPRESSION_KEY,
+    // O que o editor de template oferece como variavel, e o que o `upsert` aceita.
+    templateVariables: NOTIFICATION_TEMPLATE_VARIABLES,
   },
   providers: {
     recipientResolver: notificationRecipientResolver,
+    queue: notificationQueue,
     ...(emailDriver ? { channels: { email: emailDriver } } : {}),
     authContextResolver: notificationAuthResolver,
     logger: notificationLogger,
   },
 });
+
+/**
+ * Quem tira o job da fila e chama o driver. Sem `start()`, a entrega nasce `queued` e morre ali.
+ * O ciclo de vida (start/stop) e amarrado ao boot da API em `infra/index.ts`.
+ */
+export const notificationWorker = createNotificationWorker({
+  module: notificationModule,
+  queue: notificationQueue,
+  logger: notificationLogger,
+});
+
+const passwordResetNotifier = createPasswordResetNotifier({
+  module: notificationModule,
+  companyId: environment.ADA_COMPANY_ID,
+  ...(emailDriver ? { emailDriver } : {}),
+  logger: userLogger,
+});
+
+export const seedNotificationTemplates = new SeedNotificationTemplatesUseCase(
+  notificationModule,
+  environment.ADA_COMPANY_ID,
+);
+
+/** Ponte para o hook do `user-module`, que e declarado antes deste ponto no arquivo. */
+function notifyPasswordResetRequested(event: PasswordResetRequestedEvent): Promise<void> {
+  return passwordResetNotifier(event);
+}
 
 /**
  * Config validada do `@ada/user-sdk`, hoje so com o provedor local — ponto de extensao para quando
