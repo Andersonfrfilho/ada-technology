@@ -19,6 +19,10 @@ import {
 
 const users = new UserRepository(database as never);
 
+export type FindUserByEmail = (email: string) => Promise<{ readonly id: string } | undefined>;
+
+const findUserByEmail: FindUserByEmail = (email) => users.findByEmail({ companyId: undefined, email });
+
 /**
  * O e-mail que a pessoa recebe quando pede para redefinir a senha vira uma notificacao do
  * `notification-module`, e nao mais o texto fixo do `user-module` — e isso que permite editar a
@@ -41,10 +45,16 @@ export function createPasswordResetNotifier(params: {
   readonly companyId: string;
   readonly emailDriver?: EmailDriverPort;
   readonly logger: UserLoggerPort;
+  /** Injetavel so para teste: em producao a busca e sempre a do `user-module`. */
+  readonly findUser?: FindUserByEmail;
 }): (event: PasswordResetRequestedEvent) => Promise<void> {
+  const findUser = params.findUser ?? findUserByEmail;
+
   return async function notifyPasswordResetRequested(event: PasswordResetRequestedEvent): Promise<void> {
+    let reason: string | undefined;
+
     try {
-      const user = await users.findByEmail({ companyId: undefined, email: event.email });
+      const user = await findUser(event.email);
       if (!user) return;
 
       const result = await params.module.useCases.sendNotification.execute({
@@ -59,10 +69,18 @@ export function createPasswordResetNotifier(params: {
         channels: [NOTIFICATION_CHANNEL.EMAIL],
       });
 
-      await fallbackIfNotDelivered({ ...params, event, result });
+      reason = resolveFallbackReason(result.deliveries);
     } catch (error) {
-      params.logger.error('Falha ao notificar redefinicao de senha', { error: String(error) });
+      /**
+       * Nem toda recusa do modulo chega como entrega pulada: sem template ativo ele LANCA
+       * `TemplateNotFoundError`, antes de qualquer despacho. Tratar excecao so como log fazia a
+       * redefinicao terminar em silencio — a mesma falha muda que este arquivo existe para
+       * impedir, e que so apareceu testando com o template desativado pelo painel.
+       */
+      reason = `excecao:${String(error)}`;
     }
+
+    if (reason) await sendDirectly({ ...params, event, reason });
   };
 }
 
@@ -102,23 +120,22 @@ export function resolveFallbackReason(deliveries: readonly DeliveryOutcome[]): s
  * assim seria uma porta aberta a qualquer chamador, e supressao existe para proteger a reputacao
  * do dominio de envio. Aqui ela e furada num unico lugar, para um unico fluxo, com log.
  */
-async function fallbackIfNotDelivered(params: {
+async function sendDirectly(params: {
   readonly event: PasswordResetRequestedEvent;
-  readonly result: { readonly deliveries: readonly DeliveryOutcome[] };
+  readonly reason: string;
   readonly emailDriver?: EmailDriverPort;
   readonly logger: UserLoggerPort;
 }): Promise<void> {
-  const reason = resolveFallbackReason(params.result.deliveries);
-  if (!reason) return;
-
   if (!params.emailDriver) {
     params.logger.error('Redefinicao de senha nao entregue e sem driver de e-mail para o fallback', {
-      reason,
+      reason: params.reason,
     });
     return;
   }
 
-  params.logger.warn('Redefinicao de senha caiu no envio direto, fora do modulo de notificacao', { reason });
+  params.logger.warn('Redefinicao de senha caiu no envio direto, fora do modulo de notificacao', {
+    reason: params.reason,
+  });
 
   await params.emailDriver.send({
     to: params.event.email,
