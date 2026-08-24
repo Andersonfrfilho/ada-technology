@@ -251,7 +251,10 @@ done
 if [[ "$EMAIL_DRIVER" == "smtp" ]]; then
   # Rede privada da Railway e IPv6: escutando so em 0.0.0.0 o `mailpit.railway.internal` nao
   # resolve para nada e o envio falha por timeout, nao por erro claro.
+  # A borda do Railway roteia pela `PORT` quando o dominio nao tem porta-alvo, e o Mailpit ignora
+  # essa variavel — sem os tres numeros batendo, o dominio responde 502 com o container saudavel.
   set_variables "$MAILPIT_SERVICE" \
+    "PORT=8025" \
     "MP_SMTP_BIND_ADDR=[::]:1025" \
     "MP_UI_BIND_ADDR=[::]:8025" \
     "MP_MAX_MESSAGES=500" \
