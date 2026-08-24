@@ -20,6 +20,8 @@ import type { LoggerPort as SchedulingLoggerPort } from '@adatechnology/scheduli
 import { createSchedulingModule } from '@adatechnology/scheduling-module';
 import { createObjectStorageProvider } from '@adatechnology/object-storage-provider';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
+import type { LoggerPort as NotificationLoggerPort } from '@adatechnology/notification-contracts';
+import { createNotificationModule } from '@adatechnology/notification-module';
 import { WhatsAppTemplateProvider } from '@adatechnology/meta-whatsapp-provider';
 import type { LoggerPort as UserLoggerPort } from '@adatechnology/user-contracts';
 import { createUserModule } from '@adatechnology/user-module';
@@ -68,6 +70,12 @@ import { SaveFlowGraphUseCase } from '@/modules/flow/saveFlowGraph.use-case';
 import type { FlowGraphPort } from '@/modules/flow/types/flow.types';
 import { DrizzlePanelConversationRepository } from '@/modules/panel/DrizzlePanelConversationRepository';
 import { DrizzlePanelLeadRepository } from '@/modules/panel/DrizzlePanelLeadRepository';
+import {
+  NOTIFICATION_DEFAULT_LOCALE,
+  NOTIFICATION_DEFAULT_TIMEZONE,
+} from '@/modules/notification/notification.constant';
+import { notificationAuthResolver } from '@/modules/notification/notificationAuthResolver';
+import { notificationRecipientResolver } from '@/modules/notification/notificationRecipientResolver';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
 import { SchedulingAgenda } from '@/modules/scheduling/SchedulingAgenda';
 import { ProvisionSchedulingResourcesUseCase } from '@/modules/scheduling/provisionSchedulingResources.use-case';
@@ -94,6 +102,7 @@ export const START_STATE = 'start';
 const CATALOG_SOURCE = 'modules.catalog';
 const SCHEDULING_SOURCE = 'modules.scheduling';
 const USER_SOURCE = 'modules.user';
+const NOTIFICATION_SOURCE = 'modules.notification';
 
 /** O modulo loga por assinatura propria; a mascara e o nivel continuam sendo os da Ada. */
 const catalogLogger: CatalogLoggerPort = {
@@ -117,6 +126,14 @@ const userLogger: UserLoggerPort = {
   info: (message, meta) => logger.info({ message, source: USER_SOURCE, ...(meta ? { meta } : {}) }),
   warn: (message, meta) => logger.warn({ message, source: USER_SOURCE, ...(meta ? { meta } : {}) }),
   error: (message, meta) => logger.error({ message, source: USER_SOURCE, ...(meta ? { meta } : {}) }),
+};
+
+/** Mesma razao do logger do catalogo: assinatura do pacote, mascara e nivel da Ada. */
+const notificationLogger: NotificationLoggerPort = {
+  debug: (message, meta) => logger.debug({ message, source: NOTIFICATION_SOURCE, ...(meta ? { meta } : {}) }),
+  info: (message, meta) => logger.info({ message, source: NOTIFICATION_SOURCE, ...(meta ? { meta } : {}) }),
+  warn: (message, meta) => logger.warn({ message, source: NOTIFICATION_SOURCE, ...(meta ? { meta } : {}) }),
+  error: (message, meta) => logger.error({ message, source: NOTIFICATION_SOURCE, ...(meta ? { meta } : {}) }),
 };
 
 export const realtime = new SseHub(new RedisRelay());
@@ -353,6 +370,34 @@ export const userModule = await createUserModule({
         targetType: AUDIT_TARGET.AGENT,
         ipAddress: event.ipAddress,
       }),
+  },
+});
+
+/**
+ * Notificacao multicanal, montada ainda sem consumidor: nada no produto chama `sendNotification`
+ * nesta entrega — o reset de senha continua saindo pelo `user-module`. O modulo sobe agora para as
+ * rotas de template e de preferencia existirem antes de o fluxo migrar para elas.
+ *
+ * Sem `providers.queue` de proposito: o `ada-technology` nao tem app de worker, e uma fila em
+ * broker so acumularia job que ninguem consome. A fila em processo do modulo entrega na mesma
+ * instancia, que e onde o despacho roda.
+ *
+ * So o canal de e-mail, e ele e o mesmo objeto que o `user-module` recebe (ver
+ * `infra/email/emailDriver.ts`): `EMAIL_DRIVER` vazio devolve `undefined` e o canal some por
+ * ausencia, em vez de existir quebrado.
+ */
+export const notificationModule = createNotificationModule({
+  db: database as never,
+  config: {
+    defaultLocale: NOTIFICATION_DEFAULT_LOCALE,
+    defaultTimezone: NOTIFICATION_DEFAULT_TIMEZONE,
+    suppressionHmacKey: environment.NOTIFICATION_SUPPRESSION_KEY,
+  },
+  providers: {
+    recipientResolver: notificationRecipientResolver,
+    ...(emailDriver ? { channels: { email: emailDriver } } : {}),
+    authContextResolver: notificationAuthResolver,
+    logger: notificationLogger,
   },
 });
 
@@ -617,6 +662,7 @@ export const container = {
   schedulingModule,
   provisionSchedulingResources,
   schedulingAgenda,
+  notificationModule,
 } as const;
 
 export type Container = typeof container;

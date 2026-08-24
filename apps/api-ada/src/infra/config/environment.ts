@@ -78,6 +78,11 @@ const environmentSchema = z
     EMAIL_RESEND_API_KEY: z.string().default(''),
     EMAIL_SES_REGION: z.string().default('us-east-1'),
 
+    // Chave do HMAC que o notification-module usa para a lista de supressao: ela guarda o digest do
+    // endereco, nunca o endereco em claro. Trocar a chave zera as supressoes existentes, entao ela
+    // e de ambiente e nao rotaciona junto com segredo de sessao.
+    NOTIFICATION_SUPPRESSION_KEY: z.string().min(32),
+
     INTENT_CLASSIFIER_ENABLED: booleanFromString,
     GROQ_API_KEY: z.string().default(''),
     GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),

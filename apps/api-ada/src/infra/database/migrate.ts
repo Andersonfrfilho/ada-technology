@@ -8,6 +8,7 @@
 
 import { runCatalogMigrations } from '@adatechnology/catalog-module';
 import { runMetaWhatsAppMigrations } from '@adatechnology/meta-whatsapp-module';
+import { runNotificationMigrations } from '@adatechnology/notification-module';
 import { runSchedulingMigrations } from '@adatechnology/scheduling-module';
 import { runUserMigrations } from '@adatechnology/user-module';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
@@ -42,6 +43,10 @@ async function runMigrations(): Promise<void> {
   logger.info({ message: 'Aplicando migrations do modulo de usuario', source: SOURCE });
 
   await runUserMigrations({ db: database as never, migrate: migrate as never });
+
+  logger.info({ message: 'Aplicando migrations do modulo de notificacao', source: SOURCE });
+
+  await runNotificationMigrations({ db: database as never, migrate: migrate as never });
 
   logger.info({ message: 'Aplicando migrations da Ada', source: SOURCE });
 
