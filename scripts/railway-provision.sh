@@ -166,7 +166,14 @@ set_variables() {
   local service="$1"
   shift
   for pair in "$@"; do
-    railway variable set "$pair" --service "$service" --skip-deploys >/dev/null
+    # A CLI recusa `CHAVE=` com "Invalid variable format". Valor vazio aqui significa capacidade
+    # desligada, e no schema da API a chave ausente ja cai no `.default('')` — entao apagar e a
+    # traducao fiel, e mantem o script reversivel: religar e desligar levam ao mesmo estado.
+    if [[ "$pair" == *= ]]; then
+      railway variable delete "${pair%=}" --service "$service" >/dev/null 2>&1 || true
+    else
+      railway variable set "$pair" --service "$service" --skip-deploys >/dev/null
+    fi
   done
   echo "--> $service: ${#} variaveis"
 }
