@@ -356,9 +356,16 @@ export const userModule = await createUserModule({
   },
   providers: {
     refreshTokenStore: new RedisUserRefreshTokenStore(),
-    // Espalhado em vez de `email: undefined`: com `exactOptionalPropertyTypes`, a chave presente
-    // com `undefined` nao e a mesma coisa que a chave ausente, e e a ausencia que desliga.
-    ...(emailDriver ? { email: emailDriver } : {}),
+    /**
+     * **Sem `email` de proposito.** O `RequestPasswordResetUseCase` envia por conta propria sempre
+     * que este provider existe, e SO DEPOIS dispara `onPasswordResetRequested` — com os dois
+     * ligados, a pessoa recebia dois e-mails: o texto fixo do pacote e o template do painel.
+     *
+     * A capacidade e por ausencia: tirando o provider, o `user-module` responde `hasEmail: false`,
+     * para de enviar, e o unico caminho passa a ser o hook (ver `passwordResetNotifier.ts`). O
+     * driver continua existindo — ele agora e do `notification-module`, e do fallback de
+     * recuperacao de conta.
+     */
     logger: userLogger,
   },
   hooks: {
