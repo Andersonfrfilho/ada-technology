@@ -7,6 +7,7 @@
  */
 
 import {
+  Bell,
   CalendarClock,
   FileText,
   Package,
@@ -33,6 +34,7 @@ export const PANEL_SECTION = {
   DOCUMENTS: 'documentos',
   LEADS: 'clientes',
   SCHEDULE: 'agenda',
+  NOTIFICATIONS: 'notificacoes',
 } as const;
 
 export type PanelSection = (typeof PANEL_SECTION)[keyof typeof PANEL_SECTION];
@@ -75,6 +77,7 @@ export const PANEL_SECTION_GROUPS: readonly PanelSectionGroup[] = [
       { section: PANEL_SECTION.FLOWS, icon: Workflow },
       { section: PANEL_SECTION.MESSAGES, icon: Send },
       { section: PANEL_SECTION.TEMPLATES, icon: LayoutTemplate },
+      { section: PANEL_SECTION.NOTIFICATIONS, icon: Bell },
     ],
   },
   {

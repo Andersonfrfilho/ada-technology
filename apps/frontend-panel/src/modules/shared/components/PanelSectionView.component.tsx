@@ -11,6 +11,7 @@ import { DocumentsPage } from '@/modules/documents/Documents.page';
 import { FlowsPage } from '@/modules/flows/Flows.page';
 import { InboxPage } from '@/modules/inbox/Inbox.page';
 import { LeadsPage } from '@/modules/leads/Leads.page';
+import { NotificationPage } from '@/modules/notification/Notification.page';
 import { SchedulingPage } from '@/modules/scheduling/Scheduling.page';
 import { MessagesPage } from '@/modules/settings/Messages.page';
 import { TemplatesPage } from '@/modules/settings/Templates.page';
@@ -44,5 +45,7 @@ export function PanelSectionView({ section }: PanelSectionViewProps) {
       return <DocumentsPage />;
     case PANEL_SECTION.LEADS:
       return <LeadsPage />;
+    case PANEL_SECTION.NOTIFICATIONS:
+      return <NotificationPage />;
   }
 }

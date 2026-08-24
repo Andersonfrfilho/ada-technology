@@ -1,0 +1,21 @@
+{
+  "settings.title": "Templates de notificacao",
+  "settings.description": "Por onde avisar, e o texto exato que chega.",
+  "settings.channelsTitle": "Canais",
+  "settings.channelsHint": "Desligar um canal nao apaga o historico — o aviso deixa de sair por ali daqui em diante.",
+  "settings.templatesTitle": "Mensagens",
+  "settings.templatesHint": "Uma versao nova e criada a cada gravacao; a anterior fica no historico.",
+  "settings.templatesEmpty": "Nenhuma mensagem cadastrada.",
+  "settings.pickTemplate": "Escolha uma mensagem para editar.",
+  "settings.subject": "Titulo",
+  "settings.subjectHint": "O que aparece na lista. Vazio, o titulo e derivado da primeira linha do texto.",
+  "settings.body": "Texto",
+  "settings.previewTitle": "Como o destinatario ve",
+  "settings.save": "Salvar nova versao",
+  "settings.saving": "Salvando…",
+  "settings.unchanged": "Nada mudou ainda.",
+  "settings.close": "Fechar",
+  "settings.version": "v",
+  "list.loading": "Carregando…",
+  "channel.email": "E-mail"
+}
