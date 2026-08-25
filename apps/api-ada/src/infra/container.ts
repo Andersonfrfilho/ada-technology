@@ -449,6 +449,18 @@ const notificationQueueName = `${environment.PROJECT_NAME}-${environment.ENV}-${
 /** Exportada para o painel operacional montar em cima da MESMA fila que o modulo produz. */
 export const notificationBullQueue = new Queue(notificationQueueName, { connection: redis });
 
+/**
+ * Fecha a fila. Obrigatorio em TODO comando de linha que importa este container.
+ *
+ * A `Queue` do BullMQ abre conexao propria com o Redis e segura o event loop — o mesmo problema que
+ * o `SseHub` ja causava, e que o `closeRedis()` resolvia para ele. Sem fechar aqui, `flow:republish`
+ * e o seed publicam o que tinham que publicar e NUNCA SAEM: o `deploy:pre` fica esperando, e o
+ * deploy inteiro pendura sem erro nenhum no log.
+ */
+export function closeNotificationQueue(): Promise<void> {
+  return notificationBullQueue.close();
+}
+
 const notificationQueue = createBullMqQueue({
   queue: notificationBullQueue,
   createWorker: (handler) =>
