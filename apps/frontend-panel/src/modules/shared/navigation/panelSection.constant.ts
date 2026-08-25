@@ -36,7 +36,7 @@ export const PANEL_SECTION = {
   LEADS: 'clientes',
   SCHEDULE: 'agenda',
   NOTIFICATIONS: 'notificacoes',
-  AGENTS: 'atendentes',
+  AGENTS: 'usuarios',
 } as const;
 
 export type PanelSection = (typeof PANEL_SECTION)[keyof typeof PANEL_SECTION];

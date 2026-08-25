@@ -17,7 +17,7 @@
       "catalogo": "Catálogo",
       "documentos": "Documentos",
       "clientes": "Clientes",
-      "atendentes": "Atendentes"
+      "usuarios": "Usuários"
     },
     "groups": {
       "atendimento": "Atendimento",
