@@ -683,10 +683,14 @@ export const notificationAttachmentUpload = environment.OBJECT_STORAGE_ATTACHMEN
   ? new UploadNotificationAttachmentUseCase({
       bucket: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
       storage: createObjectStorageProvider({
-        endpoint: new URL(environment.OBJECT_STORAGE_ENDPOINT),
+        // Credencial propria quando o provedor emite uma por bucket (Railway); a compartilhada
+        // quando ele usa uma so para todos (MinIO do compose).
+        endpoint: new URL(environment.OBJECT_STORAGE_ATTACHMENT_ENDPOINT || environment.OBJECT_STORAGE_ENDPOINT),
         region: environment.OBJECT_STORAGE_REGION,
-        accessKeyId: environment.OBJECT_STORAGE_ACCESS_KEY_ID,
-        secretAccessKey: environment.OBJECT_STORAGE_SECRET_ACCESS_KEY,
+        accessKeyId:
+          environment.OBJECT_STORAGE_ATTACHMENT_ACCESS_KEY_ID || environment.OBJECT_STORAGE_ACCESS_KEY_ID,
+        secretAccessKey:
+          environment.OBJECT_STORAGE_ATTACHMENT_SECRET_ACCESS_KEY || environment.OBJECT_STORAGE_SECRET_ACCESS_KEY,
         forcePathStyle: environment.OBJECT_STORAGE_FORCE_PATH_STYLE,
         healthCheckBucket: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
         maxObjectSizeBytes: EMAIL_ATTACHMENT_MAX_BYTES,

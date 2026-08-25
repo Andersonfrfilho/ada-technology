@@ -90,6 +90,18 @@ const environmentSchema = z
      */
     OBJECT_STORAGE_ATTACHMENT_BUCKET: z.string().default(''),
 
+    /**
+     * Credencial PROPRIA do bucket de anexo, quando o provedor emite uma por bucket.
+     *
+     * O MinIO do compose usa uma credencial para todos os buckets, e ai estas ficam vazias e valem
+     * as de cima. O Railway emite um par por bucket — descoberto criando o bucket de staging, com
+     * `accessKeyId` diferente do de imagem de produto. Sem esta separacao, a chave do bucket publico
+     * assinaria o bucket privado, e o `403` so apareceria no primeiro anexo.
+     */
+    OBJECT_STORAGE_ATTACHMENT_ENDPOINT: z.string().default(''),
+    OBJECT_STORAGE_ATTACHMENT_ACCESS_KEY_ID: z.string().default(''),
+    OBJECT_STORAGE_ATTACHMENT_SECRET_ACCESS_KEY: z.string().default(''),
+
     // Vazio desliga o envio por ausencia: o modulo de usuario nao recebe `providers.email` e o
     // pedido de redefinicao de senha so dispara o hook, sem mensagem.
     EMAIL_DRIVER: z.enum(['', 'smtp', 'resend', 'ses']).default(''),
@@ -176,16 +188,21 @@ const environmentSchema = z
   .superRefine((value, context) => {
     if (value.OBJECT_STORAGE_ATTACHMENT_BUCKET.length === 0) return;
 
-    for (const key of [
-      'OBJECT_STORAGE_ENDPOINT',
-      'OBJECT_STORAGE_ACCESS_KEY_ID',
-      'OBJECT_STORAGE_SECRET_ACCESS_KEY',
-    ] as const) {
-      if (value[key].length === 0) {
+    // Cada peca vem da credencial propria do anexo OU da compartilhada. Faltando nas duas, a rota
+    // subiria e falharia so no primeiro upload — o caso que a regra do bucket de imagem evita.
+    const resolved = {
+      endpoint: value.OBJECT_STORAGE_ATTACHMENT_ENDPOINT || value.OBJECT_STORAGE_ENDPOINT,
+      accessKeyId: value.OBJECT_STORAGE_ATTACHMENT_ACCESS_KEY_ID || value.OBJECT_STORAGE_ACCESS_KEY_ID,
+      secretAccessKey:
+        value.OBJECT_STORAGE_ATTACHMENT_SECRET_ACCESS_KEY || value.OBJECT_STORAGE_SECRET_ACCESS_KEY,
+    } as const;
+
+    for (const [field, resolvedValue] of Object.entries(resolved)) {
+      if (resolvedValue.length === 0) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
-          path: [key],
-          message: `${key} e obrigatorio quando OBJECT_STORAGE_ATTACHMENT_BUCKET esta configurado`,
+          path: ['OBJECT_STORAGE_ATTACHMENT_BUCKET'],
+          message: `sem ${field} do anexo nem o compartilhado, e OBJECT_STORAGE_ATTACHMENT_BUCKET esta configurado`,
         });
       }
     }
