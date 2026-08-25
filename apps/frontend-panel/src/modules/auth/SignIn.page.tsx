@@ -64,6 +64,22 @@ export function SignInPage() {
             />
           </div>
 
+          {/* Sem estado em React: checkbox desmarcado simplesmente nao aparece no `FormData`, e o
+              hook le a ausencia como `false`. Desmarcado por padrao de proposito — a sessao que
+              sobrevive a fechar o navegador e uma escolha, nao o presente de boas-vindas. */}
+          <div className="mb-6">
+            <label className="flex min-h-11 items-center gap-3 text-sm text-ink-900" htmlFor="rememberMe">
+              <input
+                className="size-4 accent-brand-600"
+                id="rememberMe"
+                name="rememberMe"
+                type="checkbox"
+              />
+              {locale.rememberMeLabel}
+            </label>
+            <p className="mt-1 text-xs text-ink-500">{locale.rememberMeHint}</p>
+          </div>
+
           {errorMessage ? (
             <p className="mb-4 rounded-panel bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
               {errorMessage}

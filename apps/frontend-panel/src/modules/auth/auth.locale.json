@@ -7,6 +7,8 @@
     "emailPlaceholder": "voce@adatechnology.com.br",
     "passwordLabel": "Senha",
     "passwordPlaceholder": "Sua senha",
+    "rememberMeLabel": "Continuar conectado",
+    "rememberMeHint": "Em computador compartilhado, deixe desmarcado.",
     "submit": "Entrar",
     "submitting": "Entrando...",
     "invalidCredentials": "E-mail ou senha incorretos.",

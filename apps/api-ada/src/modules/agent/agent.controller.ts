@@ -20,6 +20,8 @@ import { agentLoginSchema } from '@/modules/agent/agent.schema';
 import {
   buildExpiredRefreshCookie,
   buildRefreshCookie,
+  buildRememberCookie,
+  readRememberCookie,
   readRefreshCookie,
 } from '@/modules/agent/refreshCookie';
 import type { AgentSessionResult } from '@/modules/agent/types/agent.types';
@@ -30,21 +32,29 @@ import type { AgentSessionResult } from '@/modules/agent/types/agent.types';
  * Se ele aparecesse no JSON, o painel teria de guarda-lo em algum lugar que o JavaScript alcanca —
  * e ai o `HttpOnly` do cookie nao protegeria mais nada.
  */
-function sessionResponse(session: AgentSessionResult): Response {
+function sessionResponse(session: AgentSessionResult, rememberMe: boolean): Response {
+  // Sem `Max-Age` o cookie morre com a janela; com ele, sobrevive. O companheiro `ada_remember`
+  // guarda a escolha para a renovacao reemitir a MESMA politica — o navegador manda o valor do
+  // cookie, nunca o prazo dele.
+  const maxAgeSeconds = rememberMe ? session.refreshExpiresInSeconds : undefined;
+
   const cookie = buildRefreshCookie({
     token: session.refreshToken,
-    maxAgeSeconds: session.refreshExpiresInSeconds,
+    ...(maxAgeSeconds === undefined ? {} : { maxAgeSeconds }),
   });
 
-  return jsonData(
-    {
-      accessToken: session.accessToken,
-      expiresInSeconds: session.expiresInSeconds,
-      agent: session.agent,
-    },
-    200,
-    { 'Set-Cookie': cookie },
-  );
+  const response = jsonData({
+    accessToken: session.accessToken,
+    expiresInSeconds: session.expiresInSeconds,
+    agent: session.agent,
+  });
+
+  // `append` e nao um objeto de cabecalhos: sao DOIS `Set-Cookie`, e um `Record<string, string>`
+  // so guarda um valor por chave — o segundo apagaria o primeiro.
+  response.headers.append('Set-Cookie', cookie);
+  response.headers.append('Set-Cookie', buildRememberCookie(maxAgeSeconds));
+
+  return response;
 }
 
 const loginRoute: Route = {
@@ -52,11 +62,11 @@ const loginRoute: Route = {
   path: AUTH_ROUTE.LOGIN,
   rateLimit: RATE_LIMIT.PANEL_LOGIN,
   handler: async ({ request, clientAddress }) => {
-    const { email, password } = agentLoginSchema.parse(await readJsonBody(request));
+    const { email, password, rememberMe } = agentLoginSchema.parse(await readJsonBody(request));
 
     const session = await authenticateAgent.execute({ email, password, ipAddress: clientAddress });
 
-    return sessionResponse(session);
+    return sessionResponse(session, rememberMe);
   },
 };
 
@@ -68,7 +78,9 @@ const refreshRoute: Route = {
     const refreshToken = readRefreshCookie(request);
     if (!refreshToken) throw new AgentNotAuthenticatedError();
 
-    return sessionResponse(await refreshAgentSession.execute(refreshToken));
+    // A renovacao herda a escolha do login em vez de assumir uma: sem isto, um login de maquina
+    // emprestada viraria sessao de sete dias na primeira renovacao, em silencio.
+    return sessionResponse(await refreshAgentSession.execute(refreshToken), readRememberCookie(request));
   },
 };
 

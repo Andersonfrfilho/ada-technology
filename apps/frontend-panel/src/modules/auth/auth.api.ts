@@ -15,13 +15,15 @@ import type { PanelSession } from '@/modules/shared/session/types/session.types'
 export type SignInParams = {
   readonly email: string;
   readonly password: string;
+  /** Decide a vida do cookie de refresh: persistente, ou de sessao que morre com a janela. */
+  readonly rememberMe: boolean;
 };
 
-export async function signInAgent({ email, password }: SignInParams): Promise<PanelSession> {
+export async function signInAgent({ email, password, rememberMe }: SignInParams): Promise<PanelSession> {
   return panelRequest<PanelSession>({
     path: AUTH_ROUTE.LOGIN,
     method: HTTP_METHOD.POST,
-    body: { email, password },
+    body: { email, password, rememberMe },
   });
 }
 
