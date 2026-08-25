@@ -10,40 +10,14 @@ import { buildPreviewPayload } from '@adatechnology/notification-contracts';
 import { z } from 'zod';
 
 import { environment } from '@/infra/config/environment';
-import { database } from '@/infra/database/client';
 import { notificationModule } from '@/infra/container';
 import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
 import { jsonData } from '@/infra/http/responses';
 import { AUTH_REQUIREMENT, HTTP_METHOD } from '@/infra/http/router';
 import type { Route } from '@/infra/http/router';
 import { NOTIFICATION_TEMPLATE_TEST_PATH } from '@/modules/notification/notification.constant';
-import {
-  NotificationTestRecipientUnknownError,
-  NotificationTestTemplateUnknownError,
-} from '@/modules/notification/notificationAttachment.error';
+import { NotificationTestTemplateUnknownError } from '@/modules/notification/notificationAttachment.error';
 import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
-import { DrizzleAgentRepository } from '@/modules/agent/DrizzleAgentRepository';
-import { UserRepository } from '@adatechnology/user-module';
-
-const agents = new DrizzleAgentRepository();
-const users = new UserRepository(database as never);
-
-/**
- * O painel autentica pelo sistema `agents`; o destinatario de notificacao vive na tabela do
- * `user-module`. Sao dois sistemas em paralelo nesta fase, e o `agentId` do token NAO e um
- * `user.id` — passa-lo direto faz o modulo recusar por "destinatario sem endereco".
- *
- * A ponte e o e-mail, que e o que os dois lados tem em comum. Mesmo caminho que o
- * `passwordResetNotifier` ja usa, e pelo mesmo motivo.
- */
-async function resolveRecipientUserId(agentId: string): Promise<string | undefined> {
-  const agent = await agents.findById(agentId);
-  if (!agent) return undefined;
-
-  const user = await users.findByEmail({ companyId: undefined, email: agent.email });
-  return user?.id;
-}
-
 const testBodySchema = z.object({
   /** Sem canal, vai por e-mail: e o unico com driver, e o teste existe para provar que chega. */
   channel: z.enum(['email', 'whatsapp', 'sms', 'push', 'inbox']).default('email'),
@@ -80,12 +54,14 @@ const sendTestRoute: Route = {
 
     const body = testBodySchema.parse(await request.json().catch(() => ({})));
 
-    const recipientUserId = await resolveRecipientUserId(agent?.agentId ?? '');
-    if (!recipientUserId) throw new NotificationTestRecipientUnknownError();
-
     const result = await notificationModule.useCases.sendNotification.execute({
       companyId: environment.ADA_COMPANY_ID,
-      recipientUserId,
+      /**
+       * O `agentId` do token vai direto: o `notificationRecipientResolver` procura nas DUAS tabelas
+       * enquanto `agents` e `user-module` convivem, entao ele resolve o endereco de qualquer um dos
+       * dois lados.
+       */
+      recipientUserId: agent?.agentId ?? '',
       category: templateKey,
       templateKey,
       payload: buildPreviewPayload(variables),

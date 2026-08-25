@@ -10,12 +10,14 @@ import type { RecipientResolverPort, ResolvedRecipient } from '@adatechnology/no
 import { UserRepository } from '@adatechnology/user-module';
 
 import { database } from '@/infra/database/client';
+import { DrizzleAgentRepository } from '@/modules/agent/DrizzleAgentRepository';
 import {
   NOTIFICATION_DEFAULT_LOCALE,
   NOTIFICATION_DEFAULT_TIMEZONE,
 } from '@/modules/notification/notification.constant';
 
 const users = new UserRepository(database as never);
+const agents = new DrizzleAgentRepository();
 
 /**
  * O endereco do destinatario, lido da tabela do `user-module` no instante do envio.
@@ -29,17 +31,35 @@ const users = new UserRepository(database as never);
  * existe um, e ele vem do ambiente, nunca do cliente (`security.md` §2).
  *
  * Sem telefone na tabela, so o e-mail e resolvido — que e o unico canal ligado neste host.
+ *
+ * DUAS TABELAS, enquanto os dois sistemas convivem. O painel autentica pelo `agents` legado e o
+ * `user-module` roda em paralelo; um atendente pode existir so de um lado. Procurar apenas em
+ * `users` fazia TODA notificacao para quem so existe em `agents` morrer em "destinatario sem
+ * endereco" — em silencio, porque o modulo pula o canal sem erro.
+ *
+ * A ordem importa: `users` primeiro, porque e para la que o produto esta migrando e e la que o
+ * cadastro fica completo. `agents` e a rede que impede o periodo de convivencia de calar aviso de
+ * seguranca e redefinicao de senha.
+ *
+ * Quando o `agents` sair, some o segundo `if` e nada mais muda.
  */
 export const notificationRecipientResolver: RecipientResolverPort = {
   async resolve({ userId }): Promise<ResolvedRecipient | undefined> {
     const user = await users.findById({ companyId: undefined, id: userId });
-    if (!user) return undefined;
+    if (user) return toRecipient({ email: user.email, name: user.name });
 
-    return {
-      email: user.email,
-      displayName: user.name,
-      locale: NOTIFICATION_DEFAULT_LOCALE,
-      timezone: NOTIFICATION_DEFAULT_TIMEZONE,
-    };
+    const agent = await agents.findById(userId);
+    if (agent) return toRecipient({ email: agent.email, name: agent.name });
+
+    return undefined;
   },
 };
+
+function toRecipient(params: { readonly email: string; readonly name: string }): ResolvedRecipient {
+  return {
+    email: params.email,
+    displayName: params.name,
+    locale: NOTIFICATION_DEFAULT_LOCALE,
+    timezone: NOTIFICATION_DEFAULT_TIMEZONE,
+  };
+}
