@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import '@adatechnology/conversations-ui/styles.css';
+@import '@adatechnology/notification-ui/styles.css';
 
 /**
  * O `styles.css` do SDK traz so as classes `.cv-*` escritas a mao; o resto dos componentes usa
@@ -8,6 +9,7 @@
  */
 @source '../node_modules/@adatechnology/conversations-ui/dist';
 @source '../node_modules/@adatechnology/products-ui/dist';
+@source '../node_modules/@adatechnology/notification-ui/dist';
 
 /**
  * O `dark:` do painel passa a ser a classe no `<html>`, e nao `prefers-color-scheme`.

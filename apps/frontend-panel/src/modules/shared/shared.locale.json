@@ -20,6 +20,7 @@
     },
     "groups": {
       "atendimento": "Atendimento",
+      "avisos": "Avisos",
       "conteudo": "Conteúdo",
       "cadastros": "Cadastros"
     }

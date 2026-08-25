@@ -48,6 +48,7 @@ export type PanelSectionItem = {
 
 export const PANEL_GROUP = {
   SERVICE: 'atendimento',
+  NOTIFICATIONS: 'avisos',
   CONTENT: 'conteudo',
   REGISTRY: 'cadastros',
 } as const;
@@ -77,8 +78,22 @@ export const PANEL_SECTION_GROUPS: readonly PanelSectionGroup[] = [
       { section: PANEL_SECTION.FLOWS, icon: Workflow },
       { section: PANEL_SECTION.MESSAGES, icon: Send },
       { section: PANEL_SECTION.TEMPLATES, icon: LayoutTemplate },
-      { section: PANEL_SECTION.NOTIFICATIONS, icon: Bell },
     ],
+  },
+  /**
+   * Bloco proprio, e nao junto de atendimento.
+   *
+   * Conversas, Fluxos, Mensagens e Templates sao todos a mesma coisa vista de angulos diferentes:
+   * o WhatsApp do `meta-whatsapp-module`, onde o cliente fala e o time responde. Notificacoes e
+   * outro produto (`notification-module`) e outro publico — e o aviso que o SISTEMA manda, por
+   * e-mail, sem ninguem do outro lado digitando. Misturar os dois fazia "Templates" e
+   * "Notificacoes" parecerem a mesma tela com nomes diferentes.
+   *
+   * Um item so por enquanto: e aqui que entram historico de entrega e supressoes quando existirem.
+   */
+  {
+    group: PANEL_GROUP.NOTIFICATIONS,
+    items: [{ section: PANEL_SECTION.NOTIFICATIONS, icon: Bell }],
   },
   {
     group: PANEL_GROUP.CONTENT,
