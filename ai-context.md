@@ -18,6 +18,7 @@ Stack: Bun + TypeScript, PostgreSQL + Drizzle, Redis (cache, nonce, pub/sub de t
 
 | Package | Papel |
 |---|---|
+| `packages/email-layout` (`@ada/email-layout`) | Moldura HTML dos e-mails do produto (`buildEmailHtml`) e validador do que sobrevive à entrega (`validateEmailHtml`). Em pacote, e não dentro do `api-ada`, porque o painel usa a **mesma** função no preview — duas cópias divergem no primeiro ajuste de cor e o preview passa a mentir. |
 | `packages/user-sdk` (`@ada/user-sdk`) | Contratos de usuário/autenticação compartilhados entre `api-ada` e `frontend-panel` (`UserProfile`, `UserSession`, `localCredentialsSchema`, `USER_ERROR_CODE`, `AUTH_ROUTE`) e ponto de extensão tipado para provedores de auth (`AuthProviderInterface`, mapeamento de atributos). Só o provedor local está implementado; nenhum OAuth/OIDC/SSO real existe ainda. |
 
 ## Como o bot funciona
@@ -173,11 +174,39 @@ padrão** (argumento apareceria em `ps` e no histórico). Repetir o seed não qu
   `signOutAgent`) diretamente — o mapa é o ponto de extensão para um segundo provedor, não está no
   caminho de execução das rotas ainda.
 
+### Notificações — quem faz o quê
+
+**Decisão registrada em `docs/adr/0003`.** Quatro peças conseguem mandar e-mail, e cada uma tem um
+verbo só. Já houve duas enviando ao mesmo tempo, e a pessoa recebia dois e-mails.
+
+| Peça | Verbo |
+|---|---|
+| `@adatechnology/user-module` | **Emite evento** (`onLoginSucceeded`, `onPasswordResetRequested`). **Não envia** — `providers.email` fica deliberadamente ausente |
+| `@adatechnology/notification-module` | **Despacha**: template, preferência, supressão, retry, histórico, fan-out de canal |
+| `@adatechnology/email-provider` | **Transporta**, e baixa/anexa o arquivo |
+| `@ada/email-layout` | **Emoldura** o HTML (logo, cartões, rodapé) e valida o que sobrevive à entrega. Em pacote porque o painel usa a mesma função no preview |
+| `api-ada` | **Costura**: liga hook a notificador (`*Notifier.ts`), declara categoria/template/variáveis, assina a URL do anexo |
+
+Redefinição de senha **força e-mail** (recuperação de acesso precisa chegar); aviso de acesso **não
+força canal** — o fan-out resolve pela preferência, e um driver de push ou WhatsApp injetado no
+módulo passa a servi-lo sem mudar código.
+
+A copy nasce em `*.constant.ts` como default de boot; o seeder semeia **só o que falta**. Do primeiro
+`upsert` pelo painel em diante, a versão do banco manda — editar o arquivo não muda o que o cliente
+lê hoje.
+
+Fila: **BullMQ sobre o Redis** (`notification-dispatch`, prefixada por `PROJECT_NAME` e `ENV`). A
+fila em memória de antes perdia toda entrega enfileirada em restart, em silêncio.
+
+Anexo: o upload (`POST /v1/notifications/attachments`) grava em bucket **privado** com chave pelo
+digest do conteúdo e devolve **referência**; o disparo assina a URL (5 min) e o **driver** baixa ao
+montar o MIME. Ver `docs/adr/0002`.
+
 ### E-mail
 
-`EMAIL_DRIVER` decide qual driver o `user-module` recebe em `providers.email`; **vazio desliga o
-envio por ausência** e o pedido de redefinição de senha só cria o token e dispara o hook
-`onPasswordResetRequested`. Montagem em `infra/email/emailDriver.ts`, sobre
+`EMAIL_DRIVER` decide qual driver o **`notification-module`** recebe — e o mesmo objeto serve de
+fallback direto da redefinição de senha, para quando o módulo se recusa a entregar. **Vazio desliga
+o envio por ausência.** Montagem em `infra/email/emailDriver.ts`, sobre
 `@adatechnology/email-provider`.
 
 - **Local**: `smtp` apontando para o Mailpit do `infra/docker-compose.yml`. Nada sai da máquina, e o
