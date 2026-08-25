@@ -16,7 +16,7 @@
     "@ada/user-sdk": "workspace:*",
     "@adatechnology/conversations-ui": "0.1.0-rc.35",
     "@adatechnology/notification-client": "0.1.0-rc.3",
-    "@adatechnology/notification-contracts": "0.1.0-rc.5",
+    "@adatechnology/notification-contracts": "0.1.0-rc.6",
     "@adatechnology/notification-ui": "0.1.0-rc.6",
     "@adatechnology/products-ui": "0.1.0-rc.12",
     "@adatechnology/scheduling-contracts": "0.1.0-rc.2",
