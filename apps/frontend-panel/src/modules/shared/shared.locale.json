@@ -16,7 +16,8 @@
       "notificacoes": "Notificações",
       "catalogo": "Catálogo",
       "documentos": "Documentos",
-      "clientes": "Clientes"
+      "clientes": "Clientes",
+      "atendentes": "Atendentes"
     },
     "groups": {
       "atendimento": "Atendimento",

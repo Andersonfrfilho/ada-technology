@@ -26,3 +26,15 @@ export const agentLoginSchema = localCredentialsSchema.extend({
    */
   rememberMe: z.boolean().default(false),
 });
+
+/**
+ * Cadastro de atendente pelo painel.
+ *
+ * A senha vem de quem cria, como no seed — o sistema `agents` nao tem convite nem autoatendimento
+ * de senha, e inventar um aqui seria prometer um fluxo que nenhuma rota cumpre. Quem cria comunica
+ * a senha e a pessoa entra; trocar depois depende da migracao do login para o `user-module`.
+ */
+export const agentCreateSchema = localCredentialsSchema.extend({
+  name: z.string().trim().min(2).max(120),
+  role: z.enum(['admin', 'agent']).default('agent'),
+});

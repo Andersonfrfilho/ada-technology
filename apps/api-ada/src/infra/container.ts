@@ -50,6 +50,7 @@ import { RedisRelay } from '@/infra/realtime/RedisRelay';
 import { ACCESS_TOKEN_AUDIENCE, ACCESS_TOKEN_ISSUER } from '@/modules/agent/agent.constant';
 import { AuthenticateAgentUseCase } from '@/modules/agent/authenticateAgent.use-case';
 import { DrizzleAgentRepository } from '@/modules/agent/DrizzleAgentRepository';
+import { CreateAgentUseCase } from '@/modules/agent/createAgent.use-case';
 import { createLocalAgentAuthProvider } from '@/modules/agent/localAuthProvider';
 import { RedisRefreshTokenStore } from '@/modules/agent/RedisRefreshTokenStore';
 import { RefreshAgentSessionUseCase } from '@/modules/agent/refreshAgentSession.use-case';
@@ -516,6 +517,9 @@ function notifyPasswordResetRequested(event: PasswordResetRequestedEvent): Promi
  * Config validada do `@ada/user-sdk`, hoje so com o provedor local — ponto de extensao para quando
  * um segundo provedor (OAuth2/OIDC) for implementado.
  */
+/** Cadastro de atendente pelo painel — a alternativa ao seed por SSH. */
+export const createAgent = new CreateAgentUseCase({ agents: agentRepository });
+
 export const authProvidersConfig = authProvidersConfigSchema.parse(buildLocalOnlyAuthProvidersConfig());
 
 /**

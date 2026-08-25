@@ -7,6 +7,7 @@
  */
 
 import {
+  UserPlus,
   Bell,
   CalendarClock,
   FileText,
@@ -35,6 +36,7 @@ export const PANEL_SECTION = {
   LEADS: 'clientes',
   SCHEDULE: 'agenda',
   NOTIFICATIONS: 'notificacoes',
+  AGENTS: 'atendentes',
 } as const;
 
 export type PanelSection = (typeof PANEL_SECTION)[keyof typeof PANEL_SECTION];
@@ -104,7 +106,10 @@ export const PANEL_SECTION_GROUPS: readonly PanelSectionGroup[] = [
   },
   {
     group: PANEL_GROUP.REGISTRY,
-    items: [{ section: PANEL_SECTION.LEADS, icon: Users }],
+    items: [
+      { section: PANEL_SECTION.LEADS, icon: Users },
+      { section: PANEL_SECTION.AGENTS, icon: UserPlus },
+    ],
   },
 ];
 

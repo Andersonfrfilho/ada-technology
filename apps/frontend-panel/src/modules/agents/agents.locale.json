@@ -1,0 +1,21 @@
+{
+  "title": "Atendentes",
+  "subtitle": "Quem entra no painel. Criar aqui substitui o cadastro por linha de comando.",
+  "empty": "Nenhum atendente alem de voce.",
+  "loading": "Carregando...",
+  "newAgent": "Novo atendente",
+  "name": "Nome",
+  "email": "E-mail",
+  "password": "Senha inicial",
+  "passwordHint": "Minimo de 12 caracteres. Combine com a pessoa e peca para trocar depois.",
+  "role": "Papel",
+  "roleAgent": "Atendente",
+  "roleAdmin": "Administrador",
+  "submit": "Criar atendente",
+  "submitting": "Criando...",
+  "created": "Atendente criado",
+  "failed": "Nao foi possivel criar",
+  "cancel": "Cancelar",
+  "columnName": "Nome",
+  "columnRole": "Papel"
+}

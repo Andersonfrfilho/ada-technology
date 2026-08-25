@@ -10,10 +10,12 @@ import { USER_EVENT } from '@adatechnology/user-contracts';
 import { AUTH_ROUTE } from '@ada/user-sdk';
 
 const AGENTS_PATH = '/v1/panel/agents';
+const CREATED = 201;
 
 import {
   agentRepository,
   authenticateAgent,
+  createAgent,
   loginAlertNotifier,
   refreshAgentSession,
   signOutAgent,
@@ -23,7 +25,7 @@ import { readJsonBody } from '@/infra/http/requestBody';
 import { jsonData, noContent } from '@/infra/http/responses';
 import { AUTH_REQUIREMENT, HTTP_METHOD, requireAgent, type Route } from '@/infra/http/router';
 import { AgentNotAuthenticatedError, AgentNotFoundError } from '@/modules/agent/agent.error';
-import { agentLoginSchema } from '@/modules/agent/agent.schema';
+import { agentCreateSchema, agentLoginSchema } from '@/modules/agent/agent.schema';
 import {
   buildExpiredRefreshCookie,
   buildRefreshCookie,
@@ -138,7 +140,31 @@ const listAgentsRoute: Route = {
   },
 };
 
+/**
+ * Cadastra um atendente pelo painel.
+ *
+ * `auth: ADMIN` — criar quem entra no produto e a acao mais privilegiada que existe, e ela nao pode
+ * depender de acesso SSH ao conteiner, que era a unica forma ate aqui (o seed).
+ *
+ * 201 com o perfil, sem senha nem hash: o corpo da resposta volta para a tela, e nada que identifique
+ * credencial atravessa esse caminho.
+ */
+const createAgentRoute: Route = {
+  method: HTTP_METHOD.POST,
+  path: AGENTS_PATH,
+  auth: AUTH_REQUIREMENT.ADMIN,
+  rateLimit: RATE_LIMIT.PANEL_WRITE,
+  handler: async ({ request }) => {
+    const input = agentCreateSchema.parse(await readJsonBody(request));
+
+    const created = await createAgent.execute(input);
+
+    return jsonData({ id: created.id, email: created.email, name: created.name, role: created.role }, CREATED);
+  },
+};
+
 export const agentRoutes: readonly Route[] = [
+  createAgentRoute,
   loginRoute,
   refreshRoute,
   logoutRoute,
