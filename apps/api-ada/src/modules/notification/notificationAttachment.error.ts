@@ -10,6 +10,7 @@ import { DomainError } from '@/shared/errors/AppError';
 import { ERROR_CODES } from '@/shared/errors/codes';
 
 const NOT_FOUND = 404;
+const CONFLICT = 409;
 const BAD_REQUEST = 400;
 const PAYLOAD_TOO_LARGE = 413;
 const UNSUPPORTED_MEDIA_TYPE = 415;
@@ -81,6 +82,23 @@ export class NotificationTestTemplateUnknownError extends DomainError {
       code: ERROR_CODES.notification.TEST_TEMPLATE_UNKNOWN,
       message: `Template desconhecido: ${templateKey}`,
       statusCode: NOT_FOUND,
+    });
+  }
+}
+
+/**
+ * O agente autenticado nao tem conta correspondente no `user-module`.
+ *
+ * Acontece enquanto os dois sistemas convivem: o painel entra pelo `agents`, e a notificacao so
+ * sabe entregar para quem existe do outro lado. 409 e nao 500 — nao e falha do servidor, e o
+ * operador precisa da causa para pedir a conta.
+ */
+export class NotificationTestRecipientUnknownError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.notification.TEST_RECIPIENT_UNKNOWN,
+      message: 'Sua conta de atendente ainda nao tem cadastro de usuario para receber notificacao',
+      statusCode: CONFLICT,
     });
   }
 }
