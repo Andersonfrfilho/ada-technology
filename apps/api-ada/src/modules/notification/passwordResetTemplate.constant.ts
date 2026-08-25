@@ -57,7 +57,26 @@ export const PASSWORD_RESET_VARIABLES: readonly TemplateVariableDefinition[] = [
   },
 ];
 
+/**
+ * Anexo OPCIONAL, disponivel em qualquer template deste host.
+ *
+ * `required: false` e o que faz isto nao ser mentira: no disparo normal a chave nao vem no payload,
+ * `resolveEmailAttachments` a ignora em silencio, e nada muda. Quem preenche e o envio de teste,
+ * onde o operador escolhe um arquivo para provar que a cadeia inteira funciona — upload, assinatura,
+ * download pelo driver e MIME.
+ *
+ * Declarar um anexo `required` num template exigiria saber QUAL notificacao do produto carrega
+ * arquivo, e isso e decisao de negocio. Enquanto ela nao existe, a capacidade fica disponivel sem
+ * prometer nada.
+ */
+export const OPTIONAL_ATTACHMENT_VARIABLE: TemplateVariableDefinition = {
+  name: 'anexo',
+  example: 'documento.pdf',
+  required: false,
+  kind: 'attachment',
+};
+
 export const NOTIFICATION_TEMPLATE_VARIABLES = {
-  [NOTIFICATION_TEMPLATE_PASSWORD_RESET]: PASSWORD_RESET_VARIABLES,
-  [NOTIFICATION_TEMPLATE_LOGIN_ALERT]: LOGIN_ALERT_VARIABLES,
+  [NOTIFICATION_TEMPLATE_PASSWORD_RESET]: [...PASSWORD_RESET_VARIABLES, OPTIONAL_ATTACHMENT_VARIABLE],
+  [NOTIFICATION_TEMPLATE_LOGIN_ALERT]: [...LOGIN_ALERT_VARIABLES, OPTIONAL_ATTACHMENT_VARIABLE],
 } as const;

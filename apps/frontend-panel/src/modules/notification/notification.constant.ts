@@ -39,3 +39,6 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategoryOption[] = [
 
 /** Envio de teste — rota do host, fora do `basePath` do modulo. */
 export const NOTIFICATION_TEMPLATE_TEST_PATH = '/v1/notifications/templates/:key/test';
+
+/** Upload de anexo — rota do host. */
+export const NOTIFICATION_ATTACHMENT_PATH = '/v1/notifications/attachments';

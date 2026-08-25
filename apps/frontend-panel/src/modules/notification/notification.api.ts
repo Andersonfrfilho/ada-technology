@@ -13,7 +13,10 @@ import { HTTP_METHOD } from '@/modules/shared/http/http.constant';
 import { panelRequest } from '@/modules/shared/http/panelHttpClient';
 import { useSessionStore } from '@/modules/shared/session/session.store';
 
-import { NOTIFICATION_TEMPLATE_TEST_PATH } from '@/modules/notification/notification.constant';
+import {
+  NOTIFICATION_ATTACHMENT_PATH,
+  NOTIFICATION_TEMPLATE_TEST_PATH,
+} from '@/modules/notification/notification.constant';
 
 /**
  * Diferente do `scheduling.api.ts`, este modulo nao reimplementa a chamada HTTP em cima de
@@ -52,10 +55,45 @@ export type SendTemplateTestResult = {
  * envio de teste, e nem deveria (ele nao sabe para quem mandar). O `panelRequest` ja resolve o
  * Bearer, o refresh no 401 e o envelope de erro.
  */
-export async function sendTemplateTest(templateKey: string): Promise<SendTemplateTestResult> {
+export type NotificationAttachmentRef = {
+  readonly key: string;
+  readonly filename: string;
+  readonly contentType: string;
+  readonly byteSize: number;
+};
+
+/**
+ * Sobe o arquivo e devolve a REFERENCIA. A URL de download nao existe aqui: ela e assinada no
+ * disparo, com vida curta, porque e credencial de leitura.
+ *
+ * `FormData` cru, sem `panelRequest`: aquele helper serializa JSON e definiria `content-type`,
+ * o que quebraria o boundary do multipart.
+ */
+export async function uploadNotificationAttachment(file: File): Promise<NotificationAttachmentRef> {
+  const form = new FormData();
+  form.append('file', file);
+
+  const { accessToken } = useSessionStore.getState();
+
+  const response = await fetch(`${environment.VITE_API_BASE_URL}${NOTIFICATION_ATTACHMENT_PATH}`, {
+    method: HTTP_METHOD.POST,
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    body: form,
+  });
+
+  if (!response.ok) throw new Error(`upload falhou: ${response.status}`);
+
+  const payload = (await response.json()) as { readonly data: NotificationAttachmentRef };
+  return payload.data;
+}
+
+export async function sendTemplateTest(
+  templateKey: string,
+  attachment?: NotificationAttachmentRef,
+): Promise<SendTemplateTestResult> {
   return panelRequest<SendTemplateTestResult>({
     path: NOTIFICATION_TEMPLATE_TEST_PATH.replace(':key', encodeURIComponent(templateKey)),
     method: HTTP_METHOD.POST,
-    body: {},
+    body: attachment ? { attachment } : {},
   });
 }

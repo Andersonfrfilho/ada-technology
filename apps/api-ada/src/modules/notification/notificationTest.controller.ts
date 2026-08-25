@@ -10,17 +10,33 @@ import { buildPreviewPayload } from '@adatechnology/notification-contracts';
 import { z } from 'zod';
 
 import { environment } from '@/infra/config/environment';
-import { notificationModule } from '@/infra/container';
+import { notificationAttachmentUpload, notificationModule } from '@/infra/container';
 import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
 import { jsonData } from '@/infra/http/responses';
 import { AUTH_REQUIREMENT, HTTP_METHOD } from '@/infra/http/router';
 import type { Route } from '@/infra/http/router';
 import { NOTIFICATION_TEMPLATE_TEST_PATH } from '@/modules/notification/notification.constant';
 import { NotificationTestTemplateUnknownError } from '@/modules/notification/notificationAttachment.error';
-import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
+import {
+  NOTIFICATION_TEMPLATE_VARIABLES,
+  OPTIONAL_ATTACHMENT_VARIABLE,
+} from '@/modules/notification/passwordResetTemplate.constant';
+import { signNotificationAttachments } from '@/modules/notification/signNotificationAttachments';
 const testBodySchema = z.object({
   /** Sem canal, vai por e-mail: e o unico com driver, e o teste existe para provar que chega. */
   channel: z.enum(['email', 'whatsapp', 'sms', 'push', 'inbox']).default('email'),
+  /**
+   * Referencia devolvida pela rota de upload. Ausente, o teste vai sem anexo — a variavel `anexo` e
+   * `required: false`, entao `resolveEmailAttachments` a ignora em silencio.
+   */
+  attachment: z
+    .object({
+      key: z.string().min(1),
+      filename: z.string().min(1),
+      contentType: z.string().min(1),
+      byteSize: z.number().int().positive(),
+    })
+    .optional(),
 });
 
 /**
@@ -54,6 +70,10 @@ const sendTestRoute: Route = {
 
     const body = testBodySchema.parse(await request.json().catch(() => ({})));
 
+    const anexo = body.attachment
+      ? await signNotificationAttachments({ references: [body.attachment], signer: notificationAttachmentUpload })
+      : undefined;
+
     const result = await notificationModule.useCases.sendNotification.execute({
       companyId: environment.ADA_COMPANY_ID,
       /**
@@ -64,7 +84,15 @@ const sendTestRoute: Route = {
       recipientUserId: agent?.agentId ?? '',
       category: templateKey,
       templateKey,
-      payload: buildPreviewPayload(variables),
+      /**
+       * O anexo entra sob o nome da variavel declarada com `kind: 'attachment'` — e o catalogo que
+       * faz o modulo reconhecer aquele valor como arquivo. A URL e assinada AQUI, no disparo, com
+       * cinco minutos de vida.
+       */
+      payload: {
+        ...buildPreviewPayload(variables),
+        ...(anexo ? { [OPTIONAL_ATTACHMENT_VARIABLE.name]: anexo[0] } : {}),
+      },
       channels: [body.channel],
     });
 

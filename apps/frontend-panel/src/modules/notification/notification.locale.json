@@ -22,6 +22,8 @@
     "send": "Enviar teste para mim",
     "sending": "Enviando...",
     "sent": "Enviado — confira sua caixa",
-    "failed": "Nao foi possivel enviar"
+    "failed": "Nao foi possivel enviar",
+    "attach": "Anexar arquivo",
+    "removeAttachment": "Remover anexo"
   }
 }
