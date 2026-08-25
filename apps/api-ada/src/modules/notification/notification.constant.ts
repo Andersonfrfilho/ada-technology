@@ -34,6 +34,17 @@ export const NOTIFICATION_CATEGORY_AUTH = 'auth.password_reset';
 export const NOTIFICATION_TEMPLATE_PASSWORD_RESET = 'auth.password_reset';
 
 /**
+ * Aviso de acesso a conta.
+ *
+ * Categoria SEPARADA da redefinicao de senha, e nao a mesma `auth.*`: sao decisoes de canal
+ * diferentes. Redefinicao e recuperacao de acesso e precisa chegar; aviso de login e informativo, e
+ * quem nao quiser pode desligar na aba de Roteamento sem afetar o outro. Categoria compartilhada
+ * significaria desligar os dois juntos.
+ */
+export const NOTIFICATION_CATEGORY_LOGIN = 'auth.login_alert';
+export const NOTIFICATION_TEMPLATE_LOGIN_ALERT = 'auth.login_alert';
+
+/**
  * Anexo de e-mail.
  *
  * O teto e o do contrato (`EMAIL_ATTACHMENT_MAX_BYTES`, 25MB): Gmail e Outlook recusam acima, e o

@@ -22,6 +22,7 @@ import { EMAIL_ATTACHMENT_MAX_BYTES } from '@adatechnology/notification-contract
 import { createObjectStorageProvider } from '@adatechnology/object-storage-provider';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
 import type { LoggerPort as NotificationLoggerPort } from '@adatechnology/notification-contracts';
+import { createLoginAlertNotifier } from '@/modules/notification/loginAlertNotifier';
 import { UploadNotificationAttachmentUseCase } from '@/modules/notification/uploadNotificationAttachment.use-case';
 import {
   createNotificationModule,
@@ -375,15 +376,21 @@ export const userModule = await createUserModule({
     logger: userLogger,
   },
   hooks: {
-    onLoginSucceeded: (event) =>
-      recordAuditLog.execute({
+    /**
+     * Trilha de auditoria E aviso ao dono da conta, em sequencia: a trilha e obrigatoria e nao pode
+     * depender do aviso, entao ela vem primeiro e o aviso — que nunca lanca — vem depois.
+     */
+    onLoginSucceeded: async (event) => {
+      await recordAuditLog.execute({
         actorType: ACTOR_TYPE.AGENT,
         actorId: event.userId,
         action: AUDIT_ACTION.AGENT_SIGNED_IN,
         targetType: AUDIT_TARGET.AGENT,
         targetId: event.userId,
         ipAddress: event.ipAddress,
-      }),
+      });
+      await loginAlertNotifier?.(event);
+    },
     // `LoginFailedEvent` nao carrega `userId` — defesa contra enumeracao de conta por desenho do
     // modulo, entao a trilha de auditoria de falha nao tem ator/alvo, so o IP.
     onLoginFailed: (event) =>
@@ -466,6 +473,19 @@ export const notificationWorker = createNotificationWorker({
   queue: notificationQueue,
   logger: notificationLogger,
 });
+
+/**
+ * Aviso de acesso a conta. Sem `PANEL_PASSWORD_CHANGE_URL` ele nao existe: capacidade por ausencia,
+ * porque o texto termina mandando trocar a senha e precisa dizer onde.
+ */
+const loginAlertNotifier = environment.PANEL_PASSWORD_CHANGE_URL
+  ? createLoginAlertNotifier({
+      module: notificationModule,
+      companyId: environment.ADA_COMPANY_ID,
+      passwordChangeUrl: environment.PANEL_PASSWORD_CHANGE_URL,
+      logger: userLogger,
+    })
+  : undefined;
 
 const passwordResetNotifier = createPasswordResetNotifier({
   module: notificationModule,

@@ -30,4 +30,9 @@ export const NOTIFICATION_CHANNELS: readonly NotificationChannelOption[] = [
 /** Assuntos disparados por este produto hoje. */
 export const NOTIFICATION_CATEGORIES: readonly NotificationCategoryOption[] = [
   { id: 'auth.password_reset', label: 'Redefinicao de senha' },
+  {
+    id: 'auth.login_alert',
+    label: 'Aviso de acesso',
+    hint: 'Sai a cada login bem-sucedido. Desligar aqui nao afeta a redefinicao de senha.',
+  },
 ];

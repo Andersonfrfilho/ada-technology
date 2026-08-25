@@ -43,6 +43,14 @@ const environmentSchema = z
     // `{token}` — o `user-module` substitui antes de disparar o hook `onPasswordResetRequested`.
     PANEL_RESET_URL_TEMPLATE: z.string().min(1),
 
+    /**
+     * Para onde o aviso de acesso manda quem NAO reconhece o login.
+     *
+     * Vazia desliga o aviso por ausencia — como o `EMAIL_DRIVER`. Sem essa URL o texto terminaria
+     * em "troque a senha" sem dizer onde, e um aviso de seguranca sem saida e pior que nenhum.
+     */
+    PANEL_PASSWORD_CHANGE_URL: z.string().default(''),
+
     WHATSAPP_ENABLED: booleanFromString,
     WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),
     WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().default(''),

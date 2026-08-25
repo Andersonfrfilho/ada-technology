@@ -8,8 +8,10 @@
 
 import type { TemplateVariableDefinition } from '@adatechnology/notification-contracts';
 
+import { LOGIN_ALERT_VARIABLES } from '@/modules/notification/loginAlertTemplate.constant';
 import {
   NOTIFICATION_DEFAULT_LOCALE,
+  NOTIFICATION_TEMPLATE_LOGIN_ALERT,
   NOTIFICATION_TEMPLATE_PASSWORD_RESET,
 } from '@/modules/notification/notification.constant';
 
@@ -57,4 +59,5 @@ export const PASSWORD_RESET_VARIABLES: readonly TemplateVariableDefinition[] = [
 
 export const NOTIFICATION_TEMPLATE_VARIABLES = {
   [NOTIFICATION_TEMPLATE_PASSWORD_RESET]: PASSWORD_RESET_VARIABLES,
+  [NOTIFICATION_TEMPLATE_LOGIN_ALERT]: LOGIN_ALERT_VARIABLES,
 } as const;

@@ -8,9 +8,10 @@
 
 import type { NotificationModule } from '@adatechnology/notification-module';
 
+import { LOGIN_ALERT_TEMPLATE } from '@/modules/notification/loginAlertTemplate.constant';
 import { PASSWORD_RESET_TEMPLATE } from '@/modules/notification/passwordResetTemplate.constant';
 
-const TEMPLATES = [PASSWORD_RESET_TEMPLATE];
+const TEMPLATES = [PASSWORD_RESET_TEMPLATE, LOGIN_ALERT_TEMPLATE];
 
 /**
  * Semeia no banco os templates que este produto envia, e so os que faltam.
