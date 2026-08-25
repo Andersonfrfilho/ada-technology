@@ -11,7 +11,7 @@
   "role": "Papel",
   "roleAgent": "Usuário",
   "roleAdmin": "Administrador",
-  "submit": "Criar atendente",
+  "submit": "Criar usuário",
   "submitting": "Criando...",
   "created": "Usuário criado",
   "failed": "Nao foi possivel criar",
