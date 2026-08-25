@@ -10,6 +10,7 @@ import { validateEmailHtml } from '@ada/email-layout';
 import { NotificationProvider, NotificationSettingsWorkspace } from '@adatechnology/notification-ui';
 
 import { notificationApi } from '@/modules/notification/notification.api';
+import { SendTestButton } from '@/modules/notification/SendTestButton.component';
 import { NOTIFICATION_CATEGORIES, NOTIFICATION_CHANNELS } from '@/modules/notification/notification.constant';
 import notificationLocale from '@/modules/notification/notification.locale.json';
 
@@ -29,6 +30,7 @@ export function NotificationPage() {
           channels={NOTIFICATION_CHANNELS}
           categories={NOTIFICATION_CATEGORIES}
           validateEmailHtml={validateEmailHtml}
+          renderEditorActions={({ templateKey }) => <SendTestButton templateKey={templateKey} />}
         />
       </NotificationProvider>
     </section>

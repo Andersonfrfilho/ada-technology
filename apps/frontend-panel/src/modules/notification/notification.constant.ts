@@ -36,3 +36,6 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategoryOption[] = [
     hint: 'Sai a cada login bem-sucedido. Desligar aqui nao afeta a redefinicao de senha.',
   },
 ];
+
+/** Envio de teste — rota do host, fora do `basePath` do modulo. */
+export const NOTIFICATION_TEMPLATE_TEST_PATH = '/v1/notifications/templates/:key/test';

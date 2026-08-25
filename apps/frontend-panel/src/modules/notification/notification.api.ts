@@ -9,7 +9,11 @@
 import { createNotificationClient, type NotificationClient } from '@adatechnology/notification-client';
 
 import { environment } from '@/modules/shared/config/environment';
+import { HTTP_METHOD } from '@/modules/shared/http/http.constant';
+import { panelRequest } from '@/modules/shared/http/panelHttpClient';
 import { useSessionStore } from '@/modules/shared/session/session.store';
+
+import { NOTIFICATION_TEMPLATE_TEST_PATH } from '@/modules/notification/notification.constant';
 
 /**
  * Diferente do `scheduling.api.ts`, este modulo nao reimplementa a chamada HTTP em cima de
@@ -35,3 +39,23 @@ export const notificationApi: NotificationClient = createNotificationClient({
     return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
   },
 });
+
+export type SendTemplateTestResult = {
+  readonly notificationId: string;
+  readonly deliveries: readonly { readonly channel: string; readonly status: string; readonly errorCode?: string }[];
+};
+
+/**
+ * Manda a mensagem de teste para o proprio agente autenticado.
+ *
+ * Vai por `panelRequest`, e nao pelo cliente do pacote: esta rota e do HOST — o pacote nao tem
+ * envio de teste, e nem deveria (ele nao sabe para quem mandar). O `panelRequest` ja resolve o
+ * Bearer, o refresh no 401 e o envelope de erro.
+ */
+export async function sendTemplateTest(templateKey: string): Promise<SendTemplateTestResult> {
+  return panelRequest<SendTemplateTestResult>({
+    path: NOTIFICATION_TEMPLATE_TEST_PATH.replace(':key', encodeURIComponent(templateKey)),
+    method: HTTP_METHOD.POST,
+    body: {},
+  });
+}

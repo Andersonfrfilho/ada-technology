@@ -17,5 +17,11 @@
   "settings.close": "Fechar",
   "settings.version": "v",
   "list.loading": "Carregando…",
-  "channel.email": "E-mail"
+  "channel.email": "E-mail",
+  "test": {
+    "send": "Enviar teste para mim",
+    "sending": "Enviando...",
+    "sent": "Enviado — confira sua caixa",
+    "failed": "Nao foi possivel enviar"
+  }
 }

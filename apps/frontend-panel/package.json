@@ -17,7 +17,7 @@
     "@adatechnology/conversations-ui": "0.1.0-rc.35",
     "@adatechnology/notification-client": "0.1.0-rc.3",
     "@adatechnology/notification-contracts": "0.1.0-rc.6",
-    "@adatechnology/notification-ui": "0.1.0-rc.6",
+    "@adatechnology/notification-ui": "0.1.0-rc.8",
     "@adatechnology/products-ui": "0.1.0-rc.12",
     "@adatechnology/scheduling-contracts": "0.1.0-rc.2",
     "@adatechnology/scheduling-ui": "0.1.0-rc.3",
