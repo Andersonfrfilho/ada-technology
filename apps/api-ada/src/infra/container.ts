@@ -377,20 +377,25 @@ export const userModule = await createUserModule({
   },
   hooks: {
     /**
-     * Trilha de auditoria E aviso ao dono da conta, em sequencia: a trilha e obrigatoria e nao pode
-     * depender do aviso, entao ela vem primeiro e o aviso — que nunca lanca — vem depois.
+     * So trilha de auditoria. O AVISO de acesso sai do `agent.controller.ts`, no login de verdade.
+     *
+     * O painel autentica por `authenticateAgent` direto — nada passa por aqui nesta fase, entao um
+     * aviso ligado neste hook ficaria dormente. E ligar nos DOIS lugares, para o dia em que o
+     * `user-module` assumir o login, faria a pessoa receber dois e-mails do mesmo acesso: e a mesma
+     * duplicacao que o `providers.email` ja causou uma vez (ADR 0003).
+     *
+     * Quando o login migrar para o `user-module`, o disparo volta para ca e sai do controller — um
+     * lugar de cada vez.
      */
-    onLoginSucceeded: async (event) => {
-      await recordAuditLog.execute({
+    onLoginSucceeded: (event) =>
+      recordAuditLog.execute({
         actorType: ACTOR_TYPE.AGENT,
         actorId: event.userId,
         action: AUDIT_ACTION.AGENT_SIGNED_IN,
         targetType: AUDIT_TARGET.AGENT,
         targetId: event.userId,
         ipAddress: event.ipAddress,
-      });
-      await loginAlertNotifier?.(event);
-    },
+      }),
     // `LoginFailedEvent` nao carrega `userId` — defesa contra enumeracao de conta por desenho do
     // modulo, entao a trilha de auditoria de falha nao tem ator/alvo, so o IP.
     onLoginFailed: (event) =>
@@ -478,7 +483,7 @@ export const notificationWorker = createNotificationWorker({
  * Aviso de acesso a conta. Sem `PANEL_PASSWORD_CHANGE_URL` ele nao existe: capacidade por ausencia,
  * porque o texto termina mandando trocar a senha e precisa dizer onde.
  */
-const loginAlertNotifier = environment.PANEL_PASSWORD_CHANGE_URL
+export const loginAlertNotifier = environment.PANEL_PASSWORD_CHANGE_URL
   ? createLoginAlertNotifier({
       module: notificationModule,
       companyId: environment.ADA_COMPANY_ID,

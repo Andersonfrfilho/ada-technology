@@ -6,11 +6,18 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import { USER_EVENT } from '@adatechnology/user-contracts';
 import { AUTH_ROUTE } from '@ada/user-sdk';
 
 const AGENTS_PATH = '/v1/panel/agents';
 
-import { agentRepository, authenticateAgent, refreshAgentSession, signOutAgent } from '@/infra/container';
+import {
+  agentRepository,
+  authenticateAgent,
+  loginAlertNotifier,
+  refreshAgentSession,
+  signOutAgent,
+} from '@/infra/container';
 import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
 import { readJsonBody } from '@/infra/http/requestBody';
 import { jsonData, noContent } from '@/infra/http/responses';
