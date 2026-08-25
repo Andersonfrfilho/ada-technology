@@ -24,7 +24,6 @@ import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-m
 import type { LoggerPort as NotificationLoggerPort } from '@adatechnology/notification-contracts';
 import { UploadNotificationAttachmentUseCase } from '@/modules/notification/uploadNotificationAttachment.use-case';
 import {
-  createInProcessQueue,
   createNotificationModule,
   createNotificationWorker,
 } from '@adatechnology/notification-module';
@@ -35,6 +34,10 @@ import type {
 } from '@adatechnology/user-contracts';
 import { createUserModule } from '@adatechnology/user-module';
 
+import { createBullMqQueue } from '@adatechnology/notification-module/queue/bullmq';
+import { Queue, Worker } from 'bullmq';
+
+import { redis } from '@/infra/cache/redisClient';
 import { RedisCache } from '@/infra/cache/RedisCache';
 import { RedisNonceStore } from '@/infra/cache/RedisNonceStore';
 import { createGroqTranscriber, GROQ_BASE_URL } from '@adatechnology/audio-transcription-provider';
@@ -82,6 +85,7 @@ import { DrizzlePanelLeadRepository } from '@/modules/panel/DrizzlePanelLeadRepo
 import {
   NOTIFICATION_DEFAULT_LOCALE,
   NOTIFICATION_DEFAULT_TIMEZONE,
+  NOTIFICATION_QUEUE_NAME,
 } from '@/modules/notification/notification.constant';
 import { notificationAuthResolver } from '@/modules/notification/notificationAuthResolver';
 import { notificationRecipientResolver } from '@/modules/notification/notificationRecipientResolver';
@@ -415,7 +419,25 @@ export const userModule = await createUserModule({
  * `infra/email/emailDriver.ts`): `EMAIL_DRIVER` vazio devolve `undefined` e o canal some por
  * ausencia, em vez de existir quebrado.
  */
-const notificationQueue = createInProcessQueue();
+/**
+ * BullMQ sobre o Redis que ja existe, e nao a fila em memoria de antes.
+ *
+ * A fila em memoria perdia TODA entrega enfileirada em deploy, restart ou crash — em silencio. Com
+ * o job no Redis ele sobrevive ao processo, e o consumidor o encontra ao subir. Com anexo isso
+ * pesa mais: o envio passa a incluir um download, e a janela de perda aumenta.
+ *
+ * O `Worker` ganha conexao PROPRIA: ele bloqueia esperando job (`BRPOPLPUSH`), e uma conexao
+ * bloqueada nao atende mais nenhum comando — reusar a de cima deixaria cache e rate limit mudos.
+ *
+ * Retencao, `attempts` e backoff sao do adaptador do pacote, que ja segue o `security.md` §6.
+ */
+const notificationQueueName = `${environment.PROJECT_NAME}-${environment.ENV}-${NOTIFICATION_QUEUE_NAME}`;
+
+const notificationQueue = createBullMqQueue({
+  queue: new Queue(notificationQueueName, { connection: redis }),
+  createWorker: (handler) =>
+    new Worker(notificationQueueName, async (job) => handler(job.data), { connection: redis.duplicate() }),
+});
 
 export const notificationModule = createNotificationModule({
   db: database as never,

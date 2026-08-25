@@ -70,3 +70,11 @@ export const NOTIFICATION_ATTACHMENT_SIGNED_URL_SECONDS = 300;
 
 /** A rota de upload do anexo. Fora do `basePath` do modulo: ela e do host, nao do pacote. */
 export const NOTIFICATION_ATTACHMENT_UPLOAD_PATH = '/v1/notifications/attachments';
+
+/**
+ * Nome da fila no Redis.
+ *
+ * Prefixado pelo projeto e ambiente como todo recurso (`code-standart.md` §4): dev, staging e um
+ * `docker compose` de outra pasta dividiriam o mesmo Redis e consumiriam o job um do outro.
+ */
+export const NOTIFICATION_QUEUE_NAME = 'notification-dispatch';

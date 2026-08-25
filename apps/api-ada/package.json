@@ -35,6 +35,7 @@
     "@adatechnology/scheduling-module": "0.1.0-rc.4",
     "@adatechnology/user-contracts": "0.1.0-rc.2",
     "@adatechnology/user-module": "0.1.0-rc.2",
+    "bullmq": "^6.2.1",
     "drizzle-orm": "0.45.2",
     "ioredis": "5.11.1",
     "jose": "^6.2.8",
