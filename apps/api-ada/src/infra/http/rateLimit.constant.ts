@@ -44,4 +44,8 @@ export const RATE_LIMIT = {
   // Anexo sobe ate 25MB por chamada: mais apertado que o `PANEL_WRITE` porque o custo aqui e banda
   // e disco, nao uma linha no banco. Vinte por minuto cobrem um lote de notas sem virar dreno.
   NOTIFICATION_ATTACHMENT_UPLOAD: { limit: 20, windowSeconds: ONE_MINUTE },
+
+  // Envio de teste manda e-mail DE VERDADE, ainda que so para quem pediu. Cinco por minuto cobrem
+  // ajustar um texto e reenviar; acima disso e engano de laco ou dedo preso no botao.
+  NOTIFICATION_TEST_SEND: { limit: 5, windowSeconds: ONE_MINUTE },
 } as const;

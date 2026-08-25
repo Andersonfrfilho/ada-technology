@@ -89,3 +89,6 @@ export const NOTIFICATION_ATTACHMENT_UPLOAD_PATH = '/v1/notifications/attachment
  * `docker compose` de outra pasta dividiriam o mesmo Redis e consumiriam o job um do outro.
  */
 export const NOTIFICATION_QUEUE_NAME = 'notification-dispatch';
+
+/** Envio de teste de um template, para o proprio agente autenticado. */
+export const NOTIFICATION_TEMPLATE_TEST_PATH = '/v1/notifications/templates/:key/test';

@@ -9,6 +9,7 @@
 import { DomainError } from '@/shared/errors/AppError';
 import { ERROR_CODES } from '@/shared/errors/codes';
 
+const NOT_FOUND = 404;
 const BAD_REQUEST = 400;
 const PAYLOAD_TOO_LARGE = 413;
 const UNSUPPORTED_MEDIA_TYPE = 415;
@@ -64,6 +65,22 @@ export class NotificationAttachmentStoreFailedError extends DomainError {
       code: ERROR_CODES.notification.ATTACHMENT_STORE_FAILED,
       message: 'Nao foi possivel guardar o anexo agora',
       statusCode: BAD_GATEWAY,
+    });
+  }
+}
+
+/**
+ * Chave de template fora do catalogo do host.
+ *
+ * 404 e nao 400: para quem chama, o template pedido nao existe — e o catalogo e o que define quais
+ * existem. Deixar passar faria o modulo lancar `TemplateNotFoundError` e o painel receber um 500.
+ */
+export class NotificationTestTemplateUnknownError extends DomainError {
+  constructor(templateKey: string) {
+    super({
+      code: ERROR_CODES.notification.TEST_TEMPLATE_UNKNOWN,
+      message: `Template desconhecido: ${templateKey}`,
+      statusCode: NOT_FOUND,
     });
   }
 }

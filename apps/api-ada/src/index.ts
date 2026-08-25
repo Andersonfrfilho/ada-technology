@@ -22,6 +22,7 @@ import { widgetRoutes } from '@/modules/channel/widget/widget.controller';
 import { panelFlowRoutes } from '@/modules/flow/flow.controller';
 import { healthRoutes } from '@/modules/health/health.controller';
 import { notificationAttachmentRoutes } from '@/modules/notification/notificationAttachment.controller';
+import { notificationTestRoutes } from '@/modules/notification/notificationTest.controller';
 import { notificationRoutes } from '@/modules/notification/notification.controller';
 import { panelConversationRoutes } from '@/modules/panel/conversation.controller';
 import { panelConversationActionRoutes } from '@/modules/panel/conversationAction.controller';
@@ -59,6 +60,7 @@ const routes: readonly Route[] = [
   ...userRoutes,
   ...notificationRoutes,
   ...notificationAttachmentRoutes,
+  ...notificationTestRoutes,
 ];
 
 const handleRequest = createRouter({ routes, authenticate: authenticateRequest });
