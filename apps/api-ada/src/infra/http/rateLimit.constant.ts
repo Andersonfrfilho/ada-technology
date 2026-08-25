@@ -40,4 +40,8 @@ export const RATE_LIMIT = {
   PANEL_REFRESH: { limit: 30, windowSeconds: ONE_MINUTE },
   PANEL_READ: { limit: 240, windowSeconds: ONE_MINUTE },
   PANEL_WRITE: { limit: 60, windowSeconds: ONE_MINUTE },
+
+  // Anexo sobe ate 25MB por chamada: mais apertado que o `PANEL_WRITE` porque o custo aqui e banda
+  // e disco, nao uma linha no banco. Vinte por minuto cobrem um lote de notas sem virar dreno.
+  NOTIFICATION_ATTACHMENT_UPLOAD: { limit: 20, windowSeconds: ONE_MINUTE },
 } as const;

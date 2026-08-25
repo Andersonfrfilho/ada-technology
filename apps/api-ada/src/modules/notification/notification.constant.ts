@@ -32,3 +32,41 @@ export const NOTIFICATION_DEFAULT_TIMEZONE = 'America/Sao_Paulo';
  */
 export const NOTIFICATION_CATEGORY_AUTH = 'auth.password_reset';
 export const NOTIFICATION_TEMPLATE_PASSWORD_RESET = 'auth.password_reset';
+
+/**
+ * Anexo de e-mail.
+ *
+ * O teto e o do contrato (`EMAIL_ATTACHMENT_MAX_BYTES`, 25MB): Gmail e Outlook recusam acima, e o
+ * SES conta o MIME ja em base64, que infla ~33%.
+ */
+export const NOTIFICATION_ATTACHMENT_FIELD = 'file';
+
+/**
+ * Lista fechada de tipos, e nao "tudo menos executavel".
+ *
+ * Bloquear por extensao perigosa e corrida perdida — `.scr`, `.hta`, `.iso` e o proximo formato que
+ * alguem inventar. Aceitar o que o produto realmente anexa (documento fiscal, comprovante, planilha,
+ * imagem) deixa a lista curta e o risco fechado por construcao.
+ */
+export const NOTIFICATION_ATTACHMENT_CONTENT_TYPES: readonly string[] = [
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'text/csv',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/xml',
+  'text/xml',
+];
+
+/**
+ * Prefixo da chave no bucket. O nome do arquivo NAO entra na chave: `security.md` §7 proibe dado
+ * pessoal em nome de chave, e "nota-fiscal-joao-silva.pdf" e dado pessoal. O nome original viaja no
+ * corpo da resposta e volta na hora de assinar o download.
+ */
+export const NOTIFICATION_ATTACHMENT_KEY_PREFIX = 'notification-attachments';
+
+/** Vida da URL assinada que o driver usa para baixar. Curta: ela e credencial de leitura. */
+export const NOTIFICATION_ATTACHMENT_SIGNED_URL_SECONDS = 300;
+
+/** A rota de upload do anexo. Fora do `basePath` do modulo: ela e do host, nao do pacote. */
+export const NOTIFICATION_ATTACHMENT_UPLOAD_PATH = '/v1/notifications/attachments';

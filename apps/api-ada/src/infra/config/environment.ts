@@ -70,6 +70,18 @@ const environmentSchema = z
     // O bucket do Railway serve por subdominio; o MinIO do compose, por caminho.
     OBJECT_STORAGE_FORCE_PATH_STYLE: booleanFromString.default('true'),
 
+    /**
+     * Bucket PRIVADO dos anexos de notificacao, separado do de imagem de produto.
+     *
+     * O `OBJECT_STORAGE_BUCKET` e servido com leitura anonima porque a Meta precisa buscar imagem de
+     * produto por URL estavel. Anexo e dado pessoal e sai por URL assinada de vida curta — dividir o
+     * bucket seria vazamento por descuido (ver ADR 0002). Vazio desliga a rota de upload, e o painel
+     * nao desenha o campo: capacidade por ausencia, como o `EMAIL_DRIVER`.
+     *
+     * Reusa endpoint, regiao e credencial do mesmo provedor; so o bucket muda.
+     */
+    OBJECT_STORAGE_ATTACHMENT_BUCKET: z.string().default(''),
+
     // Vazio desliga o envio por ausencia: o modulo de usuario nao recebe `providers.email` e o
     // pedido de redefinicao de senha so dispara o hook, sem mensagem.
     EMAIL_DRIVER: z.enum(['', 'smtp', 'resend', 'ses']).default(''),
@@ -77,6 +89,13 @@ const environmentSchema = z
     EMAIL_SMTP_URL: z.string().default(''),
     EMAIL_RESEND_API_KEY: z.string().default(''),
     EMAIL_SES_REGION: z.string().default('us-east-1'),
+    /**
+     * URL PUBLICA e absoluta do logo no cabecalho do e-mail. Vazia, o cabecalho cai na marca
+     * tipografica — capacidade por ausencia, como o `EMAIL_DRIVER`. Data URI nao serve: Gmail e
+     * Outlook descartam `src="data:"`, e o cabecalho sairia quebrado justamente nos dois clientes
+     * que mais aparecem.
+     */
+    EMAIL_LOGO_URL: z.string().default(''),
 
     // Chave do HMAC que o notification-module usa para a lista de supressao: ela guarda o digest do
     // endereco, nunca o endereco em claro. Trocar a chave zera as supressoes existentes, entao ela
@@ -140,6 +159,25 @@ const environmentSchema = z
           code: z.ZodIssueCode.custom,
           path: [key],
           message: `${key} precisa ser uma URL valida`,
+        });
+      }
+    }
+  })
+  // Bucket de anexo sem o resto do storage e rota que sobe e falha so no primeiro upload — o mesmo
+  // caso que a regra do bucket de imagem evita, e pelo mesmo motivo.
+  .superRefine((value, context) => {
+    if (value.OBJECT_STORAGE_ATTACHMENT_BUCKET.length === 0) return;
+
+    for (const key of [
+      'OBJECT_STORAGE_ENDPOINT',
+      'OBJECT_STORAGE_ACCESS_KEY_ID',
+      'OBJECT_STORAGE_SECRET_ACCESS_KEY',
+    ] as const) {
+      if (value[key].length === 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `${key} e obrigatorio quando OBJECT_STORAGE_ATTACHMENT_BUCKET esta configurado`,
         });
       }
     }

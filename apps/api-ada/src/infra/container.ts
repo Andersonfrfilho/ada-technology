@@ -18,9 +18,11 @@ import { createCatalogModule } from '@adatechnology/catalog-module';
 import { MetaCatalogProvider } from '@adatechnology/meta-catalog-provider';
 import type { LoggerPort as SchedulingLoggerPort } from '@adatechnology/scheduling-contracts';
 import { createSchedulingModule } from '@adatechnology/scheduling-module';
+import { EMAIL_ATTACHMENT_MAX_BYTES } from '@adatechnology/notification-contracts';
 import { createObjectStorageProvider } from '@adatechnology/object-storage-provider';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
 import type { LoggerPort as NotificationLoggerPort } from '@adatechnology/notification-contracts';
+import { UploadNotificationAttachmentUseCase } from '@/modules/notification/uploadNotificationAttachment.use-case';
 import {
   createInProcessQueue,
   createNotificationModule,
@@ -626,6 +628,28 @@ export const productImageBucket = environment.OBJECT_STORAGE_BUCKET
         maxObjectSizeBytes: PRODUCT_IMAGE_MAX_BYTES,
       }),
     }
+  : undefined;
+
+/**
+ * Bucket dos anexos, PRIVADO e separado do de imagem de produto (ADR 0002).
+ *
+ * Reusa endpoint, regiao e credencial; so o bucket muda. `maxObjectSizeBytes` e o teto do contrato,
+ * e nao o da imagem: o provider recusa antes de subir, e um teto de 5MB aqui reprovaria uma nota
+ * fiscal legitima.
+ */
+export const notificationAttachmentUpload = environment.OBJECT_STORAGE_ATTACHMENT_BUCKET
+  ? new UploadNotificationAttachmentUseCase({
+      bucket: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
+      storage: createObjectStorageProvider({
+        endpoint: new URL(environment.OBJECT_STORAGE_ENDPOINT),
+        region: environment.OBJECT_STORAGE_REGION,
+        accessKeyId: environment.OBJECT_STORAGE_ACCESS_KEY_ID,
+        secretAccessKey: environment.OBJECT_STORAGE_SECRET_ACCESS_KEY,
+        forcePathStyle: environment.OBJECT_STORAGE_FORCE_PATH_STYLE,
+        healthCheckBucket: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
+        maxObjectSizeBytes: EMAIL_ATTACHMENT_MAX_BYTES,
+      }),
+    })
   : undefined;
 
 export const productImageStorage = productImageBucket

@@ -21,6 +21,7 @@ import { whatsappRoutes } from '@/modules/channel/whatsapp/whatsapp.controller';
 import { widgetRoutes } from '@/modules/channel/widget/widget.controller';
 import { panelFlowRoutes } from '@/modules/flow/flow.controller';
 import { healthRoutes } from '@/modules/health/health.controller';
+import { notificationAttachmentRoutes } from '@/modules/notification/notificationAttachment.controller';
 import { notificationRoutes } from '@/modules/notification/notification.controller';
 import { panelConversationRoutes } from '@/modules/panel/conversation.controller';
 import { panelConversationActionRoutes } from '@/modules/panel/conversationAction.controller';
@@ -57,6 +58,7 @@ const routes: readonly Route[] = [
   ...productImageRoutes,
   ...userRoutes,
   ...notificationRoutes,
+  ...notificationAttachmentRoutes,
 ];
 
 const handleRequest = createRouter({ routes, authenticate: authenticateRequest });
