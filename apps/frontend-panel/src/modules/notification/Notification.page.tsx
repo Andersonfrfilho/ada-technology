@@ -23,7 +23,7 @@ import notificationLocale from '@/modules/notification/notification.locale.json'
  */
 export function NotificationPage() {
   return (
-    <section className="h-full min-h-0 overflow-y-auto">
+    <section className="h-full min-h-0 overflow-y-auto p-4 desktop:p-6">
       <NotificationProvider client={notificationApi} messageOverrides={notificationLocale}>
         <NotificationSettingsWorkspace
           channels={NOTIFICATION_CHANNELS}
