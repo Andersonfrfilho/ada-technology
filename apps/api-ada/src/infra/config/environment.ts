@@ -102,6 +102,20 @@ const environmentSchema = z
     OBJECT_STORAGE_ATTACHMENT_ACCESS_KEY_ID: z.string().default(''),
     OBJECT_STORAGE_ATTACHMENT_SECRET_ACCESS_KEY: z.string().default(''),
 
+    /**
+     * Painel operacional da fila (Bull Board).
+     *
+     * Vazio o usuario, o painel NAO EXISTE — nem rota, nem asset. Capacidade por ausencia, como o
+     * `EMAIL_DRIVER`: um painel de fila exposto e a lista de tudo que o produto processa, com
+     * botao de repetir e de apagar job.
+     *
+     * Com usuario e sem senha, o boot FALHA (ver o refine abaixo). E a exigencia do `security.md`
+     * §2 para painel operacional: nunca com credencial default, nunca com fallback para string
+     * vazia — porque o modo de falhar de um painel meio configurado e ficar aberto.
+     */
+    BULL_BOARD_USER: z.string().default(''),
+    BULL_BOARD_PASSWORD: z.string().default(''),
+
     // Vazio desliga o envio por ausencia: o modulo de usuario nao recebe `providers.email` e o
     // pedido de redefinicao de senha so dispara o hook, sem mensagem.
     EMAIL_DRIVER: z.enum(['', 'smtp', 'resend', 'ses']).default(''),
@@ -205,6 +219,18 @@ const environmentSchema = z
           message: `sem ${field} do anexo nem o compartilhado, e OBJECT_STORAGE_ATTACHMENT_BUCKET esta configurado`,
         });
       }
+    }
+  })
+  // Painel de fila meio configurado e painel aberto. Ou os dois, ou nenhum.
+  .superRefine((value, context) => {
+    if (value.BULL_BOARD_USER.length === 0) return;
+
+    if (value.BULL_BOARD_PASSWORD.length < 16) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['BULL_BOARD_PASSWORD'],
+        message: 'BULL_BOARD_PASSWORD precisa de ao menos 16 caracteres quando BULL_BOARD_USER esta definido',
+      });
     }
   })
   .superRefine((value, context) => {

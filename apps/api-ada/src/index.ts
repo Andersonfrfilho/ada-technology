@@ -11,7 +11,14 @@ import { environment } from '@/infra/config/environment';
 import { closeDatabase } from '@/infra/database/client';
 import { createRouter, type Route } from '@/infra/http/router';
 import { startScheduler } from '@/infra/scheduler/scheduler';
-import { catalogModule, notificationWorker, seedNotificationTemplates } from '@/infra/container';
+import {
+  catalogModule,
+  notificationBullQueue,
+  notificationWorker,
+  seedNotificationTemplates,
+} from '@/infra/container';
+import { BULL_BOARD_BASE_PATH } from '@/infra/queue/bullBoard.constant';
+import { createBullBoardHandler } from '@/infra/queue/bullBoard';
 import { agentRoutes } from '@/modules/agent/agent.controller';
 import { authenticateRequest } from '@/modules/agent/authenticateRequest';
 import { catalogRoutes } from '@/modules/catalog/catalog.controller';
@@ -65,10 +72,27 @@ const routes: readonly Route[] = [
 
 const handleRequest = createRouter({ routes, authenticate: authenticateRequest });
 
+/**
+ * O painel da fila, so quando ha credencial. Sem `BULL_BOARD_USER` a constante fica `undefined` e
+ * nem a rota existe — um 404 identico ao de qualquer caminho desconhecido, sem revelar que o painel
+ * poderia existir.
+ */
+const handleBullBoard = environment.BULL_BOARD_USER
+  ? createBullBoardHandler(notificationBullQueue)
+  : undefined;
+
 const server = Bun.serve({
   port: environment.API_PORT,
   // O `server` chega ao router so por aqui, e e dele que sai o IP do socket do rate limit.
-  fetch: (request, bunServer) => handleRequest(request, bunServer),
+  fetch: (request, bunServer) => {
+    // Antes do roteador, por PREFIXO: o Bull Board serve dezenas de caminhos sob a base, e o
+    // roteador daqui casa caminho exato.
+    if (handleBullBoard && new URL(request.url).pathname.startsWith(BULL_BOARD_BASE_PATH)) {
+      return handleBullBoard(request);
+    }
+
+    return handleRequest(request, bunServer);
+  },
   // SSE fica aberto de proposito; o corte padrao derrubaria o widget a cada poucos minutos.
   idleTimeout: 0,
 });

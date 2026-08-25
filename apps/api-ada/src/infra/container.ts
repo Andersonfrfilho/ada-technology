@@ -445,8 +445,11 @@ export const userModule = await createUserModule({
  */
 const notificationQueueName = `${environment.PROJECT_NAME}-${environment.ENV}-${NOTIFICATION_QUEUE_NAME}`;
 
+/** Exportada para o painel operacional montar em cima da MESMA fila que o modulo produz. */
+export const notificationBullQueue = new Queue(notificationQueueName, { connection: redis });
+
 const notificationQueue = createBullMqQueue({
-  queue: new Queue(notificationQueueName, { connection: redis }),
+  queue: notificationBullQueue,
   createWorker: (handler) =>
     new Worker(notificationQueueName, async (job) => handler(job.data), { connection: redis.duplicate() }),
 });
