@@ -25,6 +25,7 @@ import { readJsonBody } from '@/infra/http/requestBody';
 import { jsonData, noContent } from '@/infra/http/responses';
 import { AUTH_REQUIREMENT, HTTP_METHOD, requireAgent, type Route } from '@/infra/http/router';
 import { AgentNotAuthenticatedError, AgentNotFoundError } from '@/modules/agent/agent.error';
+import { AGENT_ROLE } from '@/shared/constants/domain.constant';
 import { agentCreateSchema, agentLoginSchema } from '@/modules/agent/agent.schema';
 import {
   buildExpiredRefreshCookie,
@@ -127,16 +128,34 @@ const meRoute: Route = {
   },
 };
 
-/** A lista que a agenda usa para montar a grade: id e nome, sem conta nem sessao de ninguem. */
+/**
+ * A lista de atendentes, com DUAS formas conforme quem pergunta.
+ *
+ * Para a agenda montar a grade bastam id, nome e papel — e era so isso que saia daqui, de proposito:
+ * uma tela de escala nao precisa do e-mail de ninguem.
+ *
+ * Quem administra a equipe precisa: sem o e-mail, a tela lista pessoas que ninguem consegue
+ * distinguir quando ha dois "Ana". Entao o campo entra so para `admin`, que e quem alcanca o
+ * cadastro. Um endpoint separado diria a mesma coisa com o dobro de superficie.
+ */
 const listAgentsRoute: Route = {
   method: HTTP_METHOD.GET,
   path: AGENTS_PATH,
   auth: AUTH_REQUIREMENT.AGENT,
   rateLimit: RATE_LIMIT.PANEL_READ,
-  handler: async () => {
+  handler: async ({ agent }) => {
     const profiles = await agentRepository.listActive();
+    const isAdmin = agent?.role === AGENT_ROLE.ADMIN;
 
-    return jsonData(profiles.map(({ id, name, role }) => ({ id, name, role })));
+    return jsonData(
+      profiles.map(({ id, name, role, email }) => ({
+        id,
+        name,
+        role,
+        // `listActive` ja filtra por ativo — quem esta na lista, esta ativo.
+        ...(isAdmin ? { email, isActive: true } : {}),
+      })),
+    );
   },
 };
 

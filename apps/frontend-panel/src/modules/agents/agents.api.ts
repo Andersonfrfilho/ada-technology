@@ -14,6 +14,9 @@ export type AgentSummary = {
   readonly id: string;
   readonly name: string;
   readonly role: string;
+  /** So chega para `admin` — a agenda nao precisa do e-mail de ninguem. */
+  readonly email?: string;
+  readonly isActive?: boolean;
 };
 
 export type CreateAgentInput = {
