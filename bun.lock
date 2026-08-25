@@ -13,6 +13,7 @@
       "name": "@ada/api",
       "version": "0.0.1",
       "dependencies": {
+        "@ada/email-layout": "workspace:*",
         "@ada/user-sdk": "workspace:*",
         "@adatechnology/audio-transcription-provider": "^0.1.0-rc.1",
         "@adatechnology/catalog-contracts": "0.1.0-rc.2",
@@ -51,6 +52,7 @@
       "name": "@ada/frontend-panel",
       "version": "0.0.1",
       "dependencies": {
+        "@ada/email-layout": "workspace:*",
         "@ada/user-sdk": "workspace:*",
         "@adatechnology/conversations-ui": "0.1.0-rc.35",
         "@adatechnology/notification-client": "0.1.0-rc.3",
@@ -98,6 +100,14 @@
         "vite": "^6.0.0",
       },
     },
+    "packages/email-layout": {
+      "name": "@ada/email-layout",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.3",
+      },
+    },
     "packages/user-sdk": {
       "name": "@ada/user-sdk",
       "version": "0.0.1",
@@ -112,6 +122,8 @@
   },
   "packages": {
     "@ada/api": ["@ada/api@workspace:apps/api-ada"],
+
+    "@ada/email-layout": ["@ada/email-layout@workspace:packages/email-layout"],
 
     "@ada/frontend-panel": ["@ada/frontend-panel@workspace:apps/frontend-panel"],
 
@@ -1265,6 +1277,8 @@
 
     "@ada/api/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
 
+    "@ada/email-layout/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
+
     "@ada/frontend-panel/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
 
     "@ada/frontend-site/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
@@ -1312,6 +1326,8 @@
     "workbox-build/pretty-bytes": ["pretty-bytes@5.6.0", "", {}, "sha512-FFw039TmrBqFK8ma/7OL3sDz/VytdtJr044/QUJtH0wK9lb9jLq9tJyIxUwtQJHwar2BqtiA4iCWSwo9JLkzFg=="],
 
     "@ada/api/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
+
+    "@ada/email-layout/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 
     "@ada/frontend-panel/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 

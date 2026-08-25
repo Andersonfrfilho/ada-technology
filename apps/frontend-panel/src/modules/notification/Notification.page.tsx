@@ -6,6 +6,7 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import { validateEmailHtml } from '@ada/email-layout';
 import { NotificationProvider, NotificationSettingsWorkspace } from '@adatechnology/notification-ui';
 
 import { notificationApi } from '@/modules/notification/notification.api';
@@ -24,7 +25,11 @@ export function NotificationPage() {
   return (
     <section className="h-full min-h-0 overflow-y-auto">
       <NotificationProvider client={notificationApi} messageOverrides={notificationLocale}>
-        <NotificationSettingsWorkspace channels={NOTIFICATION_CHANNELS} categories={NOTIFICATION_CATEGORIES} />
+        <NotificationSettingsWorkspace
+          channels={NOTIFICATION_CHANNELS}
+          categories={NOTIFICATION_CATEGORIES}
+          validateEmailHtml={validateEmailHtml}
+        />
       </NotificationProvider>
     </section>
   );
