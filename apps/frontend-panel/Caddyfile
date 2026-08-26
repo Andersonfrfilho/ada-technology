@@ -27,7 +27,15 @@
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		# `style-src` ainda precisa de 'unsafe-inline' porque o conversations-ui usa `style={{...}}`,
 		# que vira atributo inline. Nao ha hash possivel para atributo sem 'unsafe-hashes'.
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: {$API_ORIGIN}; media-src 'self' blob: {$API_ORIGIN}; font-src 'self' data:; connect-src 'self' {$API_ORIGIN}; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'"
+		#
+		# `wasm-unsafe-eval` no `script-src`: o recorte de fundo roda U2-Net em WebAssembly, e
+		# compilar WASM e bloqueado por `script-src 'self'` sozinho. O nome assusta e a permissao e
+		# estreita — ela libera `WebAssembly.compile` e NADA de `eval` de JavaScript, ao contrario
+		# de 'unsafe-eval', que abriria as duas coisas.
+		#
+		# `worker-src 'self' blob:`: o onnxruntime cria o worker do runtime a partir de um blob, e
+		# sem isto ele cai no `default-src 'self'`, que recusa blob.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: {$API_ORIGIN}; media-src 'self' blob: {$API_ORIGIN}; font-src 'self' data:; connect-src 'self' {$API_ORIGIN}; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'"
 	}
 
 	# Asset com hash no nome pode ser eterno; o index nunca, senao o deploy novo nao chega.
