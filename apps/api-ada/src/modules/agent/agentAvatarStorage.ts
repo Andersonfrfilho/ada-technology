@@ -63,5 +63,9 @@ export function createAgentAvatarStorage(params: CreateAgentAvatarStorageParams)
 
       return url.toString();
     },
+
+    async remove(key: string): Promise<void> {
+      await params.storage.delete({ bucket: params.bucket, key });
+    },
   };
 }

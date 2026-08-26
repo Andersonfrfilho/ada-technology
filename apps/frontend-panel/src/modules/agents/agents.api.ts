@@ -37,6 +37,7 @@ export async function createAgent(input: CreateAgentInput): Promise<AgentSummary
 }
 
 export type UpdateAgentInput = {
+  readonly email?: string;
   readonly name?: string;
   readonly role?: string;
   readonly isActive?: boolean;

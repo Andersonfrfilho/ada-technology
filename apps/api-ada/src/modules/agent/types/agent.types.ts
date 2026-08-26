@@ -53,6 +53,7 @@ export type AgentRepositoryInterface = {
   setAvatarKey(agentId: string, avatarKey: string): Promise<AgentAdminProfile | undefined>;
   update(agentId: string, changes: AgentUpdateChanges): Promise<AgentAdminProfile | undefined>;
   setPasswordHash(agentId: string, passwordHash: string): Promise<boolean>;
+  findAvatarKey(agentId: string): Promise<string | undefined>;
   touchLastSeen(agentId: string): Promise<void>;
   create(record: CreateAgentRecord): Promise<AgentProfile>;
 };
@@ -134,6 +135,7 @@ export type RecordAuditLogInterface = {
 
 /** `| undefined` explicito: com `exactOptionalPropertyTypes`, campo ausente e campo indefinido diferem. */
 export type AgentUpdateChanges = {
+  readonly email?: string | undefined;
   readonly name?: string | undefined;
   readonly role?: string | undefined;
   readonly isActive?: boolean | undefined;

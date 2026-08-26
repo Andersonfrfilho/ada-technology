@@ -364,7 +364,10 @@ const setAgentAvatarRoute: Route = {
     const rejection = checkAvatar({ contentType, byteLength: body.byteLength });
     if (rejection) throw new AgentAvatarRejectedError(rejection);
 
-    const key = await agentAvatarStorage.put({
+    const storage = agentAvatarStorage;
+    const previousKey = await agentRepository.findAvatarKey(targetId);
+
+    const key = await storage.put({
       userId: targetId,
       body,
       contentType: contentType as AvatarContentType,
@@ -373,7 +376,29 @@ const setAgentAvatarRoute: Route = {
     const updated = await agentRepository.setAvatarKey(targetId, key);
     if (!updated) throw new AgentNotFoundError(targetId);
 
-    return jsonData({ ...updated, avatarUrl: await agentAvatarStorage.sign(key) });
+    /*
+      A foto antiga sai DEPOIS de a nova estar gravada e apontada.
+
+      Na ordem inversa, uma falha no `put` deixaria a pessoa sem foto nenhuma — e a antiga estava
+      boa. A chave carrega o digest do conteudo, entao reenviar a MESMA foto nao cai aqui: a chave
+      e a mesma, e nao ha nada a remover.
+
+      Falhar ao remover nao desfaz a troca, que ja deu certo: a nova foto ja e a verdade, e um
+      objeto orfao custa centavos. Devolver erro faria a pessoa repetir uma operacao concluida.
+    */
+    if (previousKey && previousKey !== key) {
+      try {
+        await storage.remove?.(previousKey);
+      } catch (error) {
+        logger.warn({
+          message: 'Foto de perfil anterior nao removida do bucket',
+          source: 'agent.controller',
+          meta: { agentId: targetId, error: String(error) },
+        });
+      }
+    }
+
+    return jsonData({ ...updated, avatarUrl: await storage.sign(key) });
   },
 };
 

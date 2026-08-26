@@ -8,6 +8,8 @@
 
 import type { TeamApi } from '@adatechnology/user-ui';
 
+import { PanelApiError } from '@/modules/shared/http/http.error';
+
 import {
   createAgent,
   listAgents,
@@ -66,7 +68,13 @@ export const agentTeamApi: TeamApi = {
   },
 
   async updateTeamMember(userId, input) {
-    const updated = await updateAgent(userId, { name: input.name, role: input.role });
+    const updated = await withTranslatedEmailConflict(() =>
+      updateAgent(userId, {
+        name: input.name,
+        role: input.role,
+        ...(input.email ? { email: input.email } : {}),
+      }),
+    );
 
     return {
       id: updated.id,
@@ -107,3 +115,31 @@ export const agentTeamApi: TeamApi = {
     };
   },
 };
+
+/**
+ * Traduz o codigo do host para o do SDK.
+ *
+ * A API fala `AGENT_EMAIL_ALREADY_EXISTS` — vocabulario deste produto, onde quem entra e `agent`. A
+ * tela do pacote administra `user` e reconhece `USER_EMAIL_ALREADY_EXISTS` para ancorar o erro no
+ * campo de e-mail. O adaptador e o unico lugar que conhece os dois lados, e e por isso que ele
+ * existe: sem esta traducao a recusa chegaria como aviso generico, longe do campo que a causou.
+ */
+async function withTranslatedEmailConflict<TResult>(run: () => Promise<TResult>): Promise<TResult> {
+  try {
+    return await run();
+  } catch (cause) {
+    if (cause instanceof PanelApiError && cause.code === AGENT_EMAIL_ALREADY_EXISTS) {
+      throw new PanelApiError({
+        code: USER_EMAIL_ALREADY_EXISTS,
+        message: cause.message,
+        status: cause.status,
+      });
+    }
+
+    throw cause;
+  }
+}
+
+const AGENT_EMAIL_ALREADY_EXISTS = 'AGENT_EMAIL_ALREADY_EXISTS';
+/** Espelha o codigo que o `@adatechnology/user-ui` reconhece para ancorar o erro no campo. */
+const USER_EMAIL_ALREADY_EXISTS = 'USER_EMAIL_ALREADY_EXISTS';
