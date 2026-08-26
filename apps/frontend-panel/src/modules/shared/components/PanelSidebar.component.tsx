@@ -55,15 +55,20 @@ export function PanelSidebar({ section, isDark, onNavigate, onToggleTheme }: Pan
 
   return (
     <div className="flex h-full w-64 flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-      <div className="border-b border-gray-200 px-4 py-4 dark:border-gray-800">
+      <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-4 dark:border-gray-800">
         {/* O wordmark do logo e azul-escuro: no tema escuro ele sumiria no fundo, entao vira branco
             solido — a marca perde a cor, mas nao a legibilidade. */}
         <img
           alt={locale.brand}
-          className="mb-2 h-12 w-auto dark:brightness-0 dark:invert"
+          className="h-9 w-auto shrink-0 dark:brightness-0 dark:invert"
           src={BRAND_LOGO_SRC}
         />
-        <h1 className="text-sm font-semibold text-gray-900 dark:text-white">{locale.title}</h1>
+        {/*
+          `leading-tight` porque o titulo quebra em duas linhas na largura da barra: com a
+          entrelinha padrao as duas linhas se afastariam do logo e o par pararia de ler como um
+          bloco so.
+        */}
+        <h1 className="text-sm font-semibold leading-tight text-gray-900 dark:text-white">{locale.title}</h1>
       </div>
 
       <nav aria-label={locale.title} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-2">

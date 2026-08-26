@@ -15,6 +15,8 @@ const CREATED = 201;
 import {
   agentAvatarStorage,
   agentRepository,
+  refreshTokens,
+  sendAgentPasswordReset,
   authenticateAgent,
   createAgent,
   loginAlertNotifier,
@@ -24,18 +26,26 @@ import {
 import { logger } from '@/shared/logger';
 import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
 import { readJsonBody } from '@/infra/http/requestBody';
-import { jsonData, noContent } from '@/infra/http/responses';
+import { accepted, jsonData, noContent } from '@/infra/http/responses';
 import { AUTH_REQUIREMENT, HTTP_METHOD, requireAgent, type Route } from '@/infra/http/router';
+import { consumeAgentResetToken } from '@/modules/agent/agentPasswordReset';
 import {
   AgentAvatarForbiddenError,
   AgentAvatarRejectedError,
   AgentAvatarUnavailableError,
   AgentCannotDeactivateSelfError,
+  AgentCannotDemoteSelfError,
+  AgentResetTokenInvalidError,
   AgentNotAuthenticatedError,
   AgentNotFoundError,
 } from '@/modules/agent/agent.error';
 import { AGENT_ROLE } from '@/shared/constants/domain.constant';
-import { agentCreateSchema, agentLoginSchema, agentSetActiveSchema } from '@/modules/agent/agent.schema';
+import {
+  agentCreateSchema,
+  agentLoginSchema,
+  agentResetConfirmSchema,
+  agentUpdateSchema,
+} from '@/modules/agent/agent.schema';
 import type { AgentAdminProfile } from '@/modules/agent/types/agent.types';
 import {
   buildExpiredRefreshCookie,
@@ -239,10 +249,12 @@ const createAgentRoute: Route = {
 };
 
 /**
- * Ativa ou desativa. Desativar e a forma de tirar acesso: nao ha exclusao, porque a conta aparece em
- * trilha de auditoria e em historico de conversa, e apagar deixaria os dois apontando para o vazio.
+ * Altera nome, papel e situacao — em qualquer combinacao, e nenhum deles obrigatorio.
+ *
+ * Desativar e a forma de tirar acesso: nao ha exclusao, porque a conta aparece em trilha de
+ * auditoria e em historico de conversa, e apagar deixaria os dois apontando para o vazio.
  */
-const setAgentActiveRoute: Route = {
+const updateAgentRoute: Route = {
   method: HTTP_METHOD.PATCH,
   path: `${AGENTS_PATH}/:agentId`,
   auth: AUTH_REQUIREMENT.ADMIN,
@@ -250,15 +262,75 @@ const setAgentActiveRoute: Route = {
   handler: async (context) => {
     const { agentId: actorId } = requireAgent(context);
     const targetId = context.params.agentId ?? '';
-    const { isActive } = agentSetActiveSchema.parse(await readJsonBody(context.request));
+    const changes = agentUpdateSchema.parse(await readJsonBody(context.request));
 
-    // Antes de tocar no banco: um admin sozinho se trancaria para fora, e a saida voltaria a ser SSH.
-    if (!isActive && targetId === actorId) throw new AgentCannotDeactivateSelfError();
+    /*
+      Duas travas, e as duas sobre a propria conta do administrador.
 
-    const updated = await agentRepository.setActive(targetId, isActive);
+      Desativar-se tranca o unico admin para fora, e a saida volta a ser SSH no conteiner — o gargalo
+      que esta tela existe para eliminar. Rebaixar-se faz o mesmo por outro caminho, e a checagem
+      precisa vir antes do banco nos dois casos.
+    */
+    if (targetId === actorId) {
+      if (changes.isActive === false) throw new AgentCannotDeactivateSelfError();
+      if (changes.role && changes.role !== AGENT_ROLE.ADMIN) throw new AgentCannotDemoteSelfError();
+    }
+
+    const updated = await agentRepository.update(targetId, changes);
     if (!updated) throw new AgentNotFoundError(targetId);
 
     return jsonData(updated);
+  },
+};
+
+/**
+ * Dispara o e-mail de redefinicao de senha para um usuario.
+ *
+ * 202, e nao 200: a entrega e assincrona, e a resposta nao promete que a caixa de entrada recebeu.
+ */
+const sendAgentPasswordResetRoute: Route = {
+  method: HTTP_METHOD.POST,
+  path: `${AGENTS_PATH}/:agentId/password-reset`,
+  auth: AUTH_REQUIREMENT.ADMIN,
+  rateLimit: RATE_LIMIT.PANEL_WRITE,
+  handler: async (context) => {
+    await sendAgentPasswordReset.execute({ agentId: context.params.agentId ?? '' });
+
+    return accepted();
+  },
+};
+
+/**
+ * Confirma a redefinicao: consome o token do e-mail e grava a senha nova.
+ *
+ * Publica por necessidade — quem chega aqui nao tem sessao, e o token E a credencial. Dai o teto de
+ * tentativas do login: e a rota onde adivinhar em massa compensaria.
+ */
+const confirmAgentPasswordResetRoute: Route = {
+  method: HTTP_METHOD.POST,
+  path: `${AGENTS_PATH}/password-reset/confirm`,
+  rateLimit: RATE_LIMIT.PANEL_LOGIN,
+  handler: async (context) => {
+    const { token, password } = agentResetConfirmSchema.parse(await readJsonBody(context.request));
+
+    const agentId = await consumeAgentResetToken(token);
+    // Mesma resposta para token inexistente, vencido e ja usado: distinguir diria a quem adivinha
+    // que chegou perto.
+    if (!agentId) throw new AgentResetTokenInvalidError();
+
+    const updated = await agentRepository.setPasswordHash(agentId, await Bun.password.hash(password));
+    if (!updated) throw new AgentResetTokenInvalidError();
+
+    /*
+      Todas as sessoes do agente caem junto com a troca.
+
+      Quem redefine senha costuma estar redefinindo porque perdeu o controle da conta; deixar o
+      refresh antigo valendo por mais sete dias manteria de pe exatamente o acesso que a troca
+      deveria cortar.
+    */
+    await refreshTokens.revokeAllFor(agentId);
+
+    return noContent();
   },
 };
 
@@ -292,7 +364,10 @@ const setAgentAvatarRoute: Route = {
     const rejection = checkAvatar({ contentType, byteLength: body.byteLength });
     if (rejection) throw new AgentAvatarRejectedError(rejection);
 
-    const key = await agentAvatarStorage.put({
+    const storage = agentAvatarStorage;
+    const previousKey = await agentRepository.findAvatarKey(targetId);
+
+    const key = await storage.put({
       userId: targetId,
       body,
       contentType: contentType as AvatarContentType,
@@ -301,13 +376,37 @@ const setAgentAvatarRoute: Route = {
     const updated = await agentRepository.setAvatarKey(targetId, key);
     if (!updated) throw new AgentNotFoundError(targetId);
 
-    return jsonData({ ...updated, avatarUrl: await agentAvatarStorage.sign(key) });
+    /*
+      A foto antiga sai DEPOIS de a nova estar gravada e apontada.
+
+      Na ordem inversa, uma falha no `put` deixaria a pessoa sem foto nenhuma — e a antiga estava
+      boa. A chave carrega o digest do conteudo, entao reenviar a MESMA foto nao cai aqui: a chave
+      e a mesma, e nao ha nada a remover.
+
+      Falhar ao remover nao desfaz a troca, que ja deu certo: a nova foto ja e a verdade, e um
+      objeto orfao custa centavos. Devolver erro faria a pessoa repetir uma operacao concluida.
+    */
+    if (previousKey && previousKey !== key) {
+      try {
+        await storage.remove?.(previousKey);
+      } catch (error) {
+        logger.warn({
+          message: 'Foto de perfil anterior nao removida do bucket',
+          source: 'agent.controller',
+          meta: { agentId: targetId, error: String(error) },
+        });
+      }
+    }
+
+    return jsonData({ ...updated, avatarUrl: await storage.sign(key) });
   },
 };
 
 export const agentRoutes: readonly Route[] = [
+  confirmAgentPasswordResetRoute,
+  sendAgentPasswordResetRoute,
   setAgentAvatarRoute,
-  setAgentActiveRoute,
+  updateAgentRoute,
   createAgentRoute,
   loginRoute,
   refreshRoute,

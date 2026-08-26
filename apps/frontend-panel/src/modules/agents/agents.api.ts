@@ -36,12 +36,36 @@ export async function createAgent(input: CreateAgentInput): Promise<AgentSummary
   return panelRequest<AgentSummary>({ path: AGENTS_PATH, method: HTTP_METHOD.POST, body: input });
 }
 
-/** Ativa ou desativa. Nao ha exclusao: a conta aparece em trilha de auditoria e em historico. */
-export async function setAgentActive(agentId: string, isActive: boolean): Promise<AgentSummary> {
+export type UpdateAgentInput = {
+  readonly email?: string;
+  readonly name?: string;
+  readonly role?: string;
+  readonly isActive?: boolean;
+};
+
+/**
+ * Alteracao parcial: nome, papel e situacao pela mesma rota.
+ *
+ * Desativar nao exclui — a conta aparece em trilha de auditoria e em historico de conversa, e
+ * apagar deixaria os dois apontando para o vazio.
+ */
+export async function updateAgent(agentId: string, changes: UpdateAgentInput): Promise<AgentSummary> {
   return panelRequest<AgentSummary>({
     path: `${AGENTS_PATH}/${encodeURIComponent(agentId)}`,
     method: HTTP_METHOD.PATCH,
-    body: { isActive },
+    body: changes,
+  });
+}
+
+export async function setAgentActive(agentId: string, isActive: boolean): Promise<AgentSummary> {
+  return updateAgent(agentId, { isActive });
+}
+
+/** Dispara o e-mail com o link de redefinicao. 202: a entrega e assincrona. */
+export async function sendAgentPasswordReset(agentId: string): Promise<void> {
+  await panelRequest<void>({
+    path: `${AGENTS_PATH}/${encodeURIComponent(agentId)}/password-reset`,
+    method: HTTP_METHOD.POST,
   });
 }
 

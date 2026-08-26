@@ -30,16 +30,45 @@ export const agentLoginSchema = localCredentialsSchema.extend({
 /**
  * Cadastro de atendente pelo painel.
  *
- * A senha vem de quem cria, como no seed — o sistema `agents` nao tem convite nem autoatendimento
- * de senha, e inventar um aqui seria prometer um fluxo que nenhuma rota cumpre. Quem cria comunica
- * a senha e a pessoa entra; trocar depois depende da migracao do login para o `user-module`.
+ * A senha inicial vem de quem cria. Trocar depois e por redefinicao: o administrador dispara o
+ * e-mail pela tela de usuarios, e a pessoa escolhe a propria senha pelo link.
  */
 export const agentCreateSchema = localCredentialsSchema.extend({
   name: z.string().trim().min(2).max(120),
   role: z.enum(['admin', 'agent']).default('agent'),
 });
 
-/** Ativar ou desativar. So a situacao — nome, papel e e-mail mudam por outro caminho. */
-export const agentSetActiveSchema = z.object({
-  isActive: z.boolean(),
+/**
+ * Alteracao parcial: e-mail, nome, papel e situacao, em qualquer combinacao.
+ *
+ * O e-mail entra. A trilha de auditoria guarda `actorId`, e nao o endereco — trocar o e-mail nao faz
+ * o passado apontar para outra pessoa, e gente muda de endereco (casamento, mudanca de dominio da
+ * empresa) com frequencia suficiente para a alternativa ser recriar a conta e perder o historico.
+ *
+ * Normalizado como no cadastro: o indice unico e sobre o valor gravado, e "Ana@X.com" com espaco no
+ * fim passaria por um e-mail diferente de "ana@x.com".
+ *
+ * `refine` exige ao menos um campo: um corpo vazio passaria pelo schema, gravaria nada e responderia
+ * 200, dizendo que salvou.
+ */
+export const agentUpdateSchema = z
+  .object({
+    email: z.string().trim().toLowerCase().email().max(200).optional(),
+    name: z.string().trim().min(2).max(120).optional(),
+    role: z.enum(['admin', 'agent']).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine((value) => Object.values(value).some((field) => field !== undefined), {
+    message: 'informe ao menos um campo',
+  });
+
+/**
+ * Confirmacao da redefinicao: o token do e-mail e a senha nova.
+ *
+ * A senha reusa as regras do `localCredentialsSchema` — inclusive o teto, sem o qual um corpo de
+ * megabytes viraria um argon2 sobre megabytes numa rota publica.
+ */
+export const agentResetConfirmSchema = z.object({
+  token: z.string().min(16).max(128),
+  password: localCredentialsSchema.shape.password,
 });

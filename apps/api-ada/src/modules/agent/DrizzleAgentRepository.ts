@@ -11,12 +11,14 @@ import { asc, desc, eq, sql } from 'drizzle-orm';
 import { database } from '@/infra/database/client';
 import { agents } from '@/infra/database/schema';
 import type {
+  AgentUpdateChanges,
   AgentAdminProfile,
   AgentCredentials,
   AgentProfile,
   AgentRepositoryInterface,
   CreateAgentRecord,
 } from '@/modules/agent/types/agent.types';
+import { AgentEmailAlreadyExistsError } from '@/modules/agent/agent.error';
 import type { AgentRole } from '@/shared/constants/domain.constant';
 
 export class DrizzleAgentRepository implements AgentRepositoryInterface {
@@ -77,6 +79,70 @@ export class DrizzleAgentRepository implements AgentRepositoryInterface {
       .orderBy(asc(agents.name));
 
     return rows.map((row) => ({ ...row, role: row.role as AgentRole }));
+  }
+
+  async update(agentId: string, changes: AgentUpdateChanges): Promise<AgentAdminProfile | undefined> {
+    /*
+      A colisao de e-mail e decidida pelo indice unico do banco, e nao por um SELECT antes.
+
+      Entre a consulta e o UPDATE cabe outra escrita, e so a constraint responde pela verdade. O
+      `catch` traduz o erro do driver em erro de dominio aqui, na fronteira do adapter, para o
+      filtro global nao receber um erro cru do Postgres.
+    */
+    const [row] = await this.runUpdate(agentId, changes);
+
+    return row ? { ...row, role: row.role as AgentRole, avatarKey: row.avatarKey ?? undefined } : undefined;
+  }
+
+  private async runUpdate(agentId: string, changes: AgentUpdateChanges) {
+    try {
+      return await this.applyUpdate(agentId, changes);
+    } catch (error) {
+      if (isUniqueEmailViolation(error)) throw new AgentEmailAlreadyExistsError();
+      throw error;
+    }
+  }
+
+  private async applyUpdate(agentId: string, changes: AgentUpdateChanges) {
+    return database
+      .update(agents)
+      .set({ ...changes, updatedAt: new Date() })
+      .where(eq(agents.id, agentId))
+      .returning({
+        id: agents.id,
+        email: agents.email,
+        name: agents.name,
+        role: agents.role,
+        isActive: agents.isActive,
+        avatarKey: agents.avatarKey,
+      });
+  }
+
+  /** Devolve so se achou: quem chama usa isso para distinguir token valido de agente removido. */
+  async setPasswordHash(agentId: string, passwordHash: string): Promise<boolean> {
+    const [row] = await database
+      .update(agents)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(agents.id, agentId))
+      .returning({ id: agents.id });
+
+    return Boolean(row);
+  }
+
+  /**
+   * So a chave da foto, e sem filtrar por situacao.
+   *
+   * `findById` esconde conta desativada — correto para autenticar, errado aqui: um admin trocando a
+   * foto de quem esta desativado nao acharia a chave antiga, e o objeto ficaria orfao no bucket.
+   */
+  async findAvatarKey(agentId: string): Promise<string | undefined> {
+    const [row] = await database
+      .select({ avatarKey: agents.avatarKey })
+      .from(agents)
+      .where(eq(agents.id, agentId))
+      .limit(1);
+
+    return row?.avatarKey ?? undefined;
   }
 
   async setAvatarKey(agentId: string, avatarKey: string): Promise<AgentAdminProfile | undefined> {
@@ -154,4 +220,12 @@ export class DrizzleAgentRepository implements AgentRepositoryInterface {
       .set({ lastSeenAt: sql`now()` })
       .where(eq(agents.id, agentId));
   }
+}
+
+/** `23505` e o unique_violation do Postgres; o nome do indice separa e-mail de outra constraint. */
+function isUniqueEmailViolation(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const candidate = error as { code?: unknown; constraint?: unknown };
+
+  return candidate.code === '23505' && candidate.constraint === 'agents_email_unique';
 }

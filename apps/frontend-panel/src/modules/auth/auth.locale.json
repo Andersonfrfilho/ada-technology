@@ -18,5 +18,15 @@
   "session": {
     "restoring": "Abrindo o painel...",
     "signOut": "Sair"
+  },
+  "reset": {
+    "title": "Escolha uma senha nova para entrar no painel.",
+    "newPassword": "Nova senha",
+    "submit": "Salvar senha",
+    "done": "Senha alterada. Todas as sessoes abertas foram encerradas.",
+    "backToSignIn": "Ir para o login",
+    "missingToken": "Link de redefinicao incompleto. Peca um novo ao administrador.",
+    "invalidToken": "Link invalido ou expirado. Peca um novo ao administrador.",
+    "failed": "Nao foi possivel alterar a senha. Tente de novo."
   }
 }

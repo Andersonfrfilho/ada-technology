@@ -10,6 +10,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 
 import authLocale from '@/modules/auth/auth.locale.json';
 import { SignInPage } from '@/modules/auth/SignIn.page';
+import { ResetPasswordPage } from '@/modules/auth/ResetPassword.page';
+import { RESET_PASSWORD_PATH } from '@/modules/auth/resetPassword.constant';
 import { PREVIEW_PATH } from '@/modules/preview/preview.constant';
 import { PreviewPage } from '@/modules/preview/Preview.page';
 import { PanelShell } from '@/modules/shared/components/PanelShell.component';
@@ -23,6 +25,9 @@ import { useRestoredSession } from '@/modules/shared/session/restoreSession.hook
  */
 const IS_PREVIEW_ROUTE = import.meta.env.DEV && window.location.pathname === PREVIEW_PATH;
 
+/** Publica em todo ambiente: e o destino do link do e-mail, e quem chega nela nao tem sessao. */
+const IS_RESET_ROUTE = window.location.pathname === RESET_PASSWORD_PATH;
+
 /**
  * A navegacao entre secoes e por caminho, sem roteador.
  *
@@ -32,6 +37,13 @@ const IS_PREVIEW_ROUTE = import.meta.env.DEV && window.location.pathname === PRE
  */
 export function App() {
   if (IS_PREVIEW_ROUTE) return <PreviewPage />;
+
+  /*
+    Antes de restaurar sessao: quem vem do link de redefinicao costuma ter um refresh velho no
+    cookie, e restaurar primeiro jogaria a pessoa direto no painel — sem nunca mostrar o formulario
+    que ela veio preencher.
+  */
+  if (IS_RESET_ROUTE) return <ResetPasswordPage />;
 
   return <AuthenticatedApp />;
 }
