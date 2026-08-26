@@ -9,6 +9,7 @@
 import { TeamWorkspace } from '@adatechnology/user-ui';
 
 import { agentTeamApi } from '@/modules/agents/agentTeam.api';
+import { IMAGE_CUTOUT } from '@/modules/shared/imageCutout.constant';
 import agentsLocale from '@/modules/agents/agents.locale.json';
 
 /**
@@ -22,6 +23,7 @@ export function AgentsPage() {
     <section className="h-full overflow-y-auto p-4 desktop:p-6">
       <TeamWorkspace
         api={agentTeamApi}
+        backgroundRemoval={IMAGE_CUTOUT}
         labels={{
           teamTitle: agentsLocale.title,
           teamSubtitle: agentsLocale.subtitle,
