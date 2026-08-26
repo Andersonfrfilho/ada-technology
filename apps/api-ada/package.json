@@ -34,7 +34,7 @@
     "@adatechnology/scheduling-contracts": "0.1.0-rc.2",
     "@adatechnology/scheduling-module": "0.1.0-rc.4",
     "@adatechnology/user-contracts": "0.1.0-rc.3",
-    "@adatechnology/user-module": "0.1.0-rc.4",
+    "@adatechnology/user-module": "0.1.0-rc.5",
     "@bull-board/api": "^9.4.0",
     "@bull-board/hono": "^9.4.0",
     "bullmq": "^6.2.1",

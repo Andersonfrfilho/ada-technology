@@ -32,7 +32,7 @@
         "@adatechnology/scheduling-contracts": "0.1.0-rc.2",
         "@adatechnology/scheduling-module": "0.1.0-rc.4",
         "@adatechnology/user-contracts": "0.1.0-rc.3",
-        "@adatechnology/user-module": "0.1.0-rc.4",
+        "@adatechnology/user-module": "0.1.0-rc.5",
         "@bull-board/api": "^9.4.0",
         "@bull-board/hono": "^9.4.0",
         "bullmq": "^6.2.1",
@@ -184,7 +184,7 @@
 
     "@adatechnology/user-contracts": ["@adatechnology/user-contracts@0.1.0-rc.3", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-BtksSj/hiRX5kfWBmJKTaHPAjhCUnzhvc5i4e0u9pDArpKKm2JMZoN5gGH85OUYsjyEBXm8KYLew/5yz1M6tKA=="],
 
-    "@adatechnology/user-module": ["@adatechnology/user-module@0.1.0-rc.4", "", { "dependencies": { "@adatechnology/module-http": "0.1.0-rc.3", "@adatechnology/user-contracts": "0.1.0-rc.3", "jose": "^5.9.6", "zod": "^3.24.1" }, "optionalDependencies": { "@adatechnology/auth-keycloak": "1.0.0-rc.1" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <2" } }, "sha512-OKk+Vg23bohs8WoxH5W+jW61ruXQkgG0KVkPq4eASLOw2CWHhd6snXZBOque1oY/EkeWLDAX18Lgm22B3PIwxg=="],
+    "@adatechnology/user-module": ["@adatechnology/user-module@0.1.0-rc.5", "", { "dependencies": { "@adatechnology/module-http": "0.1.0-rc.3", "@adatechnology/user-contracts": "0.1.0-rc.3", "jose": "^5.9.6", "zod": "^3.24.1" }, "optionalDependencies": { "@adatechnology/auth-keycloak": "1.0.0-rc.1" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <2" } }, "sha512-XHzr8A2h+cfogaP3ns0cN44E6fsVPp5+Fi6yLUTnBwRAAxrjjc2ejLK4T5PUu3EA07O7NIfgL2kC7GGkRdAt0Q=="],
 
     "@adatechnology/user-ui": ["@adatechnology/user-ui@0.1.0-rc.5", "", { "peerDependencies": { "react": "^18 || ^19", "react-dom": "^18 || ^19" } }, "sha512-GITRerK7Z2R73mfztfjgFCwGHuX8pKhvrqfatdTs7/FuWGpDgrEU4eF/8u+hwdBGfoUNNZTub9H6yOZRgYdwQg=="],
 
