@@ -35,7 +35,14 @@
 		#
 		# `worker-src 'self' blob:`: o onnxruntime cria o worker do runtime a partir de um blob, e
 		# sem isto ele cai no `default-src 'self'`, que recusa blob.
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: {$API_ORIGIN}; media-src 'self' blob: {$API_ORIGIN}; font-src 'self' data:; connect-src 'self' {$API_ORIGIN}; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'"
+		#
+		# `STORAGE_ORIGIN` no `img-src`: a foto de perfil e servida por URL assinada do bucket, que e
+		# outro host. Sem declarar, o navegador recusa a imagem, o componente cai nas iniciais e o
+		# upload parece ter falhado — quando na verdade ele respondeu 200 e o arquivo esta la.
+		#
+		# A imagem de produto nao passa por aqui: ela e servida pela propria API
+		# (`OBJECT_STORAGE_PUBLIC_BASE_URL`), e por isso nunca esbarrou nisto.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: {$API_ORIGIN} {$STORAGE_ORIGIN}; media-src 'self' blob: {$API_ORIGIN}; font-src 'self' data:; connect-src 'self' {$API_ORIGIN}; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'"
 	}
 
 	# Asset com hash no nome pode ser eterno; o index nunca, senao o deploy novo nao chega.
