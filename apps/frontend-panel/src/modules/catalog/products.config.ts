@@ -8,6 +8,8 @@
 
 import { PRODUCT_OPTIONAL_FIELD, type ProductsConfig } from '@adatechnology/products-ui';
 
+import { IMAGE_CUTOUT } from '@/modules/shared/imageCutout.constant';
+
 /**
  * Declarado fora do componente: o `ProductsProvider` memoriza pelo objeto, e um literal remontado a
  * cada render trocaria o contexto inteiro a cada tecla digitada na busca.
@@ -27,16 +29,5 @@ export const PRODUCTS_CONFIG: Partial<ProductsConfig> = {
     PRODUCT_OPTIONAL_FIELD.INVENTORY,
   ],
   metaSync: { products: true, catalogs: true },
-  /**
-   * Recorte de fundo da foto do produto. O modelo e o runtime sao servidos pelo proprio painel: a
-   * foto nunca sai da maquina de quem cadastra, e nao ha CDN de terceiro no caminho.
-   *
-   * `u2netp` e a variante leve do U2-Net (Apache-2.0), ~4,4MB. A variante `u2net_portrait` foi
-   * treinada em dataset nao-comercial e nao pode entrar aqui.
-   */
-  backgroundRemoval: {
-    modelUrl: '/models/u2netp.onnx',
-    runtimeUrl: '/ort/ort.wasm.min.js',
-    wasmPaths: '/ort/',
-  },
+  backgroundRemoval: IMAGE_CUTOUT,
 };
