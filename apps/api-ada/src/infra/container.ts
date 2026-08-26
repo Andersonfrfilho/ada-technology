@@ -20,6 +20,8 @@ import type { LoggerPort as SchedulingLoggerPort } from '@adatechnology/scheduli
 import { createSchedulingModule } from '@adatechnology/scheduling-module';
 import { EMAIL_ATTACHMENT_MAX_BYTES } from '@adatechnology/notification-contracts';
 import { createObjectStorageProvider } from '@adatechnology/object-storage-provider';
+
+import { createAgentAvatarStorage } from '@/modules/agent/agentAvatarStorage';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
 import type { LoggerPort as NotificationLoggerPort } from '@adatechnology/notification-contracts';
 import { createLoginAlertNotifier } from '@/modules/notification/loginAlertNotifier';
@@ -703,9 +705,16 @@ export const productImageBucket = environment.OBJECT_STORAGE_BUCKET
  * e nao o da imagem: o provider recusa antes de subir, e um teto de 5MB aqui reprovaria uma nota
  * fiscal legitima.
  */
-export const notificationAttachmentUpload = environment.OBJECT_STORAGE_ATTACHMENT_BUCKET
-  ? new UploadNotificationAttachmentUseCase({
-      bucket: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
+/**
+ * Um provider para o bucket privado, compartilhado por anexo de e-mail e foto de perfil.
+ *
+ * Separar por prefixo de chave, e nao por bucket: os dois sao privados, tem a mesma politica de
+ * acesso e a mesma credencial. Um bucket a mais significaria mais uma variavel por ambiente para
+ * alguem esquecer de setar.
+ */
+const privateBucket = environment.OBJECT_STORAGE_ATTACHMENT_BUCKET
+  ? {
+      name: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
       storage: createObjectStorageProvider({
         // Credencial propria quando o provedor emite uma por bucket (Railway); a compartilhada
         // quando ele usa uma so para todos (MinIO do compose).
@@ -719,7 +728,19 @@ export const notificationAttachmentUpload = environment.OBJECT_STORAGE_ATTACHMEN
         healthCheckBucket: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
         maxObjectSizeBytes: EMAIL_ATTACHMENT_MAX_BYTES,
       }),
-    })
+    }
+  : undefined;
+
+/**
+ * Bucket dos anexos, PRIVADO e separado do de imagem de produto (ADR 0002).
+ */
+export const notificationAttachmentUpload = privateBucket
+  ? new UploadNotificationAttachmentUseCase({ bucket: privateBucket.name, storage: privateBucket.storage })
+  : undefined;
+
+/** Sem bucket nao ha foto de perfil — o `user-module` nem publica as rotas. */
+export const agentAvatarStorage = privateBucket
+  ? createAgentAvatarStorage({ bucket: privateBucket.name, storage: privateBucket.storage })
   : undefined;
 
 export const productImageStorage = productImageBucket

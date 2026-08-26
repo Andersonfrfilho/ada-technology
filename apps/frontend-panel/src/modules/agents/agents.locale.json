@@ -17,5 +17,8 @@
   "failed": "Nao foi possivel criar",
   "cancel": "Cancelar",
   "columnName": "Nome",
-  "columnRole": "Papel"
+  "columnRole": "Papel",
+  "photo": "Foto",
+  "changePhoto": "Trocar a foto de",
+  "sortBy": "Ordenar por"
 }

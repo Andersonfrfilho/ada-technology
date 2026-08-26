@@ -87,3 +87,41 @@ export class AgentCannotDeactivateSelfError extends DomainError {
     });
   }
 }
+
+/** Sem bucket configurado nao ha onde guardar — 503, e nao 500: e configuracao, nao defeito. */
+export class AgentAvatarUnavailableError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.AVATAR_UNAVAILABLE,
+      message: 'Foto de perfil indisponivel neste ambiente',
+      statusCode: 503,
+    });
+  }
+}
+
+export class AgentAvatarForbiddenError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.AVATAR_FORBIDDEN,
+      message: 'Voce so pode trocar a propria foto',
+      statusCode: 403,
+    });
+  }
+}
+
+/**
+ * O motivo vai no contexto, e nao na frase.
+ *
+ * "Grande demais" e "tipo nao suportado" pedem correcoes diferentes, e a tela precisa distinguir os
+ * dois sem casar texto traduzido.
+ */
+export class AgentAvatarRejectedError extends DomainError {
+  constructor(reason: string) {
+    super({
+      code: ERROR_CODES.agent.AVATAR_REJECTED,
+      message: 'Foto recusada',
+      statusCode: 400,
+      context: { reason },
+    });
+  }
+}

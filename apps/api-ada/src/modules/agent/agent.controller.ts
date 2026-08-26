@@ -6,13 +6,14 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import { USER_EVENT } from '@adatechnology/user-contracts';
+import { checkAvatar, USER_EVENT, type AvatarContentType } from '@adatechnology/user-contracts';
 import { AUTH_ROUTE } from '@ada/user-sdk';
 
 const AGENTS_PATH = '/v1/panel/agents';
 const CREATED = 201;
 
 import {
+  agentAvatarStorage,
   agentRepository,
   authenticateAgent,
   createAgent,
@@ -20,17 +21,22 @@ import {
   refreshAgentSession,
   signOutAgent,
 } from '@/infra/container';
+import { logger } from '@/shared/logger';
 import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
 import { readJsonBody } from '@/infra/http/requestBody';
 import { jsonData, noContent } from '@/infra/http/responses';
 import { AUTH_REQUIREMENT, HTTP_METHOD, requireAgent, type Route } from '@/infra/http/router';
 import {
+  AgentAvatarForbiddenError,
+  AgentAvatarRejectedError,
+  AgentAvatarUnavailableError,
   AgentCannotDeactivateSelfError,
   AgentNotAuthenticatedError,
   AgentNotFoundError,
 } from '@/modules/agent/agent.error';
 import { AGENT_ROLE } from '@/shared/constants/domain.constant';
 import { agentCreateSchema, agentLoginSchema, agentSetActiveSchema } from '@/modules/agent/agent.schema';
+import type { AgentAdminProfile } from '@/modules/agent/types/agent.types';
 import {
   buildExpiredRefreshCookie,
   buildRefreshCookie,
@@ -142,6 +148,39 @@ const meRoute: Route = {
  * distinguir quando ha dois "Ana". Entao o campo entra so para `admin`, que e quem alcanca o
  * cadastro. Um endpoint separado diria a mesma coisa com o dobro de superficie.
  */
+/**
+ * Assina as fotos de uma pagina de uma vez.
+ *
+ * Falha ao assinar sai como foto ausente, e nao como erro: a listagem de usuarios nao pode virar 500
+ * porque o bucket piscou — a tela desenha as iniciais, que e o mesmo que ela faz para quem nunca
+ * subiu foto.
+ */
+async function signAgentAvatars(
+  profiles: readonly AgentAdminProfile[],
+): Promise<ReadonlyMap<string, string>> {
+  const storage = agentAvatarStorage;
+  if (!storage) return new Map();
+
+  const keys = [...new Set(profiles.map((profile) => profile.avatarKey).filter((key): key is string => Boolean(key)))];
+
+  const signed = await Promise.all(
+    keys.map(async (key) => {
+      try {
+        return [key, await storage.sign(key)] as const;
+      } catch (error) {
+        logger.warn({
+          message: 'Nao foi possivel assinar a foto de perfil',
+          source: 'agent.controller',
+          meta: { error: String(error) },
+        });
+        return undefined;
+      }
+    }),
+  );
+
+  return new Map(signed.filter((entry): entry is readonly [string, string] => entry !== undefined));
+}
+
 const listAgentsRoute: Route = {
   method: HTTP_METHOD.GET,
   path: AGENTS_PATH,
@@ -161,8 +200,18 @@ const listAgentsRoute: Route = {
     }
 
     const profiles = await agentRepository.listAll();
+    const avatarUrls = await signAgentAvatars(profiles);
 
-    return jsonData(profiles.map(({ id, name, role, email, isActive }) => ({ id, name, role, email, isActive })));
+    return jsonData(
+      profiles.map(({ id, name, role, email, isActive, avatarKey }) => ({
+        id,
+        name,
+        role,
+        email,
+        isActive,
+        ...(avatarKey && avatarUrls.has(avatarKey) ? { avatarUrl: avatarUrls.get(avatarKey) } : {}),
+      })),
+    );
   },
 };
 
@@ -213,7 +262,51 @@ const setAgentActiveRoute: Route = {
   },
 };
 
+/**
+ * Troca a foto de um usuario.
+ *
+ * `auth: ADMIN` para trocar a de outra pessoa; a propria e liberada abaixo, no proprio handler, e
+ * nao por uma segunda rota — o caminho e o mesmo, so a permissao muda.
+ *
+ * Os bytes chegam crus, com o tipo no `content-type`. Base64 dentro de JSON infla um terco e ainda
+ * passaria megabytes por um parse para desfazer em seguida.
+ */
+const setAgentAvatarRoute: Route = {
+  method: HTTP_METHOD.PUT,
+  path: `${AGENTS_PATH}/:agentId/avatar`,
+  auth: AUTH_REQUIREMENT.AGENT,
+  rateLimit: RATE_LIMIT.PANEL_WRITE,
+  handler: async (context) => {
+    if (!agentAvatarStorage) throw new AgentAvatarUnavailableError();
+
+    const { agentId: actorId, role } = requireAgent(context);
+    const targetId = context.params.agentId ?? '';
+
+    // Trocar a foto de outra pessoa e acao de administracao; a propria, nao.
+    if (targetId !== actorId && role !== AGENT_ROLE.ADMIN) throw new AgentAvatarForbiddenError();
+
+    const body = new Uint8Array(await context.request.arrayBuffer());
+    const contentType = context.request.headers.get('content-type') ?? '';
+
+    // A regra e do SDK: mesmo teto, mesma lista de tipos, mesma razao para SVG ficar de fora.
+    const rejection = checkAvatar({ contentType, byteLength: body.byteLength });
+    if (rejection) throw new AgentAvatarRejectedError(rejection);
+
+    const key = await agentAvatarStorage.put({
+      userId: targetId,
+      body,
+      contentType: contentType as AvatarContentType,
+    });
+
+    const updated = await agentRepository.setAvatarKey(targetId, key);
+    if (!updated) throw new AgentNotFoundError(targetId);
+
+    return jsonData({ ...updated, avatarUrl: await agentAvatarStorage.sign(key) });
+  },
+};
+
 export const agentRoutes: readonly Route[] = [
+  setAgentAvatarRoute,
   setAgentActiveRoute,
   createAgentRoute,
   loginRoute,

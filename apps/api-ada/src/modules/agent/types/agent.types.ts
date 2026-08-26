@@ -40,6 +40,8 @@ export type CreateAgentRecord = {
 /** O perfil como a ADMINISTRACAO ve: com a situacao, que a agenda nao precisa saber. */
 export type AgentAdminProfile = AgentProfile & {
   readonly isActive: boolean;
+  /** Chave no bucket. A URL assinada e derivada na resposta, nunca guardada. */
+  readonly avatarKey?: string | undefined;
 };
 
 export type AgentRepositoryInterface = {
@@ -48,6 +50,7 @@ export type AgentRepositoryInterface = {
   listActive(): Promise<readonly AgentProfile[]>;
   listAll(): Promise<readonly AgentAdminProfile[]>;
   setActive(agentId: string, isActive: boolean): Promise<AgentAdminProfile | undefined>;
+  setAvatarKey(agentId: string, avatarKey: string): Promise<AgentAdminProfile | undefined>;
   touchLastSeen(agentId: string): Promise<void>;
   create(record: CreateAgentRecord): Promise<AgentProfile>;
 };

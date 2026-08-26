@@ -37,3 +37,13 @@ export const AUTH_SCHEME = 'Bearer';
 
 export const ACCESS_TOKEN_ISSUER = 'ada-api';
 export const ACCESS_TOKEN_AUDIENCE = 'ada-panel';
+
+export const AGENT_AVATAR_KEY_PREFIX = 'agent-avatar';
+
+/**
+ * Cinco minutos: a URL viaja na resposta da listagem e vai parar em cache de navegador.
+ *
+ * Longa o bastante para a página inteira renderizar e a pessoa rolar até o fim da tabela; curta o
+ * bastante para uma resposta vazada num log não virar leitura permanente do bucket.
+ */
+export const AGENT_AVATAR_SIGNED_URL_SECONDS = 300;

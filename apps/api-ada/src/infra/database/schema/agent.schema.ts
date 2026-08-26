@@ -18,6 +18,8 @@ export const agents = pgTable(
     name: varchar('name', { length: 160 }).notNull(),
     passwordHash: varchar('password_hash', { length: 255 }).notNull(),
     role: varchar('role', { length: 20 }).notNull().default(AGENT_ROLE.AGENT),
+    // Chave opaca no bucket, nunca URL: a URL de leitura e assinada e expira.
+    avatarKey: varchar('avatar_key', { length: 512 }),
     isActive: boolean('is_active').notNull().default(true),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

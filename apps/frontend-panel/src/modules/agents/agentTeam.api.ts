@@ -8,7 +8,7 @@
 
 import type { TeamApi } from '@adatechnology/user-ui';
 
-import { createAgent, listAgents, setAgentActive } from '@/modules/agents/agents.api';
+import { createAgent, listAgents, setAgentActive, setAgentAvatar } from '@/modules/agents/agents.api';
 
 /**
  * A tela de equipe do `@adatechnology/user-ui` sobre a tabela `agents`.
@@ -38,6 +38,7 @@ export const agentTeamApi: TeamApi = {
         role: agent.role,
         email: agent.email ?? '',
         isActive: agent.isActive ?? true,
+        ...(agent.avatarUrl ? { avatarUrl: agent.avatarUrl } : {}),
       })),
       total: agents.length,
       page,
@@ -54,6 +55,19 @@ export const agentTeamApi: TeamApi = {
       role: updated.role,
       email: updated.email ?? '',
       isActive: updated.isActive ?? isActive,
+    };
+  },
+
+  async setTeamMemberAvatar(userId, file) {
+    const updated = await setAgentAvatar(userId, file);
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      role: updated.role,
+      email: updated.email ?? '',
+      isActive: updated.isActive ?? true,
+      ...(updated.avatarUrl ? { avatarUrl: updated.avatarUrl } : {}),
     };
   },
 

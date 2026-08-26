@@ -37,6 +37,9 @@ export function AgentsPage() {
           teamCreating: agentsLocale.submitting,
           teamCreatedMessage: agentsLocale.created,
           teamCancel: agentsLocale.cancel,
+          teamPhoto: agentsLocale.photo,
+          teamChangePhoto: agentsLocale.changePhoto,
+          teamSortBy: agentsLocale.sortBy,
           name: agentsLocale.name,
           email: agentsLocale.email,
         }}
