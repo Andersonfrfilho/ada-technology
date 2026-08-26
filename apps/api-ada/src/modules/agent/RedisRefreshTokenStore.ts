@@ -44,7 +44,48 @@ export class RedisRefreshTokenStore implements RefreshTokenStoreInterface {
   async revoke(token: string): Promise<void> {
     await redis.del(keyOf(token));
   }
+
+  /**
+   * Derruba TODAS as sessoes de um agente. Usado na redefinicao de senha.
+   *
+   * Sem isto a redefinicao seria meia medida: quem redefine costuma redefinir porque perdeu o
+   * controle da conta, e o refresh antigo continuaria valendo por sete dias — mantendo de pe
+   * exatamente o acesso que a troca deveria cortar.
+   *
+   * `SCAN`, e nao `KEYS`: `KEYS` percorre o keyspace inteiro num comando unico e bloqueia o Redis,
+   * que aqui tambem serve cache e fila. Redefinicao e rara e pode pagar varias voltas curtas; uma
+   * pausa no Redis, nao.
+   */
+  async revokeAllFor(agentId: string): Promise<number> {
+    let cursor = '0';
+    let revoked = 0;
+
+    do {
+      const [next, keys] = await redis.scan(cursor, 'MATCH', `${KEY_PREFIX}*`, 'COUNT', SCAN_BATCH);
+      cursor = next;
+
+      if (keys.length > 0) {
+        // Um `MGET` por lote em vez de um `GET` por chave: a lista ja esta em maos, e ir uma vez por
+        // token multiplicaria a ida ao Redis pelo numero de sessoes abertas no produto inteiro.
+        const owners = await redis.mget(...keys);
+        const mine = keys.filter((_, index) => owners[index] === agentId);
+
+        if (mine.length > 0) {
+          await redis.del(...mine);
+          revoked += mine.length;
+        }
+      }
+    } while (cursor !== '0');
+
+    return revoked;
+  }
 }
+
+/**
+ * Lote do `SCAN`. Alto o bastante para nao render dezenas de voltas, baixo o bastante para cada
+ * volta continuar sendo barata.
+ */
+const SCAN_BATCH = 200;
 
 function keyOf(token: string): string {
   return `${KEY_PREFIX}${token}`;

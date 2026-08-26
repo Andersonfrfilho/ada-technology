@@ -28,6 +28,14 @@ export type PanelRequest = {
   readonly form?: FormData;
   /** Cabecalho extra da rota (ex: `Idempotency-Key`). Nunca segredo: quem autentica e o Bearer. */
   readonly headers?: Readonly<Record<string, string>>;
+  /**
+   * Rota publica: nao anexa Bearer e nao tenta renovar sessao no 401.
+   *
+   * Redefinicao de senha e o caso: quem esta ali nao tem sessao, e a tentativa de renovar levaria a
+   * pessoa de volta ao login no meio da troca de senha — perdendo o token do e-mail, que vale uma
+   * vez so.
+   */
+  readonly anonymous?: boolean;
 };
 
 /**
@@ -66,6 +74,8 @@ async function execute<TResult>(
   const response = await send(request);
 
   if (response.status !== HTTP_STATUS.UNAUTHORIZED) return read(response);
+  // Rota publica nao tem sessao a renovar: renovar aqui trocaria o erro real por um redirecionamento.
+  if (request.anonymous) return read(response);
   if (!(await refreshSession())) return read(response);
 
   return read(await send(request));
@@ -106,7 +116,7 @@ async function send(request: PanelRequest): Promise<Response> {
       headers: {
         ...payload.headers,
         ...request.headers,
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...(accessToken && !request.anonymous ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
       ...('body' in payload ? { body: payload.body } : {}),
     });

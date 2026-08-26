@@ -11,6 +11,7 @@ import { asc, desc, eq, sql } from 'drizzle-orm';
 import { database } from '@/infra/database/client';
 import { agents } from '@/infra/database/schema';
 import type {
+  AgentUpdateChanges,
   AgentAdminProfile,
   AgentCredentials,
   AgentProfile,
@@ -77,6 +78,34 @@ export class DrizzleAgentRepository implements AgentRepositoryInterface {
       .orderBy(asc(agents.name));
 
     return rows.map((row) => ({ ...row, role: row.role as AgentRole }));
+  }
+
+  async update(agentId: string, changes: AgentUpdateChanges): Promise<AgentAdminProfile | undefined> {
+    const [row] = await database
+      .update(agents)
+      .set({ ...changes, updatedAt: new Date() })
+      .where(eq(agents.id, agentId))
+      .returning({
+        id: agents.id,
+        email: agents.email,
+        name: agents.name,
+        role: agents.role,
+        isActive: agents.isActive,
+        avatarKey: agents.avatarKey,
+      });
+
+    return row ? { ...row, role: row.role as AgentRole, avatarKey: row.avatarKey ?? undefined } : undefined;
+  }
+
+  /** Devolve so se achou: quem chama usa isso para distinguir token valido de agente removido. */
+  async setPasswordHash(agentId: string, passwordHash: string): Promise<boolean> {
+    const [row] = await database
+      .update(agents)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(agents.id, agentId))
+      .returning({ id: agents.id });
+
+    return Boolean(row);
   }
 
   async setAvatarKey(agentId: string, avatarKey: string): Promise<AgentAdminProfile | undefined> {

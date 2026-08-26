@@ -94,6 +94,7 @@ import {
 import { notificationAuthResolver } from '@/modules/notification/notificationAuthResolver';
 import { notificationRecipientResolver } from '@/modules/notification/notificationRecipientResolver';
 import { createPasswordResetNotifier } from '@/modules/notification/passwordResetNotifier';
+import { SendAgentPasswordResetUseCase } from '@/modules/agent/sendAgentPasswordReset.use-case';
 import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
 import { SeedNotificationTemplatesUseCase } from '@/modules/notification/seedNotificationTemplates.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
@@ -321,7 +322,7 @@ export const postWidgetAudio = new PostWidgetAudioUseCase({
 
 export const recordAuditLog = new RecordAuditLogUseCase();
 export const agentRepository = new DrizzleAgentRepository();
-const refreshTokens = new RedisRefreshTokenStore();
+export const refreshTokens = new RedisRefreshTokenStore();
 
 export const authenticateAgent = new AuthenticateAgentUseCase({
   agents: agentRepository,
@@ -515,6 +516,31 @@ const passwordResetNotifier = createPasswordResetNotifier({
   companyId: environment.ADA_COMPANY_ID,
   ...(emailDriver ? { emailDriver } : {}),
   logger: userLogger,
+});
+
+/**
+ * O mesmo notificador, apontado para `agents` em vez de `users`.
+ *
+ * A tela de usuarios do painel administra quem entra NESTE painel, que vive em `agents`. Um segundo
+ * fluxo de redefinicao — token, expiracao, template, fallback — seria copia do que o `user-module`
+ * ja resolve; o que muda de verdade e so onde a pessoa e encontrada pelo e-mail.
+ */
+const agentPasswordResetNotifier = createPasswordResetNotifier({
+  module: notificationModule,
+  companyId: environment.ADA_COMPANY_ID,
+  ...(emailDriver ? { emailDriver } : {}),
+  logger: userLogger,
+  findUser: async (email: string) => {
+    const found = await agentRepository.findByEmail(email);
+
+    return found ? { id: found.id } : undefined;
+  },
+});
+
+export const sendAgentPasswordReset = new SendAgentPasswordResetUseCase({
+  agents: agentRepository,
+  resetUrlTemplate: environment.PANEL_RESET_URL_TEMPLATE,
+  notify: agentPasswordResetNotifier,
 });
 
 export const seedNotificationTemplates = new SeedNotificationTemplatesUseCase(

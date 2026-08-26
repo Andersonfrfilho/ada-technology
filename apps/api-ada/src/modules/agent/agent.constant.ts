@@ -47,3 +47,11 @@ export const AGENT_AVATAR_KEY_PREFIX = 'agent-avatar';
  * bastante para uma resposta vazada num log não virar leitura permanente do bucket.
  */
 export const AGENT_AVATAR_SIGNED_URL_SECONDS = 300;
+
+export const AGENT_RESET_TOKEN_BYTES = 32;
+
+/**
+ * Uma hora. Curto porque o link e credencial de troca de senha e viaja por e-mail, que fica no
+ * histórico da caixa de entrada; longo porque quem pede às vezes só abre o e-mail depois do almoço.
+ */
+export const AGENT_RESET_TOKEN_TTL_SECONDS = 3600;

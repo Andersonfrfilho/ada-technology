@@ -125,3 +125,35 @@ export class AgentAvatarRejectedError extends DomainError {
     });
   }
 }
+
+/**
+ * Ninguem se rebaixa.
+ *
+ * Irmao do `AgentCannotDeactivateSelfError`, e pelo mesmo motivo: o unico admin virando usuario
+ * comum perde a tela de usuarios, e a saida volta a ser SSH no conteiner.
+ */
+export class AgentCannotDemoteSelfError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.CANNOT_DEMOTE_SELF,
+      message: 'Voce nao pode rebaixar o proprio papel',
+      statusCode: 409,
+    });
+  }
+}
+
+/**
+ * Uma resposta so para token inexistente, vencido e ja usado.
+ *
+ * Distinguir os tres diria a quem adivinha que chegou perto — "vencido" confirma que o token
+ * existiu, e isso e informacao que so serve para quem nao deveria te-la.
+ */
+export class AgentResetTokenInvalidError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.RESET_TOKEN_INVALID,
+      message: 'Link de redefinicao invalido ou expirado',
+      statusCode: 400,
+    });
+  }
+}

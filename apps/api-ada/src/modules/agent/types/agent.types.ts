@@ -51,6 +51,8 @@ export type AgentRepositoryInterface = {
   listAll(): Promise<readonly AgentAdminProfile[]>;
   setActive(agentId: string, isActive: boolean): Promise<AgentAdminProfile | undefined>;
   setAvatarKey(agentId: string, avatarKey: string): Promise<AgentAdminProfile | undefined>;
+  update(agentId: string, changes: AgentUpdateChanges): Promise<AgentAdminProfile | undefined>;
+  setPasswordHash(agentId: string, passwordHash: string): Promise<boolean>;
   touchLastSeen(agentId: string): Promise<void>;
   create(record: CreateAgentRecord): Promise<AgentProfile>;
 };
@@ -128,4 +130,11 @@ export type RefreshAgentSessionDependencies = {
 
 export type RecordAuditLogInterface = {
   execute(params: RecordAuditLogParams): Promise<void>;
+};
+
+/** `| undefined` explicito: com `exactOptionalPropertyTypes`, campo ausente e campo indefinido diferem. */
+export type AgentUpdateChanges = {
+  readonly name?: string | undefined;
+  readonly role?: string | undefined;
+  readonly isActive?: boolean | undefined;
 };
