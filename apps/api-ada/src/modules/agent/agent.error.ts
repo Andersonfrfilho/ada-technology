@@ -71,3 +71,19 @@ export class AgentNotFoundError extends DomainError {
     });
   }
 }
+
+/**
+ * Ninguem se desativa.
+ *
+ * Sem isto, um admin sozinho tira o proprio acesso com um clique e a unica saida vira `railway ssh`
+ * no conteiner — exatamente o gargalo que a tela de usuarios existe para eliminar.
+ */
+export class AgentCannotDeactivateSelfError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.CANNOT_DEACTIVATE_SELF,
+      message: 'Voce nao pode desativar a propria conta',
+      statusCode: 409,
+    });
+  }
+}

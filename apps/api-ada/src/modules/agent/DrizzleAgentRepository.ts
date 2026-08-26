@@ -6,11 +6,12 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import { asc, eq, sql } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 
 import { database } from '@/infra/database/client';
 import { agents } from '@/infra/database/schema';
 import type {
+  AgentAdminProfile,
   AgentCredentials,
   AgentProfile,
   AgentRepositoryInterface,
@@ -76,6 +77,45 @@ export class DrizzleAgentRepository implements AgentRepositoryInterface {
       .orderBy(asc(agents.name));
 
     return rows.map((row) => ({ ...row, role: row.role as AgentRole }));
+  }
+
+  /**
+   * TODOS, ativos e inativos, para a tela de administracao.
+   *
+   * Separada de `listActive` de proposito: a agenda nao pode oferecer titular desativado, e uma
+   * flag na mesma funcao acabaria com alguem esquecendo de passa-la — o desativado voltaria a
+   * aparecer na grade de horario.
+   */
+  async listAll(): Promise<readonly AgentAdminProfile[]> {
+    const rows = await database
+      .select({
+        id: agents.id,
+        email: agents.email,
+        name: agents.name,
+        role: agents.role,
+        isActive: agents.isActive,
+      })
+      .from(agents)
+      // Ativos primeiro: quem administra procura quem trabalha, nao quem saiu.
+      .orderBy(desc(agents.isActive), asc(agents.name));
+
+    return rows.map((row) => ({ ...row, role: row.role as AgentRole }));
+  }
+
+  async setActive(agentId: string, isActive: boolean): Promise<AgentAdminProfile | undefined> {
+    const [row] = await database
+      .update(agents)
+      .set({ isActive })
+      .where(eq(agents.id, agentId))
+      .returning({
+        id: agents.id,
+        email: agents.email,
+        name: agents.name,
+        role: agents.role,
+        isActive: agents.isActive,
+      });
+
+    return row ? { ...row, role: row.role as AgentRole } : undefined;
   }
 
   async create(record: CreateAgentRecord): Promise<AgentProfile> {

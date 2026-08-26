@@ -38,3 +38,8 @@ export const agentCreateSchema = localCredentialsSchema.extend({
   name: z.string().trim().min(2).max(120),
   role: z.enum(['admin', 'agent']).default('agent'),
 });
+
+/** Ativar ou desativar. So a situacao — nome, papel e e-mail mudam por outro caminho. */
+export const agentSetActiveSchema = z.object({
+  isActive: z.boolean(),
+});

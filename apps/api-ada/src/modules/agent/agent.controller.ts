@@ -24,9 +24,13 @@ import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
 import { readJsonBody } from '@/infra/http/requestBody';
 import { jsonData, noContent } from '@/infra/http/responses';
 import { AUTH_REQUIREMENT, HTTP_METHOD, requireAgent, type Route } from '@/infra/http/router';
-import { AgentNotAuthenticatedError, AgentNotFoundError } from '@/modules/agent/agent.error';
+import {
+  AgentCannotDeactivateSelfError,
+  AgentNotAuthenticatedError,
+  AgentNotFoundError,
+} from '@/modules/agent/agent.error';
 import { AGENT_ROLE } from '@/shared/constants/domain.constant';
-import { agentCreateSchema, agentLoginSchema } from '@/modules/agent/agent.schema';
+import { agentCreateSchema, agentLoginSchema, agentSetActiveSchema } from '@/modules/agent/agent.schema';
 import {
   buildExpiredRefreshCookie,
   buildRefreshCookie,
@@ -144,18 +148,21 @@ const listAgentsRoute: Route = {
   auth: AUTH_REQUIREMENT.AGENT,
   rateLimit: RATE_LIMIT.PANEL_READ,
   handler: async ({ agent }) => {
-    const profiles = await agentRepository.listActive();
     const isAdmin = agent?.role === AGENT_ROLE.ADMIN;
 
-    return jsonData(
-      profiles.map(({ id, name, role, email }) => ({
-        id,
-        name,
-        role,
-        // `listActive` ja filtra por ativo — quem esta na lista, esta ativo.
-        ...(isAdmin ? { email, isActive: true } : {}),
-      })),
-    );
+    /**
+     * Admin ve TODOS, inclusive desativados — sem isso nao ha como reativar ninguem. Quem nao e
+     * admin ve so os ativos, porque a lista dele serve a agenda: oferecer titular desativado seria
+     * marcar horario com quem nao entra mais.
+     */
+    if (!isAdmin) {
+      const active = await agentRepository.listActive();
+      return jsonData(active.map(({ id, name, role }) => ({ id, name, role })));
+    }
+
+    const profiles = await agentRepository.listAll();
+
+    return jsonData(profiles.map(({ id, name, role, email, isActive }) => ({ id, name, role, email, isActive })));
   },
 };
 
@@ -182,7 +189,32 @@ const createAgentRoute: Route = {
   },
 };
 
+/**
+ * Ativa ou desativa. Desativar e a forma de tirar acesso: nao ha exclusao, porque a conta aparece em
+ * trilha de auditoria e em historico de conversa, e apagar deixaria os dois apontando para o vazio.
+ */
+const setAgentActiveRoute: Route = {
+  method: HTTP_METHOD.PATCH,
+  path: `${AGENTS_PATH}/:agentId`,
+  auth: AUTH_REQUIREMENT.ADMIN,
+  rateLimit: RATE_LIMIT.PANEL_WRITE,
+  handler: async (context) => {
+    const { agentId: actorId } = requireAgent(context);
+    const targetId = context.params.agentId ?? '';
+    const { isActive } = agentSetActiveSchema.parse(await readJsonBody(context.request));
+
+    // Antes de tocar no banco: um admin sozinho se trancaria para fora, e a saida voltaria a ser SSH.
+    if (!isActive && targetId === actorId) throw new AgentCannotDeactivateSelfError();
+
+    const updated = await agentRepository.setActive(targetId, isActive);
+    if (!updated) throw new AgentNotFoundError(targetId);
+
+    return jsonData(updated);
+  },
+};
+
 export const agentRoutes: readonly Route[] = [
+  setAgentActiveRoute,
   createAgentRoute,
   loginRoute,
   refreshRoute,

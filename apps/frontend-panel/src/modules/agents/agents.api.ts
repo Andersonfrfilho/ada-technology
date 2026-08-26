@@ -33,3 +33,12 @@ export async function listAgents(): Promise<readonly AgentSummary[]> {
 export async function createAgent(input: CreateAgentInput): Promise<AgentSummary> {
   return panelRequest<AgentSummary>({ path: AGENTS_PATH, method: HTTP_METHOD.POST, body: input });
 }
+
+/** Ativa ou desativa. Nao ha exclusao: a conta aparece em trilha de auditoria e em historico. */
+export async function setAgentActive(agentId: string, isActive: boolean): Promise<AgentSummary> {
+  return panelRequest<AgentSummary>({
+    path: `${AGENTS_PATH}/${encodeURIComponent(agentId)}`,
+    method: HTTP_METHOD.PATCH,
+    body: { isActive },
+  });
+}

@@ -8,7 +8,7 @@
 
 import type { TeamApi } from '@adatechnology/user-ui';
 
-import { createAgent, listAgents } from '@/modules/agents/agents.api';
+import { createAgent, listAgents, setAgentActive } from '@/modules/agents/agents.api';
 
 /**
  * A tela de equipe do `@adatechnology/user-ui` sobre a tabela `agents`.
@@ -20,9 +20,6 @@ import { createAgent, listAgents } from '@/modules/agents/agents.api';
  * Por isso o adaptador: a tela nao sabe de onde vem a lista, e este arquivo e o unico lugar que
  * precisa mudar no dia em que o login migrar para o `user-module`.
  *
- * `setTeamMemberActive` fica de FORA: o repositorio so lista ativos, entao nao ha inativo para
- * reativar. Ausente, a tela nem desenha a coluna de acao — melhor que um botao que nao tem o que
- * desfazer.
  */
 export const agentTeamApi: TeamApi = {
   async listTeam({ page, pageSize }) {
@@ -45,6 +42,18 @@ export const agentTeamApi: TeamApi = {
       total: agents.length,
       page,
       pageSize,
+    };
+  },
+
+  async setTeamMemberActive(userId, isActive) {
+    const updated = await setAgentActive(userId, isActive);
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      role: updated.role,
+      email: updated.email ?? '',
+      isActive: updated.isActive ?? isActive,
     };
   },
 

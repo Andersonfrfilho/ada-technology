@@ -37,10 +37,17 @@ export type CreateAgentRecord = {
   readonly passwordHash: string;
 };
 
+/** O perfil como a ADMINISTRACAO ve: com a situacao, que a agenda nao precisa saber. */
+export type AgentAdminProfile = AgentProfile & {
+  readonly isActive: boolean;
+};
+
 export type AgentRepositoryInterface = {
   findByEmail(email: string): Promise<AgentCredentials | undefined>;
   findById(agentId: string): Promise<AgentProfile | undefined>;
   listActive(): Promise<readonly AgentProfile[]>;
+  listAll(): Promise<readonly AgentAdminProfile[]>;
+  setActive(agentId: string, isActive: boolean): Promise<AgentAdminProfile | undefined>;
   touchLastSeen(agentId: string): Promise<void>;
   create(record: CreateAgentRecord): Promise<AgentProfile>;
 };
