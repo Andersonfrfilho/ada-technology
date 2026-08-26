@@ -16,14 +16,16 @@
       "notificacoes": "Notificações",
       "catalogo": "Catálogo",
       "documentos": "Documentos",
-      "clientes": "Clientes"
+      "clientes": "Clientes",
+      "usuarios": "Usuários"
     },
     "groups": {
       "atendimento": "Atendimento",
       "avisos": "Avisos",
       "conteudo": "Conteúdo",
       "cadastros": "Cadastros"
-    }
+    },
+    "sectionNotAllowed": "Esta área não está disponível para o seu acesso."
   },
   "environmentBadge": {
     "dev": "Ambiente de desenvolvimento",

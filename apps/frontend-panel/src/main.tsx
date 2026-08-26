@@ -11,11 +11,15 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from '@/modules/shared/App.component';
 import { applyEnvironmentBadge } from '@/modules/shared/environmentBadge/environmentBadge';
+import { reloadOnServiceWorkerUpdate } from '@/modules/shared/serviceWorkerUpdate';
 
 import '@/index.css';
 
 // Antes do React: a faixa e do documento, e nao de uma tela — ela vale inclusive no erro de boot.
 applyEnvironmentBadge();
+
+// Sem isto, quem esta com o painel aberto opera a versao anterior ate fechar todas as abas.
+reloadOnServiceWorkerUpdate();
 
 const container = document.getElementById('root');
 

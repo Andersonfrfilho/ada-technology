@@ -7,6 +7,7 @@
  */
 
 import {
+  UserPlus,
   Bell,
   CalendarClock,
   FileText,
@@ -35,6 +36,7 @@ export const PANEL_SECTION = {
   LEADS: 'clientes',
   SCHEDULE: 'agenda',
   NOTIFICATIONS: 'notificacoes',
+  AGENTS: 'usuarios',
 } as const;
 
 export type PanelSection = (typeof PANEL_SECTION)[keyof typeof PANEL_SECTION];
@@ -44,6 +46,15 @@ export const DEFAULT_PANEL_SECTION: PanelSection = PANEL_SECTION.CONVERSATIONS;
 export type PanelSectionItem = {
   readonly section: PanelSection;
   readonly icon: LucideIcon;
+  /**
+   * Papel minimo para VER o item. Ausente, todo usuario autenticado ve.
+   *
+   * Isto e conveniencia de tela, NAO barreira: quem decide o acesso e o `auth` da rota na API, e ele
+   * continua valendo mesmo que alguem digite a URL. Esconder um menu que a API deixaria passar seria
+   * seguranca de mentira; mostrar um que ela recusa e o que temos hoje — o usuario preenche o
+   * formulario inteiro e toma 403 no submit.
+   */
+  readonly requiresAdmin?: boolean;
 };
 
 export const PANEL_GROUP = {
@@ -93,7 +104,10 @@ export const PANEL_SECTION_GROUPS: readonly PanelSectionGroup[] = [
    */
   {
     group: PANEL_GROUP.NOTIFICATIONS,
-    items: [{ section: PANEL_SECTION.NOTIFICATIONS, icon: Bell }],
+    // As rotas de template e de politica de categoria exigem o escopo `notification:admin`, que o
+    // `notificationAuthResolver` so concede a quem e admin. Sem isto, o usuario comum abre a tela e
+    // descobre no primeiro salvamento.
+    items: [{ section: PANEL_SECTION.NOTIFICATIONS, icon: Bell, requiresAdmin: true }],
   },
   {
     group: PANEL_GROUP.CONTENT,
@@ -104,7 +118,11 @@ export const PANEL_SECTION_GROUPS: readonly PanelSectionGroup[] = [
   },
   {
     group: PANEL_GROUP.REGISTRY,
-    items: [{ section: PANEL_SECTION.LEADS, icon: Users }],
+    items: [
+      { section: PANEL_SECTION.LEADS, icon: Users },
+      // `POST /v1/panel/agents` e `auth: ADMIN`, e a listagem so devolve e-mail para admin.
+      { section: PANEL_SECTION.AGENTS, icon: UserPlus, requiresAdmin: true },
+    ],
   },
 ];
 
@@ -120,4 +138,23 @@ const SECTIONS: readonly string[] = Object.values(PANEL_SECTION);
 
 export function isPanelSection(value: string): value is PanelSection {
   return SECTIONS.includes(value);
+}
+
+/**
+ * As secoes que este papel enxerga.
+ *
+ * Grupo que fica sem item algum some inteiro — um titulo de grupo vazio e ruido que so aparece para
+ * quem tem menos acesso, ou seja, exatamente para quem menos entende por que esta ali.
+ */
+export function visibleSectionGroups(isAdmin: boolean): readonly PanelSectionGroup[] {
+  return PANEL_SECTION_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.requiresAdmin || isAdmin),
+  })).filter((group) => group.items.length > 0);
+}
+
+/** `false` quando o papel nao alcanca a secao — usado para nao renderizar a tela por URL direta. */
+export function canSeeSection(section: PanelSection, isAdmin: boolean): boolean {
+  const item = PANEL_SECTION_ITEMS.find((candidate) => candidate.section === section);
+  return !item?.requiresAdmin || isAdmin;
 }

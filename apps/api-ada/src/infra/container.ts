@@ -20,6 +20,8 @@ import type { LoggerPort as SchedulingLoggerPort } from '@adatechnology/scheduli
 import { createSchedulingModule } from '@adatechnology/scheduling-module';
 import { EMAIL_ATTACHMENT_MAX_BYTES } from '@adatechnology/notification-contracts';
 import { createObjectStorageProvider } from '@adatechnology/object-storage-provider';
+
+import { createAgentAvatarStorage } from '@/modules/agent/agentAvatarStorage';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
 import type { LoggerPort as NotificationLoggerPort } from '@adatechnology/notification-contracts';
 import { createLoginAlertNotifier } from '@/modules/notification/loginAlertNotifier';
@@ -50,6 +52,7 @@ import { RedisRelay } from '@/infra/realtime/RedisRelay';
 import { ACCESS_TOKEN_AUDIENCE, ACCESS_TOKEN_ISSUER } from '@/modules/agent/agent.constant';
 import { AuthenticateAgentUseCase } from '@/modules/agent/authenticateAgent.use-case';
 import { DrizzleAgentRepository } from '@/modules/agent/DrizzleAgentRepository';
+import { CreateAgentUseCase } from '@/modules/agent/createAgent.use-case';
 import { createLocalAgentAuthProvider } from '@/modules/agent/localAuthProvider';
 import { RedisRefreshTokenStore } from '@/modules/agent/RedisRefreshTokenStore';
 import { RefreshAgentSessionUseCase } from '@/modules/agent/refreshAgentSession.use-case';
@@ -448,6 +451,18 @@ const notificationQueueName = `${environment.PROJECT_NAME}-${environment.ENV}-${
 /** Exportada para o painel operacional montar em cima da MESMA fila que o modulo produz. */
 export const notificationBullQueue = new Queue(notificationQueueName, { connection: redis });
 
+/**
+ * Fecha a fila. Obrigatorio em TODO comando de linha que importa este container.
+ *
+ * A `Queue` do BullMQ abre conexao propria com o Redis e segura o event loop — o mesmo problema que
+ * o `SseHub` ja causava, e que o `closeRedis()` resolvia para ele. Sem fechar aqui, `flow:republish`
+ * e o seed publicam o que tinham que publicar e NUNCA SAEM: o `deploy:pre` fica esperando, e o
+ * deploy inteiro pendura sem erro nenhum no log.
+ */
+export function closeNotificationQueue(): Promise<void> {
+  return notificationBullQueue.close();
+}
+
 const notificationQueue = createBullMqQueue({
   queue: notificationBullQueue,
   createWorker: (handler) =>
@@ -516,6 +531,9 @@ function notifyPasswordResetRequested(event: PasswordResetRequestedEvent): Promi
  * Config validada do `@ada/user-sdk`, hoje so com o provedor local — ponto de extensao para quando
  * um segundo provedor (OAuth2/OIDC) for implementado.
  */
+/** Cadastro de atendente pelo painel — a alternativa ao seed por SSH. */
+export const createAgent = new CreateAgentUseCase({ agents: agentRepository });
+
 export const authProvidersConfig = authProvidersConfigSchema.parse(buildLocalOnlyAuthProvidersConfig());
 
 /**
@@ -687,9 +705,16 @@ export const productImageBucket = environment.OBJECT_STORAGE_BUCKET
  * e nao o da imagem: o provider recusa antes de subir, e um teto de 5MB aqui reprovaria uma nota
  * fiscal legitima.
  */
-export const notificationAttachmentUpload = environment.OBJECT_STORAGE_ATTACHMENT_BUCKET
-  ? new UploadNotificationAttachmentUseCase({
-      bucket: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
+/**
+ * Um provider para o bucket privado, compartilhado por anexo de e-mail e foto de perfil.
+ *
+ * Separar por prefixo de chave, e nao por bucket: os dois sao privados, tem a mesma politica de
+ * acesso e a mesma credencial. Um bucket a mais significaria mais uma variavel por ambiente para
+ * alguem esquecer de setar.
+ */
+const privateBucket = environment.OBJECT_STORAGE_ATTACHMENT_BUCKET
+  ? {
+      name: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
       storage: createObjectStorageProvider({
         // Credencial propria quando o provedor emite uma por bucket (Railway); a compartilhada
         // quando ele usa uma so para todos (MinIO do compose).
@@ -703,7 +728,19 @@ export const notificationAttachmentUpload = environment.OBJECT_STORAGE_ATTACHMEN
         healthCheckBucket: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
         maxObjectSizeBytes: EMAIL_ATTACHMENT_MAX_BYTES,
       }),
-    })
+    }
+  : undefined;
+
+/**
+ * Bucket dos anexos, PRIVADO e separado do de imagem de produto (ADR 0002).
+ */
+export const notificationAttachmentUpload = privateBucket
+  ? new UploadNotificationAttachmentUseCase({ bucket: privateBucket.name, storage: privateBucket.storage })
+  : undefined;
+
+/** Sem bucket nao ha foto de perfil — o `user-module` nem publica as rotas. */
+export const agentAvatarStorage = privateBucket
+  ? createAgentAvatarStorage({ bucket: privateBucket.name, storage: privateBucket.storage })
   : undefined;
 
 export const productImageStorage = productImageBucket

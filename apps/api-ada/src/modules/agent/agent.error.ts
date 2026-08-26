@@ -71,3 +71,57 @@ export class AgentNotFoundError extends DomainError {
     });
   }
 }
+
+/**
+ * Ninguem se desativa.
+ *
+ * Sem isto, um admin sozinho tira o proprio acesso com um clique e a unica saida vira `railway ssh`
+ * no conteiner — exatamente o gargalo que a tela de usuarios existe para eliminar.
+ */
+export class AgentCannotDeactivateSelfError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.CANNOT_DEACTIVATE_SELF,
+      message: 'Voce nao pode desativar a propria conta',
+      statusCode: 409,
+    });
+  }
+}
+
+/** Sem bucket configurado nao ha onde guardar — 503, e nao 500: e configuracao, nao defeito. */
+export class AgentAvatarUnavailableError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.AVATAR_UNAVAILABLE,
+      message: 'Foto de perfil indisponivel neste ambiente',
+      statusCode: 503,
+    });
+  }
+}
+
+export class AgentAvatarForbiddenError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.AVATAR_FORBIDDEN,
+      message: 'Voce so pode trocar a propria foto',
+      statusCode: 403,
+    });
+  }
+}
+
+/**
+ * O motivo vai no contexto, e nao na frase.
+ *
+ * "Grande demais" e "tipo nao suportado" pedem correcoes diferentes, e a tela precisa distinguir os
+ * dois sem casar texto traduzido.
+ */
+export class AgentAvatarRejectedError extends DomainError {
+  constructor(reason: string) {
+    super({
+      code: ERROR_CODES.agent.AVATAR_REJECTED,
+      message: 'Foto recusada',
+      statusCode: 400,
+      context: { reason },
+    });
+  }
+}
