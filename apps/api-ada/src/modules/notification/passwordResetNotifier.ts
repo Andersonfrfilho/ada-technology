@@ -55,7 +55,17 @@ export function createPasswordResetNotifier(params: {
 
     try {
       const user = await findUser(event.email);
-      if (!user) return;
+      if (!user) {
+        /*
+          Sair calado aqui e o unico desfecho que nao deixa rastro nenhum: a rota responde 202, o
+          e-mail nunca sai, e nem banco nem log registram o motivo.
+
+          Sem PII no log — quem foi procurado se descobre pelo `resetUrl` da trilha, nao pelo
+          endereco (`security.md` §1).
+        */
+        params.logger.error('Redefinicao de senha pedida para e-mail sem conta correspondente');
+        return;
+      }
 
       const result = await params.module.useCases.sendNotification.execute({
         companyId: params.companyId,
