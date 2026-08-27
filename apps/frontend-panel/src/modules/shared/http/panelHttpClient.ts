@@ -162,8 +162,23 @@ async function rotateSession(): Promise<boolean> {
 
 const EMPTY_RESULT = undefined as never;
 
+/**
+ * Resposta sem corpo nao passa por `json()`.
+ *
+ * 204 nao e o unico caso: 202 de efeito assincrono (disparo do e-mail de redefinicao) tambem vem
+ * vazio, e `json()` sobre corpo vazio estoura com "Unexpected end of JSON input" — erro de parse
+ * exibido no lugar do sucesso.
+ */
+function hasNoBody(response: Response): boolean {
+  return (
+    response.status === HTTP_STATUS.NO_CONTENT ||
+    response.status === HTTP_STATUS.ACCEPTED ||
+    response.headers.get('Content-Length') === '0'
+  );
+}
+
 async function unwrap<TResult>(response: Response): Promise<TResult> {
-  if (response.status === HTTP_STATUS.NO_CONTENT) return EMPTY_RESULT;
+  if (hasNoBody(response)) return EMPTY_RESULT;
 
   const envelope = (await response.json()) as Envelope<TResult>;
 
