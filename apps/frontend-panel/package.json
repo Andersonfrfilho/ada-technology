@@ -21,7 +21,7 @@
     "@adatechnology/notification-ui": "0.1.0-rc.9",
     "@adatechnology/products-ui": "0.1.0-rc.12",
     "@adatechnology/scheduling-contracts": "0.1.0-rc.2",
-    "@adatechnology/scheduling-ui": "0.1.0-rc.3",
+    "@adatechnology/scheduling-ui": "0.1.0-rc.5",
     "@adatechnology/user-ui": "0.1.0-rc.14",
     "@tanstack/react-query": "^5.62.8",
     "@tanstack/react-router": "^1.95.1",
