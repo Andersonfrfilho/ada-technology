@@ -23,7 +23,10 @@ import { createObjectStorageProvider } from '@adatechnology/object-storage-provi
 
 import { createAgentAvatarStorage } from '@/modules/agent/agentAvatarStorage';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
-import type { LoggerPort as NotificationLoggerPort } from '@adatechnology/notification-contracts';
+import type {
+  LoggerPort as NotificationLoggerPort,
+  NotificationHooks,
+} from '@adatechnology/notification-contracts';
 import { createLoginAlertNotifier } from '@/modules/notification/loginAlertNotifier';
 import { UploadNotificationAttachmentUseCase } from '@/modules/notification/uploadNotificationAttachment.use-case';
 import {
@@ -470,6 +473,35 @@ const notificationQueue = createBullMqQueue({
     new Worker(notificationQueueName, async (job) => handler(job.data), { connection: redis.duplicate() }),
 });
 
+/**
+ * Entrega que falha precisa aparecer no log, e nao so numa coluna do banco.
+ *
+ * O modulo converte recusa do provedor em `delivery.status` e segue calado — o worker so loga
+ * excecao de infraestrutura. Para aviso de pedido isso e aceitavel; para redefinicao de senha
+ * significou uma pessoa sem receber nada e nenhuma linha explicando, com a unica evidencia numa
+ * tabela que nao tem rota de leitura.
+ *
+ * O contrato ja previa esta ponta (`DeliveryFailedEvent.willRetry` existe para "alerta do host"):
+ * o que faltava era o host registrar o gancho.
+ *
+ * Nada de PII: id de notificacao, id de entrega, canal e codigo de erro. O endereco nem chega
+ * aqui, e e por isso que o `targetMasked` do modulo existe.
+ */
+const notificationDeliveryHooks: NotificationHooks = {
+  onDeliveryFailed: ({ notificationId, deliveryId, channel, errorCode, attempt, willRetry }) => {
+    const message = willRetry ? 'Entrega de notificacao falhou e sera retentada' : 'Entrega de notificacao falhou';
+    const meta = { notificationId, deliveryId, channel, errorCode, attempt };
+
+    // Retry ainda pode dar certo; esgotado, ninguem recebeu — e so o segundo caso e um defeito.
+    if (willRetry) notificationLogger.warn(message, meta);
+    else notificationLogger.error(message, meta);
+  },
+  onDeliveryBounced: ({ notificationId, deliveryId, channel, reason }) => {
+    // Bounce suprime o endereco: os proximos envios somem em silencio ate alguem limpar a supressao.
+    notificationLogger.error('Endereco suprimido por bounce', { notificationId, deliveryId, channel, reason });
+  },
+};
+
 export const notificationModule = createNotificationModule({
   db: database as never,
   config: {
@@ -486,6 +518,7 @@ export const notificationModule = createNotificationModule({
     authContextResolver: notificationAuthResolver,
     logger: notificationLogger,
   },
+  hooks: notificationDeliveryHooks,
 });
 
 /**
