@@ -32,6 +32,7 @@ export const HTTP_METHOD = {
 export type HttpMethod = (typeof HTTP_METHOD)[keyof typeof HTTP_METHOD];
 
 export const HTTP_STATUS = {
+  ACCEPTED: 202,
   NO_CONTENT: 204,
   UNAUTHORIZED: 401,
 } as const;
