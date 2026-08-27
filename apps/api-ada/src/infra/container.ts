@@ -489,7 +489,15 @@ const notificationQueue = createBullMqQueue({
  */
 const notificationDeliveryHooks: NotificationHooks = {
   onDeliveryFailed: ({ notificationId, deliveryId, channel, errorCode, attempt, willRetry }) => {
-    const message = willRetry ? 'Entrega de notificacao falhou e sera retentada' : 'Entrega de notificacao falhou';
+    /*
+      Canal e codigo de erro vao na MENSAGEM, e nao so no `meta`.
+
+      O agregador de log da hospedagem exibe e indexa a `message`; o `meta` viaja no JSON e nao
+      aparece nem na busca. "Entrega de notificacao falhou", sozinha, diz que falhou e esconde a
+      unica parte que responde por que — que e a pergunta inteira.
+    */
+    const outcome = willRetry ? 'falhou e sera retentada' : 'falhou';
+    const message = `Entrega de notificacao ${outcome} [${channel}: ${errorCode}]`;
     const meta = { notificationId, deliveryId, channel, errorCode, attempt };
 
     // Retry ainda pode dar certo; esgotado, ninguem recebeu — e so o segundo caso e um defeito.
@@ -498,7 +506,12 @@ const notificationDeliveryHooks: NotificationHooks = {
   },
   onDeliveryBounced: ({ notificationId, deliveryId, channel, reason }) => {
     // Bounce suprime o endereco: os proximos envios somem em silencio ate alguem limpar a supressao.
-    notificationLogger.error('Endereco suprimido por bounce', { notificationId, deliveryId, channel, reason });
+    notificationLogger.error(`Endereco suprimido por bounce [${channel}: ${reason}]`, {
+      notificationId,
+      deliveryId,
+      channel,
+      reason,
+    });
   },
 };
 
