@@ -11,6 +11,7 @@
 @source '../node_modules/@adatechnology/products-ui/dist';
 @source '../node_modules/@adatechnology/notification-ui/dist';
 @source '../node_modules/@adatechnology/user-ui/dist';
+@source '../node_modules/@adatechnology/scheduling-ui/dist';
 
 /**
  * O `dark:` do painel passa a ser a classe no `<html>`, e nao `prefers-color-scheme`.
