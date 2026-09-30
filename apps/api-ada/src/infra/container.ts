@@ -127,6 +127,7 @@ const CATALOG_SOURCE = 'modules.catalog';
 const SCHEDULING_SOURCE = 'modules.scheduling';
 const USER_SOURCE = 'modules.user';
 const NOTIFICATION_SOURCE = 'modules.notification';
+const WHATSAPP_SOURCE = 'modules.channel.whatsapp';
 
 /** O modulo loga por assinatura propria; a mascara e o nivel continuam sendo os da Ada. */
 const catalogLogger: CatalogLoggerPort = {
@@ -219,6 +220,27 @@ export const metaWhatsApp = createMetaWhatsAppModule({
         return whatsappMessageHandlers;
       },
     }),
+    /**
+     * A Meta recusou um envio que o modulo tentou fazer reagindo a este webhook, e a recusa e
+     * deterministica: token sem escopo, conta barrada de mandar para o pais, payload invalido.
+     *
+     * Chega como hook, e nao como excecao, porque excecao aqui viraria resposta nao-2xx e a Meta
+     * reentregaria o evento — numa recusa destas a reentrega falha identica, e webhook que falha
+     * com frequencia a Meta desativa, derrubando o canal inteiro. A mensagem do cliente ja esta
+     * gravada: o que se perdeu foi a resposta a ela, e sem este log ninguem fica sabendo na hora.
+     */
+    onInboundEffectRejected: (details) => {
+      logger.error({
+        message: 'Meta recusou a resposta ao cliente',
+        source: WHATSAPP_SOURCE,
+        meta: {
+          companyId: details.companyId,
+          kind: details.kind,
+          whatsappNumber: details.whatsappNumber,
+          code: details.code,
+        },
+      });
+    },
     // Vitrine que nao saiu deixa o cliente sem resposta num no automatico, e o modulo segue a
     // conversa de proposito. Quem tem de gritar e o host.
     onFlowProductListError: (error, details) => {
