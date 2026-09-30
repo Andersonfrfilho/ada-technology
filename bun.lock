@@ -21,10 +21,10 @@
         "@adatechnology/catalog-module": "0.1.0-rc.3",
         "@adatechnology/email-provider": "0.1.0-rc.7",
         "@adatechnology/meta-catalog-provider": "0.2.0-rc.2",
-        "@adatechnology/meta-graph-core": "^0.1.0",
-        "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.12",
-        "@adatechnology/meta-whatsapp-module": "0.2.0-rc.22",
-        "@adatechnology/meta-whatsapp-provider": "0.2.0-rc.3",
+        "@adatechnology/meta-graph-core": "0.3.0",
+        "@adatechnology/meta-whatsapp-contracts": "0.6.0",
+        "@adatechnology/meta-whatsapp-module": "0.6.0",
+        "@adatechnology/meta-whatsapp-provider": "0.3.1",
         "@adatechnology/module-http": "0.1.0-rc.3",
         "@adatechnology/notification-contracts": "0.1.0-rc.6",
         "@adatechnology/notification-module": "0.1.0-rc.12",
@@ -157,13 +157,13 @@
 
     "@adatechnology/meta-catalog-provider": ["@adatechnology/meta-catalog-provider@0.2.0-rc.2", "", { "dependencies": { "@adatechnology/meta-graph-core": "0.2.0-rc.2", "zod": "^3.24.1" } }, "sha512-Eb34Hgv2fV2p0jpb8d59Vu6oIrVbMg5Odj/Zi0c2bjG0/JrB0RGbbXywu6E9wS30ZLoHfJ59uwhvC4iUb9uZpQ=="],
 
-    "@adatechnology/meta-graph-core": ["@adatechnology/meta-graph-core@0.1.0", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-r0Ev5L0nmmRq+FZuciDgMESlvNdbmBdbfiBCVYA9azi9vp+iTBK40WHMKLkn9X+NxjeMNs5bsIa7XI7SOAysbw=="],
+    "@adatechnology/meta-graph-core": ["@adatechnology/meta-graph-core@0.3.0", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-A9pkmtbeItNN/LjZmu22gGdX5S3mHXWxX5sHT36VTDDAMDNie0YZyyT4sVAIIhDue2JG+jGuLMs/PKIKaTlqRw=="],
 
-    "@adatechnology/meta-whatsapp-contracts": ["@adatechnology/meta-whatsapp-contracts@0.2.0-rc.12", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-/0VXJkDDMZCteCgyGMNbHTZYSt4RQzx/U98lR+4FDOea+UlgqYZ4XzmfkNrQ+OHEdxHJQo4cDTZx73TEdgASHA=="],
+    "@adatechnology/meta-whatsapp-contracts": ["@adatechnology/meta-whatsapp-contracts@0.6.0", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-uaVDXBglXeqOSypjqNqg2PPM2h/zvpn2Rb3PKG9j+aoqoYyHKulkuuCzhQb1aUV/sTFgxhUDjS8McS/5KAKxzA=="],
 
-    "@adatechnology/meta-whatsapp-module": ["@adatechnology/meta-whatsapp-module@0.2.0-rc.22", "", { "dependencies": { "@adatechnology/meta-graph-core": "0.2.0-rc.2", "@adatechnology/meta-whatsapp-contracts": "0.2.0-rc.12", "@adatechnology/meta-whatsapp-provider": "0.2.0-rc.3" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <1" } }, "sha512-4uHv7crgxr0tQBJUTlAVn+tApBYcGLZz0RSjKUJTVu779UBx3BZmwrAF0Ljln6eS5Jur/j78GDlorGxQZXZlpg=="],
+    "@adatechnology/meta-whatsapp-module": ["@adatechnology/meta-whatsapp-module@0.6.0", "", { "dependencies": { "@adatechnology/meta-graph-core": "0.3.0", "@adatechnology/meta-whatsapp-contracts": "0.6.0", "@adatechnology/meta-whatsapp-provider": "0.3.1" }, "peerDependencies": { "drizzle-orm": ">=0.36.0 <1" } }, "sha512-XOPR7MUCqELsQ/m5TWzj6fzQfy8zgRhQCzrKaGIcJPwB3wyzhg0yR4xsYOe4L1r4D3hZbNfuzl5mL1KeNnqSig=="],
 
-    "@adatechnology/meta-whatsapp-provider": ["@adatechnology/meta-whatsapp-provider@0.2.0-rc.3", "", { "dependencies": { "@adatechnology/meta-graph-core": "0.2.0-rc.2", "zod": "^3.24.1" } }, "sha512-hGhMnVuaU3vTDQLLXKYvlMGFjN+gbOVvwjSCU4n0uwJkeynSP3sjpBi7ao/5KPTAyzkEHpaPLkppcRBdjU7mNw=="],
+    "@adatechnology/meta-whatsapp-provider": ["@adatechnology/meta-whatsapp-provider@0.3.1", "", { "dependencies": { "@adatechnology/meta-graph-core": "0.3.0", "zod": "^3.24.1" } }, "sha512-udBJvHq1/Sq+MkspHKUXW/iKuTqTyVuUToo/rz4zVCpAnZDCu8GnBVQzSdVmQlFoi7v8W7WIuo5FBCq86255kA=="],
 
     "@adatechnology/module-http": ["@adatechnology/module-http@0.1.0-rc.3", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-w1ZcbbVwGFpYbFDfyhegbpNvrxqWMTasg7QRUtpd40fRVWIz1fy3rss3RVWHEa72piHxkqs8T+L1MbaSpWQpsA=="],
 
@@ -1323,23 +1323,21 @@
 
     "zustand": ["zustand@5.0.14", "", { "peerDependencies": { "@types/react": ">=18.0.0", "immer": ">=9.0.6", "react": ">=18.0.0", "use-sync-external-store": ">=1.2.0" }, "optionalPeers": ["@types/react", "immer", "react", "use-sync-external-store"] }, "sha512-/8tAspM5LMPr28b3fwLYrtdj77ECpfZviaP75CMTnwO8ISyaE4GDIG/9rDDYq/cH9D2Xw2A2RXglLInmVBQB/g=="],
 
-    "@ada/api/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
+    "@ada/api/@types/bun": ["@types/bun@1.4.2", "", { "dependencies": { "bun-types": "1.4.2" } }, "sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ=="],
 
-    "@ada/email-layout/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
+    "@ada/email-layout/@types/bun": ["@types/bun@1.4.2", "", { "dependencies": { "bun-types": "1.4.2" } }, "sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ=="],
 
     "@ada/frontend-panel/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
 
     "@ada/frontend-site/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
 
-    "@ada/user-sdk/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
+    "@ada/user-sdk/@types/bun": ["@types/bun@1.4.2", "", { "dependencies": { "bun-types": "1.4.2" } }, "sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ=="],
 
     "@adatechnology/catalog-module/@adatechnology/module-http": ["@adatechnology/module-http@0.1.0-rc.1", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-ThCyhqC1fa/vSmfArvLs6Y0rogHLmuiMvQ+lzgIScuYiLJsVueW9RG6ZP0v8hMh+wEB6maLyVypIMl6rwzVPbw=="],
 
+    "@adatechnology/conversations-ui/@adatechnology/meta-whatsapp-contracts": ["@adatechnology/meta-whatsapp-contracts@0.2.0-rc.12", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-/0VXJkDDMZCteCgyGMNbHTZYSt4RQzx/U98lR+4FDOea+UlgqYZ4XzmfkNrQ+OHEdxHJQo4cDTZx73TEdgASHA=="],
+
     "@adatechnology/meta-catalog-provider/@adatechnology/meta-graph-core": ["@adatechnology/meta-graph-core@0.2.0-rc.2", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-IW2EeIBAFTflhOCiePp2LlrhLsA/2bW76ZUD8G0HSHbh0VFVLQnCXLrEiSiV3KFmNgyyQSn3PkGbCFnUnYoYpA=="],
-
-    "@adatechnology/meta-whatsapp-module/@adatechnology/meta-graph-core": ["@adatechnology/meta-graph-core@0.2.0-rc.2", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-IW2EeIBAFTflhOCiePp2LlrhLsA/2bW76ZUD8G0HSHbh0VFVLQnCXLrEiSiV3KFmNgyyQSn3PkGbCFnUnYoYpA=="],
-
-    "@adatechnology/meta-whatsapp-provider/@adatechnology/meta-graph-core": ["@adatechnology/meta-graph-core@0.2.0-rc.2", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-IW2EeIBAFTflhOCiePp2LlrhLsA/2bW76ZUD8G0HSHbh0VFVLQnCXLrEiSiV3KFmNgyyQSn3PkGbCFnUnYoYpA=="],
 
     "@adatechnology/notification-client/@adatechnology/notification-contracts": ["@adatechnology/notification-contracts@0.1.0-rc.3", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-ign38pbiRTMMpx0uKUoNOOv1x90oR+6l2PKMbj7+7b69xb46wpRR2pQBhFOuFqg83RgUee331laZ0P4n1yJjTA=="],
 
@@ -1391,15 +1389,15 @@
 
     "workbox-build/pretty-bytes": ["pretty-bytes@5.6.0", "", {}, "sha512-FFw039TmrBqFK8ma/7OL3sDz/VytdtJr044/QUJtH0wK9lb9jLq9tJyIxUwtQJHwar2BqtiA4iCWSwo9JLkzFg=="],
 
-    "@ada/api/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
+    "@ada/api/@types/bun/bun-types": ["bun-types@1.4.2", "", { "dependencies": { "@types/node": "*" } }, "sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w=="],
 
-    "@ada/email-layout/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
+    "@ada/email-layout/@types/bun/bun-types": ["bun-types@1.4.2", "", { "dependencies": { "@types/node": "*" } }, "sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w=="],
 
     "@ada/frontend-panel/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 
     "@ada/frontend-site/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 
-    "@ada/user-sdk/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
+    "@ada/user-sdk/@types/bun/bun-types": ["bun-types@1.4.2", "", { "dependencies": { "@types/node": "*" } }, "sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w=="],
 
     "@esbuild-kit/core-utils/esbuild/@esbuild/android-arm": ["@esbuild/android-arm@0.18.20", "", { "os": "android", "cpu": "arm" }, "sha512-fyi7TDI/ijKKNZTUJAQqiG5T7YjJXgnzkURqmGj13C6dCqckZBLdl4h7bkhHt/t0WP+zO9/zwroDvANaOqO5Sw=="],
 
