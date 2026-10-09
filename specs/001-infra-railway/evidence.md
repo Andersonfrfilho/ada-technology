@@ -57,6 +57,22 @@ Achados para o `RailwayGateway`:
 - `usage` com `endDate` igual a "agora" falha com `Problem processing request`; com data futura (ex.: fim do mês) funciona. Usar sempre o último instante do mês.
 - `BACKUP_USAGE_GB` só funciona agrupando por `PROJECT_ID`, sem `ENVIRONMENT_ID`; ficar fora da consulta principal (o custo de backup é por projeto).
 
+## T0.4 — Token de workspace por HTTP (2026-10-09) — ✅
+
+`bun scripts/railway-token-check.ts` com um token de **workspace**, rodado pelo usuário no terminal:
+
+| Item | Resultado |
+|---|---|
+| workspace | PASS — visível |
+| projetos e ambientes | PASS — 5 projetos, 4 ambientes de staging |
+| ciclo de cobrança e `currentUsage` | PASS — ciclo 2026-09-19 → 2026-10-19, `currentUsage` US$ 113,35 (**o token de workspace lê cobrança**) |
+| `usage` por projeto e ambiente | PASS — 96 linhas |
+| estado dos serviços de um ambiente | PASS — 5 serviços legíveis (`deploymentStopped`, status da instância, `source.image`) |
+
+Conclusões: D1 confirmada (token de workspace basta para leitura, inclusive `customer`), e a degradação `billing_unavailable` do D7 fica como proteção, não como caminho esperado.
+Não verificado: permissão de parar/religar deployment (escrita). Fica para a T6.3.
+Incidente: durante a execução o token apareceu na tela do terminal (eco da colagem). Tratado como queimado: revogar o token usado nesta verificação e criar outro só quando for configurar a `api-ada` de produção.
+
 ### Decisão D2
 
 - **Desligar:** `deploymentStop(id do deployment ativo)`. **Religar:** `deploymentRestart(id)`. Sem build, ~7 s, mesmo deployment.

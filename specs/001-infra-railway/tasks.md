@@ -41,7 +41,7 @@ com trabalho de outra sessão.
   - Registrar D1–D6 da spec, com o resultado do T0.1 fechando a D2, e o risco do token de workspace.
   - Aceite: ADR no formato dos ADRs 0001–0003; plan §2.2 atualizado com a mutação escolhida.
 
-- [ ] **T0.4 Verificar o token de workspace por HTTP.** _(bloqueada: precisa de um token criado por você)_
+- [x] **T0.4 Verificar o token de workspace por HTTP.** _(feito em 2026-10-09: todos os itens PASS; ver `evidence.md`)_
   - Criar um token de **workspace** no Railway (Workspace settings → Tokens) e rodar `scripts/railway-token-check.ts` com ele, num terminal seu: o script só lê, nunca imprime o token e cobre workspace, projetos/ambientes, ciclo de cobrança + `currentUsage`, `usage` e estado de um ambiente.
   - Se `billing` falhar, o token de workspace não lê cobrança: registrar e decidir entre token de conta ou custo sem total oficial (D7).
   - Aceite: saída do script (sem token) colada no `evidence.md`; a permissão de parar/religar deployment fica para a T6.3.
