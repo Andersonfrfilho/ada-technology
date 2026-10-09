@@ -69,6 +69,16 @@ export type InfraEnvironmentPowerState =
   (typeof INFRA_ENVIRONMENT_POWER_STATE)[keyof typeof INFRA_ENVIRONMENT_POWER_STATE];
 
 export const INFRA_OPERATION_LOCK_KEY_PREFIX = 'infra:operation-lock:';
+/** Folga da trava sobre a espera dos bancos: cobre o build de um serviço de repositório. */
+export const INFRA_OPERATION_LOCK_GRACE_SECONDS = 600;
+export const INFRA_DATABASE_POLL_INTERVAL_SECONDS = 5;
+
+export const INFRA_SERVICE_OUTCOME = {
+  OK: 'ok',
+  FAILED: 'failed',
+  SKIPPED: 'skipped',
+} as const;
+export type InfraServiceOutcome = (typeof INFRA_SERVICE_OUTCOME)[keyof typeof INFRA_SERVICE_OUTCOME];
 
 export const INFRA_KEEP_ON_UNTIL_DEFAULT_HOURS = 2;
 export const INFRA_KEEP_ON_UNTIL_MAX_HOURS = 24;

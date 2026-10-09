@@ -15,6 +15,8 @@ import {
   catalogModule,
   notificationBullQueue,
   notificationWorker,
+  railwayGateway,
+  recoverInterruptedInfraOperations,
   seedNotificationTemplates,
 } from '@/infra/container';
 import { BULL_BOARD_BASE_PATH } from '@/infra/queue/bullBoard.constant';
@@ -124,6 +126,21 @@ try {
   }
 } catch (error) {
   logger.error({ message: 'Falha ao semear templates de notificacao', source: SOURCE, meta: { error: String(error) } });
+}
+
+/**
+ * Operacao de infra `running` de um processo que morreu (deploy no meio) travaria o painel. Falha aqui
+ * so e logada: recuperar historico nunca pode impedir a API de subir.
+ */
+if (railwayGateway) {
+  try {
+    const recovered = await recoverInterruptedInfraOperations.execute();
+    if (recovered > 0) {
+      logger.info({ message: 'Operacoes de infra interrompidas recuperadas', source: SOURCE, meta: { count: recovered } });
+    }
+  } catch (error) {
+    logger.error({ message: 'Falha ao recuperar operacoes de infra interrompidas', source: SOURCE, meta: { error: String(error) } });
+  }
 }
 
 logger.info({

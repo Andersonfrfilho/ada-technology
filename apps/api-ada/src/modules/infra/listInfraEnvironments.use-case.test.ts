@@ -103,6 +103,9 @@ function buildHarness(params: {
       counters.access += 1;
       return params.access ?? 'ok';
     },
+    async getEnvironmentServices() {
+      return [];
+    },
     async stopDeployment() {},
     async restartDeployment() {},
     async redeployService() {},
@@ -123,6 +126,11 @@ function buildHarness(params: {
     },
     async set(key, value) {
       store.set(key, value);
+    },
+    async setIfAbsent(setParams) {
+      if (store.has(setParams.key)) return false;
+      store.set(setParams.key, setParams.value);
+      return true;
     },
     async delete(key) {
       store.delete(key);

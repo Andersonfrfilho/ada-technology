@@ -84,7 +84,7 @@ com trabalho de outra sessão.
 - [x] **T2.2 `listInfraEnvironments.use-case.ts`.**
   - Estado, classificação, agenda e operação em andamento; cache Redis de 30 s.
   - Aceite: testes com gateway falso.
-- [ ] **T2.3 `runPowerOperation` + `powerOffEnvironment` + `powerOnEnvironment`.**
+- [x] **T2.3 `runPowerOperation` + `powerOffEnvironment` + `powerOnEnvironment`.**
   - Trava Redis, registro da operação, execução em segundo plano, espera dos bancos com teto e resultado por serviço.
   - Auditoria e invalidação do cache.
   - "Pronto" = `deploymentStopped` falso e instância `RUNNING`; trava com TTL renovado; no boot, operações `running` antigas viram `failed` (interrompida).

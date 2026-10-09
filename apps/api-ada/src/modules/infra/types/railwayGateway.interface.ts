@@ -8,10 +8,12 @@
 
 import type { InfraAccessStatus } from '@/modules/infra/infra.constant';
 import type {
+  GetEnvironmentServicesParams,
   GetUsageParams,
   RailwayBillingCycle,
   RailwayEstimatedUsageRow,
   RailwayProject,
+  RailwayServiceInstance,
   RailwayUsageRow,
   RedeployServiceParams,
   RestartDeploymentParams,
@@ -20,6 +22,8 @@ import type {
 
 export interface RailwayGatewayInterface {
   listInventory(): Promise<readonly RailwayProject[]>;
+  /** Leitura de um ambiente só, sem cache: a espera dos bancos depende do estado de agora. */
+  getEnvironmentServices(params: GetEnvironmentServicesParams): Promise<readonly RailwayServiceInstance[]>;
   stopDeployment(params: StopDeploymentParams): Promise<void>;
   restartDeployment(params: RestartDeploymentParams): Promise<void>;
   redeployService(params: RedeployServiceParams): Promise<void>;

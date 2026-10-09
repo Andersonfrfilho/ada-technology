@@ -99,6 +99,12 @@ import { notificationRecipientResolver } from '@/modules/notification/notificati
 import { createPasswordResetNotifier } from '@/modules/notification/passwordResetNotifier';
 import { SendAgentPasswordResetUseCase } from '@/modules/agent/sendAgentPasswordReset.use-case';
 import { createRailwayGateway } from '@/modules/infra/createRailwayGateway';
+import { DrizzleInfraOperationRepository } from '@/modules/infra/DrizzleInfraOperationRepository';
+import { DrizzleInfraScheduleRepository } from '@/modules/infra/DrizzleInfraScheduleRepository';
+import { ListInfraEnvironmentsUseCase } from '@/modules/infra/listInfraEnvironments.use-case';
+import { PowerOffEnvironmentUseCase } from '@/modules/infra/powerOffEnvironment.use-case';
+import { PowerOnEnvironmentUseCase } from '@/modules/infra/powerOnEnvironment.use-case';
+import { RecoverInterruptedInfraOperationsUseCase } from '@/modules/infra/recoverInterruptedInfraOperations.use-case';
 import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
 import { SeedNotificationTemplatesUseCase } from '@/modules/notification/seedNotificationTemplates.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
@@ -119,6 +125,8 @@ import { DrizzleTranscriptRepository } from '@/modules/shared/DrizzleTranscriptR
 import { SimulateInboundMessageUseCase } from '@/modules/simulation/simulateInboundMessage.use-case';
 import { WhatsAppInboundSimulator } from '@/modules/simulation/WhatsAppInboundSimulator';
 import { RedisUserRefreshTokenStore } from '@/modules/user/RedisUserRefreshTokenStore';
+import type { PowerEnvironmentDependencies } from '@/modules/infra/powerEnvironment.use-case';
+import type { InfraLogger } from '@/modules/infra/types/infra.types';
 import { logger } from '@/shared/logger';
 
 // Estado inicial de sessao nova. O modulo nao conhece a maquina de estados do produto.
@@ -352,6 +360,49 @@ export const railwayGateway = createRailwayGateway({
   token: environment.RAILWAY_API_TOKEN,
   workspaceId: environment.RAILWAY_WORKSPACE_ID,
 });
+
+const INFRA_SOURCE = 'modules.infra';
+
+/** Só ids, códigos e contagens chegam aqui; o logger da Ada ainda redige o que for sensível. */
+const infraLogger: InfraLogger = {
+  info: (message, meta) => logger.info({ message, source: INFRA_SOURCE, meta: { ...meta } }),
+  error: (message, meta) => logger.error({ message, source: INFRA_SOURCE, meta: { ...meta } }),
+};
+
+const infraCache = new RedisCache();
+const infraOperationRepository = new DrizzleInfraOperationRepository();
+const infraScheduleRepository = new DrizzleInfraScheduleRepository();
+
+export const listInfraEnvironments = new ListInfraEnvironmentsUseCase({
+  ...(railwayGateway ? { railwayGateway } : {}),
+  cache: infraCache,
+  operationRepository: infraOperationRepository,
+  scheduleRepository: infraScheduleRepository,
+  managedPattern: environment.RAILWAY_MANAGED_ENVIRONMENT_PATTERN,
+  selfEnvironmentId: environment.RAILWAY_ENVIRONMENT_ID,
+});
+
+const infraPowerDependencies: PowerEnvironmentDependencies = {
+  ...(railwayGateway ? { railwayGateway } : {}),
+  cache: infraCache,
+  operationRepository: infraOperationRepository,
+  recordAudit: recordAuditLog,
+  logger: infraLogger,
+  sleep: (milliseconds) => Bun.sleep(milliseconds),
+  managedPattern: environment.RAILWAY_MANAGED_ENVIRONMENT_PATTERN,
+  selfEnvironmentId: environment.RAILWAY_ENVIRONMENT_ID,
+  databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
+};
+
+export const powerOffEnvironment = new PowerOffEnvironmentUseCase(infraPowerDependencies);
+export const powerOnEnvironment = new PowerOnEnvironmentUseCase(infraPowerDependencies);
+
+export const recoverInterruptedInfraOperations = new RecoverInterruptedInfraOperationsUseCase({
+  operationRepository: infraOperationRepository,
+  databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
+  now: () => new Date(),
+});
+
 export const agentRepository = new DrizzleAgentRepository();
 export const refreshTokens = new RedisRefreshTokenStore();
 

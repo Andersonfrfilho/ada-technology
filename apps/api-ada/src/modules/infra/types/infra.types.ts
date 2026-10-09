@@ -9,11 +9,14 @@
 import type { z } from 'zod';
 
 import type { infraEnvironmentSchedules, infraPowerOperations } from '@/infra/database/schema/infra.schema';
+import type { ActorType } from '@/modules/audit/audit.constant';
 import type {
   InfraAccessStatus,
   InfraEnvironmentClassification,
   InfraEnvironmentPowerState,
+  InfraOperationTrigger,
   InfraPowerDirection,
+  InfraServiceOutcome,
   InfraServicePowerState,
 } from '@/modules/infra/infra.constant';
 
@@ -58,6 +61,7 @@ export type RailwayEstimatedUsageRow = {
   readonly projectId: string;
 };
 
+export type GetEnvironmentServicesParams = { readonly environmentId: string };
 export type StopDeploymentParams = { readonly deploymentId: string };
 export type RestartDeploymentParams = { readonly deploymentId: string };
 export type RedeployServiceParams = { readonly environmentId: string; readonly serviceId: string };
@@ -97,7 +101,7 @@ export type CreateRailwayGatewayParams = {
   readonly workspaceId: string;
 };
 
-export type InfraServiceResultOutcome = 'ok' | 'failed' | 'skipped';
+export type InfraServiceResultOutcome = InfraServiceOutcome;
 export type InfraServiceResult = {
   readonly serviceName: string;
   readonly outcome: InfraServiceResultOutcome;
@@ -160,4 +164,48 @@ export type InfraProjectView = {
 export type ListInfraEnvironmentsResult = {
   readonly access: InfraAccessStatus;
   readonly projects: readonly InfraProjectView[];
+};
+
+export type PowerEnvironmentParams = {
+  readonly environmentId: string;
+  readonly actor: { readonly type: ActorType; readonly agentId?: string };
+  readonly trigger: InfraOperationTrigger;
+  readonly ipAddress?: string;
+};
+export type PowerEnvironmentResult = { readonly operationId: string };
+
+/** Tudo que o runner em segundo plano precisa, já resolvido pelo `execute`. */
+export type RunOperationParams = {
+  readonly operationId: string;
+  readonly projectId: string;
+  readonly projectName: string;
+  readonly environmentId: string;
+  readonly environmentName: string;
+  readonly services: readonly RailwayServiceInstance[];
+  readonly actor: PowerEnvironmentParams['actor'];
+  readonly trigger: InfraOperationTrigger;
+  readonly ipAddress?: string;
+};
+
+export type RunPowerOperationParams = {
+  readonly direction: InfraPowerDirection;
+  readonly environmentId: string;
+  readonly services: readonly RailwayServiceInstance[];
+  /** Chamado a cada serviço processado e a cada consulta de espera, para renovar a trava. */
+  readonly onProgress: () => Promise<void>;
+};
+
+export type ResolveOperationStatusParams = { readonly serviceResults: readonly InfraServiceResult[] };
+
+export type InfraLogger = {
+  info(message: string, meta: Readonly<Record<string, unknown>>): void;
+  error(message: string, meta: Readonly<Record<string, unknown>>): void;
+};
+
+export type InfraSleep = (milliseconds: number) => Promise<void>;
+
+export type SetIfAbsentParams = {
+  readonly key: string;
+  readonly value: string;
+  readonly ttlSeconds: number;
 };

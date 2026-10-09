@@ -12,6 +12,7 @@ import {
   billingCycleResponseSchema,
   deploymentRestartResponseSchema,
   deploymentStopResponseSchema,
+  environmentServicesResponseSchema,
   estimatedUsageResponseSchema,
   inventoryResponseSchema,
   railwayEnvelopeSchema,
@@ -19,10 +20,12 @@ import {
   usageResponseSchema,
   workspaceResponseSchema,
   type InventoryResponse,
+  type ServiceInstanceNode,
 } from '@/modules/infra/railwayGateway.schema';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 import type {
   ExecuteRailwayParams,
+  GetEnvironmentServicesParams,
   GetUsageParams,
   RailwayBillingCycle,
   RailwayEstimatedUsageRow,
@@ -41,6 +44,7 @@ const EXITED_INSTANCE_STATUS = 'EXITED';
 
 const OPERATION = {
   INVENTORY: 'listInventory',
+  ENVIRONMENT_SERVICES: 'getEnvironmentServices',
   STOP: 'deploymentStop',
   RESTART: 'deploymentRestart',
   REDEPLOY: 'serviceInstanceRedeploy',
@@ -64,6 +68,17 @@ const INVENTORY_QUERY = `query ListInventory($workspaceId: String!) {
         } } }
       } } }
     } }
+  }
+}`;
+
+const ENVIRONMENT_SERVICES_QUERY = `query EnvironmentServices($id: String!) {
+  environment(id: $id) {
+    serviceInstances { edges { node {
+      serviceId serviceName
+      source { image repo }
+      latestDeployment { id status deploymentStopped instances { status } }
+      activeDeployments { id }
+    } } }
   }
 }`;
 
@@ -115,6 +130,17 @@ export class RailwayGateway implements RailwayGatewayInterface {
     });
 
     return normalizeInventory(data);
+  }
+
+  async getEnvironmentServices(params: GetEnvironmentServicesParams): Promise<readonly RailwayServiceInstance[]> {
+    const data = await this.execute({
+      operationName: OPERATION.ENVIRONMENT_SERVICES,
+      query: ENVIRONMENT_SERVICES_QUERY,
+      variables: { id: params.environmentId },
+      schema: environmentServicesResponseSchema,
+    });
+
+    return data.environment.serviceInstances.edges.map(({ node }) => normalizeServiceInstance(node));
   }
 
   async stopDeployment(params: StopDeploymentParams): Promise<void> {
@@ -268,9 +294,7 @@ function normalizeInventory(data: InventoryResponse): RailwayProject[] {
   }));
 }
 
-type RawServiceInstance = InventoryResponse['projects']['edges'][number]['node']['environments']['edges'][number]['node']['serviceInstances']['edges'][number]['node'];
-
-function normalizeServiceInstance(node: RawServiceInstance): RailwayServiceInstance {
+function normalizeServiceInstance(node: ServiceInstanceNode): RailwayServiceInstance {
   const deployment = node.latestDeployment;
   const instanceStatus = deployment?.instances[0]?.status;
   const sourceImage = node.source?.image;

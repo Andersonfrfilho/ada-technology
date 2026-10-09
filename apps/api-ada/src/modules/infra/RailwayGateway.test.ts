@@ -161,6 +161,63 @@ describe('RailwayGateway', () => {
     });
   });
 
+  describe('getEnvironmentServices', () => {
+    function environmentBody(nodes: Record<string, unknown>[]): unknown {
+      return { environment: { serviceInstances: { edges: nodes.map((node) => ({ node })) } } };
+    }
+
+    it('normaliza os servicos de um ambiente e envia o id por variables', async () => {
+      const { gateway, calls } = buildGateway(() =>
+        ok(environmentBody([serviceNode({ source: { image: 'redis:8', repo: null } })])),
+      );
+
+      const services = await gateway.getEnvironmentServices({ environmentId: 'environment-1' });
+
+      expect(services).toEqual([
+        {
+          serviceId: 'service-1',
+          serviceName: 'web',
+          sourceImage: 'redis:8',
+          latestDeploymentId: DEPLOYMENT_ID,
+          hasDeployment: true,
+          isStopped: false,
+          instanceStatus: 'RUNNING',
+        },
+      ]);
+      const body = JSON.parse(String(calls[0]?.init.body)) as { query: string; variables: Record<string, unknown> };
+      expect(body.variables).toEqual({ id: 'environment-1' });
+      expect(body.query).toContain('environment(id: $id)');
+      expect(body.query).not.toContain('environment-1');
+    });
+
+    it('marca isStopped para deployment parado que continua SUCCESS', async () => {
+      const stopped = serviceNode({
+        latestDeployment: { id: DEPLOYMENT_ID, status: 'SUCCESS', deploymentStopped: true, instances: [{ status: 'EXITED' }] },
+      });
+      const { gateway } = buildGateway(() => ok(environmentBody([stopped])));
+
+      const [service] = await gateway.getEnvironmentServices({ environmentId: 'environment-1' });
+
+      expect(service?.isStopped).toBe(true);
+    });
+
+    it('falha com RailwayRequestFailedError quando a resposta foge do schema', async () => {
+      const { gateway } = buildGateway(() => ok({ environment: null }));
+
+      const error = await captureError(() => gateway.getEnvironmentServices({ environmentId: 'environment-1' }));
+
+      expect(error).toBeInstanceOf(RailwayRequestFailedError);
+    });
+
+    it('falha quando o GraphQL responde errors com HTTP 200', async () => {
+      const { gateway } = buildGateway(() => jsonResponse({ errors: [{ message: 'Not Authorized' }] }));
+
+      const error = await captureError(() => gateway.getEnvironmentServices({ environmentId: 'environment-1' }));
+
+      expect(error).toBeInstanceOf(RailwayRequestFailedError);
+    });
+  });
+
   describe('mutations', () => {
     it('stopDeployment envia o id por variables e aceita true', async () => {
       const { gateway, calls } = buildGateway(() => ok({ deploymentStop: true }));

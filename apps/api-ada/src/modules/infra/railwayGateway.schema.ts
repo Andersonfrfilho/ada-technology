@@ -42,6 +42,10 @@ const projectSchema = z.object({
   environments: connection(environmentSchema),
 });
 
+export const environmentServicesResponseSchema = z.object({
+  environment: z.object({ serviceInstances: connection(serviceInstanceSchema) }),
+});
+
 export const inventoryResponseSchema = z.object({ projects: connection(projectSchema) });
 
 export const workspaceResponseSchema = z.object({ workspace: z.object({ id: z.string() }) });
@@ -76,3 +80,4 @@ export const deploymentRestartResponseSchema = z.object({ deploymentRestart: z.b
 export const serviceInstanceRedeployResponseSchema = z.object({ serviceInstanceRedeploy: z.boolean() });
 
 export type InventoryResponse = z.infer<typeof inventoryResponseSchema>;
+export type ServiceInstanceNode = z.infer<typeof serviceInstanceSchema>;
