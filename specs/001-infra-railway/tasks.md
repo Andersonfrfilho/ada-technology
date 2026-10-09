@@ -33,7 +33,7 @@ com trabalho de outra sessão.
   - **Parar e pedir confirmação ao usuário antes de mexer em qualquer serviço.**
   - **Alvo do teste:** serviços sem webhook do WhatsApp (`worker-uploads` e `Redis`). Não desligar `financing-backend` nem mandar mensagem real de WhatsApp sem nova autorização.
   - Aceite: tabela no `evidence.md`, com a conclusão sobre o domínio e o webhook.
-- [ ] **T0.2 Unidade e preço do `usage`.**
+- [x] **T0.2 Unidade e preço do `usage`.** _(feito em 2026-10-09: +1,2% contra `customer.currentUsage`; ver `evidence.md`)_
   - Rodar a query `usage` do mês corrente para o workspace.
   - Converter com os preços do plan §2.3 e comparar com o painel de uso do Railway (pedir o número ao usuário se a CLI não expuser).
   - Aceite: diferença ≤ 5% registrada no `evidence.md`; se não bater, corrigir a tabela de preço/unidade no plan antes da Fase 3.
@@ -94,7 +94,7 @@ com trabalho de outra sessão.
   - Preços e unidades confirmados no T0.2, com fonte e data.
   - Aceite: teste com números do T0.2.
 - [ ] **T3.2 `getInfraCosts.use-case.ts` + `GET /costs`.**
-  - `usage` agrupado por projeto e ambiente, `estimatedUsage` para a projeção, cache de 15 min, `isProduction` por ambiente.
+  - `billingPeriod` do workspace define a janela; `usage` agrupado por projeto e ambiente com `endDate` = fim do ciclo; `estimatedUsage` para a projeção; total oficial `customer.currentUsage` para reconciliar; cache de 15 min; `isProduction` por ambiente.
   - Aceite: testes com gateway falso e de rota.
 
 ## Fase 4 — Agenda

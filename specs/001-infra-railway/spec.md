@@ -53,7 +53,7 @@ Um workspace: `AdA Technology` (id `42450f5c-a76c-40d9-b77f-cc627906ead1`).
   escolhendo "manter ligado até" (padrão: +2 h; máximo: 24 h). A agenda não desliga antes desse
   horário e, passado ele, desliga no próximo tick. Também posso pausar a agenda de um ambiente
   sem apagá-la.
-- **US5 — Custos.** Como admin, abro *Infra → Custos* e vejo, para o mês corrente: custo acumulado por
+- **US5 — Custos.** Como admin, abro *Infra → Custos* e vejo, para o mês corrente: custo acumulado no ciclo de cobrança por
   projeto, quebra por ambiente (staging × produção), quebra por recurso (CPU, memória, rede, disco) e a
   projeção de fechamento do mês.
 - **US6 — Rastro.** Toda ação de ligar/desligar (manual ou agendada) fica na trilha de auditoria com
@@ -89,8 +89,8 @@ Um workspace: `AdA Technology` (id `42450f5c-a76c-40d9-b77f-cc627906ead1`).
 - **RF8c** O painel sugere o preset "horário comercial" (seg–sex, 08:00–20:00) ao criar a agenda;
   nenhum ambiente ganha agenda sem um admin salvar.
 - **RF8d** A API devolve, por ambiente, `nextScheduledAction` (`{ kind, at }`), calculado no servidor.
-- **RF9** Custos do mês corrente por projeto × ambiente × medida (query `usage` com
-  `groupBy: [PROJECT_ID, ENVIRONMENT_ID]`) e projeção por projeto (`estimatedUsage`).
+- **RF9** Custos do **ciclo de cobrança corrente** (`workspace.customer.billingPeriod`, hoje dia 19 a dia 19; não o mês-calendário) por projeto × ambiente × medida (query `usage` com
+  `groupBy: [PROJECT_ID, ENVIRONMENT_ID]`) e projeção até o fim do ciclo (`estimatedUsage`). A tela mostra também o total oficial do Railway (`customer.currentUsage`) para reconciliar com o cálculo.
 - **RF10** Conversão de uso em dólar pela tabela de preços do Railway, mantida em constante com a fonte
   e a data de conferência.
 - **RF11** Somente admin (`AUTH_REQUIREMENT.ADMIN` na API, `requiresAdmin` no menu).
@@ -142,6 +142,6 @@ Um workspace: `AdA Technology` (id `42450f5c-a76c-40d9-b77f-cc627906ead1`).
 4. Com a agenda seg–sex 08:00–20:00 em `cbni-staging`: às 20:00 desliga e às 08:00 do dia útil
    seguinte liga, sozinha, com auditoria de ator `system`. No sábado, ligar com "manter até +2 h"
    mantém ligado e desliga sozinho ao vencer. A agenda pausada não age.
-5. O custo do mês por projeto bate com o painel de uso do Railway, com margem de ±5%.
+5. O custo do ciclo por projeto bate com o Railway, com margem de ±5% (T0.2 já mediu +1,2% no total).
 6. Sem `RAILWAY_API_TOKEN`, a API sobe, as rotas de infra respondem 503 e o resto do painel funciona.
 7. `make validate` verde; nenhum `test.skip`/`.only`.

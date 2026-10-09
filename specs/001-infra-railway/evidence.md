@@ -27,7 +27,7 @@ Conferências após religar tudo:
 Formato da consulta de estado (campos confirmados): `serviceInstances { serviceId serviceName source { image repo } latestDeployment { id status deploymentStopped instances { status } } activeDeployments { id status } }`.
 Banco × aplicação: dá para distinguir por `source.image` (`postgres-ssl`, `redis`), sem depender só do nome.
 
-## T0.2 — Unidade e preço do `usage` (2026-10-09, 1 a 9/out) — aguardando conferência
+## T0.2 — Unidade e preço do `usage` (2026-10-09) — ✅ conferido: diferença de 1,2%
 
 `usage(workspaceId, 2026-10-01 → 2026-10-31, [CPU_USAGE, MEMORY_USAGE_GB, NETWORK_TX_GB, DISK_USAGE_GB], groupBy [PROJECT_ID, ENVIRONMENT_ID])`.
 Unidades: `CPU_USAGE` em vCPU-minuto, `MEMORY_USAGE_GB` e `DISK_USAGE_GB` em GB-minuto, `NETWORK_TX_GB` em GB.
@@ -49,7 +49,9 @@ Leituras:
 - **Staging é 48% do total** (US$ 24,18 de 50,57); só `transportada / staging` custa quase o mesmo que a produção dela.
 - **Memória é ~95% do custo**; CPU é desprezível. Desligar staging corta praticamente toda a fatura do ambiente.
 - `quickcart / production` não aparece (sem uso registrado no período).
-- Falta comparar com a tela de uso do Railway (aceite: diferença ≤ 5%). Pendente do número do usuário.
+- **Conferência (aceite ≤ 5%): passou.** Pelo ciclo de cobrança completo (2026-09-19 14:00 → agora) o cálculo deu **US$ 114,69**; o Railway informa `workspace.customer.currentUsage = 113,28`. Diferença **+1,2%**. Quebra do cálculo: memória 111,32 · CPU 2,22 · disco 0,66 · rede 0,49. No ciclo: transportada/production 44,87 · transportada/staging 44,17 · cbni-production 6,82 · transportada-ops 5,90 · cbni-staging 5,84 · quickcart/staging 3,03 · ada-technology production 2,18 / staging 1,89.
+- **O ciclo de cobrança não é o mês-calendário:** `workspace.customer.billingPeriod` = 2026-09-19T14:00:56Z → 2026-10-19T14:00:56Z. O plano do workspace é `HOBBY`. A tela de custos deve usar o ciclo, não o dia 1.
+- `workspace(workspaceId) { customer { currentUsage billingPeriod { start end } } }` é o total oficial para reconciliar; a tabela por ambiente vem do `usage`.
 
 Achados para o `RailwayGateway`:
 - `usage` com `endDate` igual a "agora" falha com `Problem processing request`; com data futura (ex.: fim do mês) funciona. Usar sempre o último instante do mês.

@@ -49,7 +49,8 @@ O `container.ts` instancia o `RailwayGateway` **só se** `RAILWAY_API_TOKEN` nã
 | `environment(id) { serviceInstances { edges { node { serviceId serviceName source { image repo } latestDeployment { id status deploymentStopped instances { status } } activeDeployments { id status } } } } }` | estado (shape confirmado no T0.1). "Desligado" = `deploymentStopped` verdadeiro, instância `EXITED` ou nenhum deployment. O status continua `SUCCESS` em deployment parado |
 | `deploymentStop(id)` | desligar (D2 fechada no T0.1: ~7 s, sem perder o deployment). `numReplicas: 0` é recusado pelo Railway |
 | `deploymentRestart(id)` se parado; `serviceInstanceRedeploy(environmentId, serviceId)` se não há deployment | ligar (~7 s sem build; o redeploy pode exigir build em serviço de repositório) |
-| `usage(workspaceId, startDate, endDate, measurements, groupBy: [PROJECT_ID, ENVIRONMENT_ID])` | custo acumulado |
+| `workspace(workspaceId) { customer { currentUsage billingPeriod { start end } } }` | período do ciclo e total oficial para reconciliar |
+| `usage(workspaceId, startDate: billingPeriod.start, endDate: billingPeriod.end, measurements, groupBy: [PROJECT_ID, ENVIRONMENT_ID])` | custo acumulado. `endDate` = fim do ciclo (futuro); `endDate` = agora dá `Problem processing request`. Sem `BACKUP_USAGE_GB` aqui (só agrupa por projeto) |
 | `estimatedUsage(workspaceId, measurements)` | projeção do mês por projeto |
 
 Medidas consultadas: `CPU_USAGE`, `MEMORY_USAGE_GB`, `NETWORK_TX_GB`, `DISK_USAGE_GB`, `BACKUP_USAGE_GB`.
@@ -177,4 +178,4 @@ Gráfico de custos: segue a skill `dataviz` (barras empilhadas staging × produ�
 | Dedup do webhook falha após religar | o `ReceiveWhatsAppWebhook` guarda o nonce (`x-request-id`, ou `Date.now()` se o header faltar) no Redis por 300 s; reentrega fora desses 5 min, ou com o Redis zerado, não é barrada. Verificar no T0.1 se a Meta envia `x-request-id`; se não, o dedup só vale por `wamid` |
 | API com 2+ réplicas dispara a agenda N vezes | `last_evaluated_at` + trava Redis; nota no `ai-context.md` |
 | Agenda derruba staging no meio de um teste | modelo por transição (não reaplica no meio da janela) + `keepOnUntil` obrigatório fora da janela |
-| Unidade de `usage` errada → custo errado | T0.2 compara com o painel de uso do Railway antes do T3 |
+| Unidade de `usage` errada → custo errado | T0.2 conferiu: +1,2% contra `customer.currentUsage`. A tela mostra os dois totais; divergência > 5% vira aviso |
