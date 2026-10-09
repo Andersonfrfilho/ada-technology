@@ -77,7 +77,7 @@ com trabalho de outra sessão.
 ## Fase 2 — Ligar/desligar
 > 🤖 Modelo: `sonnet`
 
-- [ ] **T2.1 Schema Drizzle + migration.**
+- [x] **T2.1 Schema Drizzle + migration.**
   - Tabelas `infra_environment_schedules` e `infra_power_operations` (plan §2.5), via `bun run db:generate`.
   - Aceite: `db:migrate` local aplica; migration só aditiva.
   - **Parar e perguntar** se o gerador produzir `DROP` ou alteração em tabela existente.
