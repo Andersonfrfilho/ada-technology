@@ -119,7 +119,7 @@ com trabalho de outra sessão.
   - `power-on` fora da janela de agenda ativa exige `keepOnUntil` ≤ 24 h (400 `INFRA_KEEP_ON_UNTIL_REQUIRED`).
   - `power-off` limpa o campo.
   - Aceite: testes de rota.
-- [ ] **T4.4 `infraSchedules.ts` no `startScheduler`.**
+- [x] **T4.4 `infraSchedules.ts` no `startScheduler`.**
   - Tick de 1 min chamando `resolveScheduleAction`; executa com `trigger: schedule` e ator system.
   - Grava `last_evaluated_at`; adia se houver operação rodando.
   - Aceite: teste da task com relógio controlado (entra, sai, `keepOnUntil` vence, sem disparo duplicado).

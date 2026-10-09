@@ -44,6 +44,7 @@ import { createBullMqQueue } from '@adatechnology/notification-module/queue/bull
 import { Queue, Worker } from 'bullmq';
 
 import { redis } from '@/infra/cache/redisClient';
+import { buildInfraSchedulesTask } from '@/infra/scheduler/infraSchedules';
 import { RedisCache } from '@/infra/cache/RedisCache';
 import { RedisNonceStore } from '@/infra/cache/RedisNonceStore';
 import { createGroqTranscriber, GROQ_BASE_URL } from '@adatechnology/audio-transcription-provider';
@@ -107,6 +108,7 @@ import { ListInfraEnvironmentsUseCase } from '@/modules/infra/listInfraEnvironme
 import { PowerOffEnvironmentUseCase } from '@/modules/infra/powerOffEnvironment.use-case';
 import { PowerOnEnvironmentUseCase } from '@/modules/infra/powerOnEnvironment.use-case';
 import { SaveEnvironmentScheduleUseCase } from '@/modules/infra/saveEnvironmentSchedule.use-case';
+import { RunInfraSchedulesUseCase } from '@/modules/infra/runInfraSchedules.use-case';
 import { RecoverInterruptedInfraOperationsUseCase } from '@/modules/infra/recoverInterruptedInfraOperations.use-case';
 import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
 import { SeedNotificationTemplatesUseCase } from '@/modules/notification/seedNotificationTemplates.use-case';
@@ -418,6 +420,17 @@ export const getInfraOperation = new GetInfraOperationUseCase({ operationReposit
 
 export const powerOffEnvironment = new PowerOffEnvironmentUseCase(infraPowerDependencies);
 export const powerOnEnvironment = new PowerOnEnvironmentUseCase(infraPowerDependencies);
+
+export const infraSchedules = buildInfraSchedulesTask(
+  new RunInfraSchedulesUseCase({
+    ...(railwayGateway ? { railwayGateway } : {}),
+    scheduleRepository: infraScheduleRepository,
+    powerOnEnvironment,
+    powerOffEnvironment,
+    logger: infraLogger,
+    now: () => new Date(),
+  }),
+);
 
 export const recoverInterruptedInfraOperations = new RecoverInterruptedInfraOperationsUseCase({
   operationRepository: infraOperationRepository,

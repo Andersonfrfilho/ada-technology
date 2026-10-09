@@ -10,17 +10,15 @@ import {
   INFRA_ACCESS_CACHE_KEY,
   INFRA_ACCESS_CACHE_TTL_SECONDS,
   INFRA_ACCESS_STATUS,
-  INFRA_ENVIRONMENT_POWER_STATE,
   INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS,
   INFRA_INVENTORY_CACHE_KEY,
-  INFRA_SERVICE_POWER_STATE,
   type InfraAccessStatus,
-  type InfraEnvironmentPowerState,
 } from '@/modules/infra/infra.constant';
 import { InfraNotConfiguredError } from '@/modules/infra/infra.error';
 import { infraInventoryCacheSchema } from '@/modules/infra/infraInventory.schema';
 import { classifyEnvironment } from '@/modules/infra/classifyEnvironment';
 import { isDatabaseService } from '@/modules/infra/isDatabaseService';
+import { resolveEnvironmentPowerState } from '@/modules/infra/resolveEnvironmentPowerState';
 import { resolveNextScheduledActionView } from '@/modules/infra/resolveNextScheduledActionView';
 import { resolveServicePowerState } from '@/modules/infra/resolveServicePowerState';
 import type { InfraCacheInterface } from '@/modules/infra/types/infraCache.interface';
@@ -28,7 +26,6 @@ import type {
   InfraEnvironmentView,
   InfraProjectView,
   InfraScheduleRecord,
-  InfraServiceView,
   ListInfraEnvironmentsResult,
   RailwayEnvironment,
   RailwayProject,
@@ -51,22 +48,6 @@ const ACCESS_STATUSES = Object.values(INFRA_ACCESS_STATUS) as readonly string[];
 
 function isAccessStatus(value: string | null): value is InfraAccessStatus {
   return value !== null && ACCESS_STATUSES.includes(value);
-}
-
-function aggregatePowerState(services: readonly InfraServiceView[]): InfraEnvironmentPowerState {
-  if (services.length === 0) return INFRA_ENVIRONMENT_POWER_STATE.STOPPED;
-  if (services.some((service) => service.powerState === INFRA_SERVICE_POWER_STATE.TRANSITIONING)) {
-    return INFRA_ENVIRONMENT_POWER_STATE.TRANSITIONING;
-  }
-  if (services.every((service) => service.powerState === INFRA_SERVICE_POWER_STATE.RUNNING)) {
-    return INFRA_ENVIRONMENT_POWER_STATE.RUNNING;
-  }
-  const isAllOff = services.every(
-    (service) =>
-      service.powerState === INFRA_SERVICE_POWER_STATE.STOPPED ||
-      service.powerState === INFRA_SERVICE_POWER_STATE.NO_DEPLOYMENT,
-  );
-  return isAllOff ? INFRA_ENVIRONMENT_POWER_STATE.STOPPED : INFRA_ENVIRONMENT_POWER_STATE.PARTIAL;
 }
 
 function byName<TItem>(getName: (item: TItem) => string): (left: TItem, right: TItem) => number {
@@ -169,7 +150,7 @@ export class ListInfraEnvironmentsUseCase {
         managedPattern,
         selfEnvironmentId,
       }),
-      state: aggregatePowerState(services),
+      state: resolveEnvironmentPowerState(services.map((service) => service.powerState)),
       services,
       ...(schedule ? { schedule } : {}),
       ...(nextScheduledAction ? { nextScheduledAction } : {}),

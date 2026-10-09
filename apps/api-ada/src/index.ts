@@ -13,6 +13,7 @@ import { createRouter, type Route } from '@/infra/http/router';
 import { startScheduler } from '@/infra/scheduler/scheduler';
 import {
   catalogModule,
+  infraSchedules,
   notificationBullQueue,
   notificationWorker,
   railwayGateway,
@@ -106,7 +107,7 @@ const server = Bun.serve({
  * usa o catalogo interno nao paga por um timer que nao tem o que sincronizar.
  */
 const scheduler = startScheduler({
-  tasks: catalogModule.schedules,
+  tasks: [...catalogModule.schedules, ...(railwayGateway ? [infraSchedules] : [])],
   companyId: environment.ADA_COMPANY_ID,
 });
 
