@@ -31,6 +31,9 @@ export const AUDIT_ACTION = {
   APPOINTMENT_CANCELED: 'appointment.canceled',
   SETTINGS_CHANGED: 'settings.changed',
   TEMPLATE_CREATED: 'template.created',
+  INFRA_ENVIRONMENT_POWERED_OFF: 'infra.environment_powered_off',
+  INFRA_ENVIRONMENT_POWERED_ON: 'infra.environment_powered_on',
+  INFRA_SCHEDULE_CHANGED: 'infra.schedule_changed',
 } as const;
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
 
@@ -39,6 +42,7 @@ export const AUDIT_TARGET = {
   APPOINTMENT: 'appointment',
   CONVERSATION: 'conversation',
   FLOW: 'flow',
+  INFRA_ENVIRONMENT: 'infra_environment',
   KNOWLEDGE_ITEM: 'knowledge_item',
   LEAD: 'lead',
   SCHEDULE: 'schedule',

@@ -23,8 +23,8 @@ Infra → Custos     ──GET──────▶     ├─ listInfraEnvironm
 |---|---|
 | `infra.controller.ts` | `infraRoutes: readonly Route[]`, todas com `auth: AUTH_REQUIREMENT.ADMIN` |
 | `infra.schema.ts` | zod dos params/body das rotas |
-| `infra.constant.ts` | `INFRA_ENVIRONMENT_STATE`, `INFRA_OPERATION_KIND`, `INFRA_OPERATION_STATUS`, padrões de banco, TTLs de cache, chaves Redis |
-| `infra.error.ts` | `InfraNotConfiguredError` 503, `InfraEnvironmentProtectedError` 403, `InfraEnvironmentNotFoundError` 404, `InfraOperationInProgressError` 409, `RailwayRequestFailedError` 502, `RailwayRateLimitedError` 503, `InfraKeepOnUntilRequiredError` 400, `InfraInvalidScheduleError` 400 |
+| `infra.constant.ts` | `INFRA_ENVIRONMENT_CLASSIFICATION`, `INFRA_SERVICE_POWER_STATE`, `INFRA_OPERATION_KIND`, `INFRA_OPERATION_STATUS`, padrões de banco, TTLs de cache, chaves Redis |
+| `infra.error.ts` | `InfraNotConfiguredError` 503, `InfraEnvironmentProtectedError` 403, `InfraEnvironmentNotFoundError` 404, `InfraOperationInProgressError` 409, `InfraOperationNotFoundError` 404, `RailwayRequestFailedError` 502, `RailwayRateLimitedError` 503, `InfraKeepOnUntilRequiredError` 400, `InfraInvalidScheduleError` 400 |
 | `railwayPricing.constant.ts` | preço por medida, unidade, fonte (URL) e data de conferência |
 | `RailwayGateway.ts` | adaptador: `fetch` (HTTP, sem CLI) para `https://backboard.railway.com/graphql/v2` com `Authorization: Bearer`, timeout de 20 s, documentos GraphQL fixos e `safeParse` zod; converte falha em erro de domínio. Trata `errors` mesmo com HTTP 200. Expõe `verifyAccess()` (D7), que o boot e a tela Infra usam e que devolve `ok \| token_invalid \| billing_unavailable` |
 | `railwayGateway.schema.ts` | zod das respostas do Railway (são entrada não confiável) |

@@ -54,9 +54,9 @@ com trabalho de outra sessão.
   - Regras de `superRefine`: workspace e `RAILWAY_ENVIRONMENT_ID` obrigatórios quando há token; o padrão precisa compilar como regex.
   - Valores vazios em `envs/env.dev` e `envs/env.test`.
   - Aceite: `typecheck` e testes do `environment` cobrindo token sem workspace, token sem `RAILWAY_ENVIRONMENT_ID` e regex inválida.
-- [ ] **T1.2 Códigos de erro e constantes.**
+- [x] **T1.2 Códigos de erro e constantes.**
   - Grupo `infra` em `shared/errors/codes.ts`.
-  - `infra.error.ts` com todas as classes do plan §2.1 (oito, incluindo `InfraKeepOnUntilRequiredError` e `InfraInvalidScheduleError`).
+  - `infra.error.ts` com todas as classes do plan §2.1 (nove, incluindo `InfraOperationNotFoundError`, `InfraKeepOnUntilRequiredError` e `InfraInvalidScheduleError`).
   - `infra.constant.ts`.
   - `AUDIT_ACTION`/`AUDIT_TARGET` (e `ACTOR_TYPE.SYSTEM`, se faltar).
   - Aceite: `typecheck`.
