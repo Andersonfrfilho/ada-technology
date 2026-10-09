@@ -21,7 +21,7 @@ com trabalho de outra sessão.
 ## Fase 0 — Spike e decisão
 > 🤖 Modelo: `opus` (T0.2 → `sonnet`)
 
-- [ ] **T0.1 🧠 Spike do mecanismo de desligar.** Em **um** serviço de aplicação de `cbni-staging`,
+- [x] **T0.1 🧠 Spike do mecanismo de desligar.** _(feito em 2026-10-09; resultado em `evidence.md`)_ Em **um** serviço de aplicação de `cbni-staging`,
   e depois no Postgres do mesmo ambiente, testar `deploymentStop`, `deploymentRemove` e
   `serviceInstanceUpdate(numReplicas: 0)`. Para cada um, registrar:
   - se a cobrança de CPU e memória para;

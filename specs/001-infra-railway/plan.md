@@ -46,9 +46,9 @@ O `container.ts` instancia o `RailwayGateway` **só se** `RAILWAY_API_TOKEN` nã
 
 | Operação | Uso |
 |---|---|
-| `projects(workspaceId) { environments { serviceInstances { serviceId serviceName source { image } latestDeployment { id status } } } }` | estado (shape exato confirmado no T0.1) |
-| mutação de desligar, escolhida no T0.1 (`deploymentStop(id)`, `deploymentRemove(id)` ou `serviceInstanceUpdate(numReplicas: 0)`) | desligar |
-| `serviceInstanceRedeploy(environmentId, serviceId)`, ou `serviceInstanceUpdate(numReplicas: 1)` se D2 escolher réplicas | ligar |
+| `environment(id) { serviceInstances { edges { node { serviceId serviceName source { image repo } latestDeployment { id status deploymentStopped instances { status } } activeDeployments { id status } } } } }` | estado (shape confirmado no T0.1). "Desligado" = `deploymentStopped` verdadeiro, instância `EXITED` ou nenhum deployment. O status continua `SUCCESS` em deployment parado |
+| `deploymentStop(id)` | desligar (D2 fechada no T0.1: ~7 s, sem perder o deployment). `numReplicas: 0` é recusado pelo Railway |
+| `deploymentRestart(id)` se parado; `serviceInstanceRedeploy(environmentId, serviceId)` se não há deployment | ligar (~7 s sem build; o redeploy pode exigir build em serviço de repositório) |
 | `usage(workspaceId, startDate, endDate, measurements, groupBy: [PROJECT_ID, ENVIRONMENT_ID])` | custo acumulado |
 | `estimatedUsage(workspaceId, measurements)` | projeção do mês por projeto |
 

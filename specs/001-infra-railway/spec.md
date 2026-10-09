@@ -127,7 +127,7 @@ Um workspace: `AdA Technology` (id `42450f5c-a76c-40d9-b77f-cc627906ead1`).
 | # | Decisão | Alternativa descartada |
 |---|---|---|
 | D1 | Token de **workspace** (`Authorization: Bearer`), só em produção da `api-ada` | Token de projeto: é por ambiente, não enxerga os outros projetos |
-| D2 | Mecanismo de desligar decidido no spike T0.1 entre `deploymentStop`, `deploymentRemove` e `numReplicas: 0` | Escolher sem medir: os dois scripts atuais usam mecanismos diferentes |
+| D2 | **Fechada no T0.1:** `deploymentStop` para desligar e `deploymentRestart` para religar (~7 s, sem build, mesmo deployment) | `numReplicas: 0` (o Railway recusa; os `stg-toggle.yml` não funcionam) e `deploymentRemove` (religar cria deployment novo e pode exigir build) |
 | D3 | Agenda no scheduler em processo da `api-ada` (réplica única hoje) | `apps/cron-ada` novo: só se a API ganhar réplicas |
 | D6 | Agenda como janela (dias + hora liga/desliga), convergente por transição | Dois crons independentes: deixam estados impossíveis (ligar depois de desligar no mesmo dia) e não suportam "manter até" |
 | D4 | Preços em constante, com fonte e data | Buscar preço por API: o Railway não expõe |
