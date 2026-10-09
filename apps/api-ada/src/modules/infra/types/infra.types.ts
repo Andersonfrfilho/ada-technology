@@ -19,6 +19,7 @@ import type {
   InfraPowerDirection,
   InfraServiceOutcome,
   InfraServicePowerState,
+  INFRA_SCHEDULE_ACTION,
 } from '@/modules/infra/infra.constant';
 import type { RailwayUsageMeasurement } from '@/modules/infra/railwayPricing.constant';
 
@@ -270,4 +271,23 @@ export type ResolveCostsWindowResult = {
   readonly end: string;
   readonly windowSource: InfraCostsWindowSource;
   readonly officialTotal?: number;
+};
+
+export type InfraScheduleAction = (typeof INFRA_SCHEDULE_ACTION)[keyof typeof INFRA_SCHEDULE_ACTION];
+export type InfraScheduledTransition = {
+  readonly kind: typeof INFRA_SCHEDULE_ACTION.POWER_ON | typeof INFRA_SCHEDULE_ACTION.POWER_OFF;
+  readonly at: Date;
+};
+export type InfraScheduleWindowInput = Pick<
+  InfraScheduleRecord,
+  'activeWeekdays' | 'powerOnTime' | 'powerOffTime' | 'timezone' | 'isEnabled' | 'keepOnUntil' | 'lastEvaluatedAt'
+>;
+export type ResolveScheduleActionParams = {
+  readonly schedule: InfraScheduleWindowInput;
+  readonly now: Date;
+};
+export type ResolveScheduleActionResult = {
+  readonly action: InfraScheduleAction;
+  readonly shouldClearKeepOn: boolean;
+  readonly nextScheduledAction: InfraScheduledTransition | undefined;
 };

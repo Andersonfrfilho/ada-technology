@@ -107,7 +107,7 @@ com trabalho de outra sessão.
 ## Fase 4 — Agenda
 > 🤖 Modelo: `sonnet`
 
-- [ ] **T4.1 `resolveScheduleAction` (função pura, TDD).**
+- [x] **T4.1 `resolveScheduleAction` (função pura, TDD).**
   - Janela por dia da semana + `HH:mm` no fuso `America/Sao_Paulo`.
   - Detecção de transição via `lastEvaluatedAt`, `keepOnUntil` e `nextScheduledAction` (plan §2.8).
   - Aceite: todos os casos da tabela de testes do plan §4 "Agenda".

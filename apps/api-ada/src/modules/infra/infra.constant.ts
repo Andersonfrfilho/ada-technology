@@ -106,3 +106,9 @@ export const INFRA_ACCESS_STATUS = {
 export type InfraAccessStatus = (typeof INFRA_ACCESS_STATUS)[keyof typeof INFRA_ACCESS_STATUS];
 
 export const RAILWAY_GRAPHQL_URL = 'https://backboard.railway.com/graphql/v2';
+
+export const INFRA_SCHEDULE_ACTION = {
+  POWER_ON: 'power_on',
+  POWER_OFF: 'power_off',
+  NONE: 'none',
+} as const;

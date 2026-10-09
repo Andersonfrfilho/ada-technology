@@ -116,7 +116,7 @@ A trava "uma operação por ambiente" usa `SET NX` no Redis, com TTL de 15 min e
 - Depois de avaliar, grava `last_evaluated_at = now`. Se a API ficou fora do ar e perdeu uma transição, o primeiro tick depois da volta detecta a mudança de lado da janela e age uma vez só.
 - **Guarda:** não age se o ambiente já estiver no estado-alvo, ou se houver operação rodando (a trava Redis do §2.5); nesse caso tenta no próximo tick.
 - **`keepOnUntil`:** o `power-on` manual fora da janela de agenda ativa exige o campo (400 `INFRA_KEEP_ON_UNTIL_REQUIRED`), e acima de 24 h dá 400. O `power-off` manual limpa o campo.
-- **`nextScheduledAction`:** próxima transição a partir de `now` (varrendo até 7 dias), considerando `keep_on_until`. Volta em `GET environments` e no `PUT schedule`.
+- **`nextScheduledAction`:** próxima transição a partir de `now` (varrendo até 8 dias), considerando `keep_on_until`. Volta em `GET environments` e no `PUT schedule`.
 - **Fuso:** `America/Sao_Paulo`, com conversão por `Intl.DateTimeFormat` e sem lib nova. Janela que cruza a meia-noite é recusada na v1.
 
 ## 3. Frontend — `apps/frontend-panel/src/modules/infra/`
