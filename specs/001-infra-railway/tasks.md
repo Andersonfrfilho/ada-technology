@@ -127,7 +127,7 @@ com trabalho de outra sessão.
 ## Fase 5 — Painel
 > 🤖 Modelo: `sonnet` (T5.4 → `haiku`)
 
-- [ ] **T5.1 Navegação + API client.**
+- [x] **T5.1 Navegação + API client.**
   - `PANEL_GROUP.INFRA`, seções `ambientes` e `custos` com `requiresAdmin`, `case` no `PanelSectionView`, `PANEL_PATH`.
   - `infra.api.ts`, `infra.hook.ts`.
   - Aceite: `typecheck` e teste do `infra.api.ts`.

@@ -10,11 +10,13 @@ import {
   UserPlus,
   Bell,
   CalendarClock,
+  CircleDollarSign,
   FileText,
   Package,
   LayoutTemplate,
   MessageSquare,
   Send,
+  Server,
   Users,
   Workflow,
   type LucideIcon,
@@ -37,6 +39,8 @@ export const PANEL_SECTION = {
   SCHEDULE: 'agenda',
   NOTIFICATIONS: 'notificacoes',
   AGENTS: 'usuarios',
+  INFRA_ENVIRONMENTS: 'ambientes',
+  INFRA_COSTS: 'custos',
 } as const;
 
 export type PanelSection = (typeof PANEL_SECTION)[keyof typeof PANEL_SECTION];
@@ -62,6 +66,7 @@ export const PANEL_GROUP = {
   NOTIFICATIONS: 'avisos',
   CONTENT: 'conteudo',
   REGISTRY: 'cadastros',
+  INFRA: 'infra',
 } as const;
 
 export type PanelGroup = (typeof PANEL_GROUP)[keyof typeof PANEL_GROUP];
@@ -122,6 +127,14 @@ export const PANEL_SECTION_GROUPS: readonly PanelSectionGroup[] = [
       { section: PANEL_SECTION.LEADS, icon: Users },
       // `POST /v1/panel/agents` e `auth: ADMIN`, e a listagem so devolve e-mail para admin.
       { section: PANEL_SECTION.AGENTS, icon: UserPlus, requiresAdmin: true },
+    ],
+  },
+  {
+    group: PANEL_GROUP.INFRA,
+    // As rotas /v1/panel/infra/* sao `auth: ADMIN`; custo e liga/desliga de ambiente nao sao para o atendente.
+    items: [
+      { section: PANEL_SECTION.INFRA_ENVIRONMENTS, icon: Server, requiresAdmin: true },
+      { section: PANEL_SECTION.INFRA_COSTS, icon: CircleDollarSign, requiresAdmin: true },
     ],
   },
 ];

@@ -17,13 +17,16 @@
       "catalogo": "Catálogo",
       "documentos": "Documentos",
       "clientes": "Clientes",
-      "usuarios": "Usuários"
+      "usuarios": "Usuários",
+      "ambientes": "Ambientes",
+      "custos": "Custos"
     },
     "groups": {
       "atendimento": "Atendimento",
       "avisos": "Avisos",
       "conteudo": "Conteúdo",
-      "cadastros": "Cadastros"
+      "cadastros": "Cadastros",
+      "infra": "Infraestrutura"
     },
     "sectionNotAllowed": "Esta área não está disponível para o seu acesso."
   },

@@ -1,0 +1,112 @@
+{
+  "environments": {
+    "title": "Ambientes",
+    "subtitle": "Ligue e desligue os ambientes de homologação para economizar. Produção nunca aparece como desligável.",
+    "loading": "Carregando ambientes...",
+    "empty": "Nenhum ambiente encontrado.",
+    "loadFailed": "Não foi possível carregar os ambientes.",
+    "retry": "Tentar de novo"
+  },
+  "access": {
+    "ok": "Conexão com o Railway ativa.",
+    "token_invalid": "O token do Railway é inválido ou expirou. Atualize-o na configuração do servidor.",
+    "billing_unavailable": "O token não tem acesso à cobrança. Ambientes funcionam, mas os custos podem ficar indisponíveis."
+  },
+  "state": {
+    "running": "Ligado",
+    "stopped": "Desligado",
+    "partial": "Parcial",
+    "transitioning": "Em transição"
+  },
+  "classification": {
+    "managed": "Gerenciável",
+    "protected": "Protegido",
+    "unmanaged": "Não gerenciado"
+  },
+  "services": {
+    "title": "Serviços",
+    "database": "Banco",
+    "running": "Rodando",
+    "stopped": "Parado",
+    "no_deployment": "Sem deploy",
+    "transitioning": "Mudando"
+  },
+  "power": {
+    "on": "Ligar",
+    "off": "Desligar",
+    "running": "Operação em andamento...",
+    "started": "Operação iniciada.",
+    "confirmTitle": "Desligar ambiente",
+    "confirmDescription": "Digite o nome do ambiente para confirmar o desligamento.",
+    "confirmPlaceholder": "Nome do ambiente",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
+  },
+  "keepOn": {
+    "label": "Manter ligado até",
+    "plusOneHour": "+1 h",
+    "plusTwoHours": "+2 h",
+    "plusFourHours": "+4 h",
+    "endOfDay": "Fim do dia",
+    "activeUntil": "Mantido ligado até"
+  },
+  "schedule": {
+    "title": "Agenda",
+    "none": "Sem agenda",
+    "enabled": "Ativa",
+    "paused": "Pausada",
+    "weekdays": "Dias da semana",
+    "powerOnTime": "Hora de ligar",
+    "powerOffTime": "Hora de desligar",
+    "businessHours": "Horário comercial",
+    "save": "Salvar agenda",
+    "saving": "Salvando...",
+    "saved": "Agenda salva.",
+    "next": "Próxima ação",
+    "nextPowerOn": "Liga",
+    "nextPowerOff": "Desliga",
+    "weekdayNames": ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+  },
+  "operation": {
+    "running": "Em andamento",
+    "succeeded": "Concluída",
+    "partially_failed": "Concluída com falhas",
+    "failed": "Falhou"
+  },
+  "costs": {
+    "title": "Custos",
+    "subtitle": "Consumo do Railway no período de cobrança atual.",
+    "loading": "Carregando custos...",
+    "loadFailed": "Não foi possível carregar os custos.",
+    "empty": "Sem consumo no período.",
+    "period": "Período",
+    "total": "Total do mês",
+    "projection": "Projeção do mês",
+    "officialTotal": "Total oficial do Railway",
+    "divergence": "Divergência em relação ao total oficial",
+    "stale": "Desatualizado: exibindo o último valor conhecido.",
+    "pricingCheckedAt": "Preços conferidos em",
+    "columnProject": "Projeto",
+    "columnStaging": "Homologação",
+    "columnProduction": "Produção",
+    "columnTotal": "Total",
+    "columnProjected": "Projeção",
+    "measurement": {
+      "CPU_USAGE": "CPU",
+      "MEMORY_USAGE_GB": "Memória",
+      "DISK_USAGE_GB": "Disco",
+      "NETWORK_TX_GB": "Rede (saída)"
+    }
+  },
+  "errors": {
+    "INFRA_NOT_CONFIGURED": "A integração com o Railway não está configurada neste servidor.",
+    "INFRA_ENVIRONMENT_PROTECTED": "Este ambiente é protegido e não pode ser ligado ou desligado pelo painel.",
+    "INFRA_OPERATION_IN_PROGRESS": "Já existe uma operação em andamento neste ambiente. Aguarde terminar.",
+    "INFRA_KEEP_ON_UNTIL_REQUIRED": "Fora do horário da agenda, informe até quando manter o ambiente ligado (máximo 24 h).",
+    "INFRA_INVALID_SCHEDULE": "Agenda inválida. Confira os dias e os horários (a janela não pode cruzar a meia-noite).",
+    "RAILWAY_REQUEST_FAILED": "O Railway não respondeu como esperado. Tente de novo em instantes.",
+    "RAILWAY_RATE_LIMITED": "O Railway limitou as chamadas. Aguarde um pouco e tente de novo.",
+    "RATE_LIMITED": "Muitas tentativas seguidas. Aguarde um pouco e tente de novo.",
+    "UNKNOWN": "Algo deu errado. Tente de novo."
+  }
+}

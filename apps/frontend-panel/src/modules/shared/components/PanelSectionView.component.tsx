@@ -12,6 +12,8 @@ import { CatalogPage } from '@/modules/catalog/Catalog.page';
 import { DocumentsPage } from '@/modules/documents/Documents.page';
 import { FlowsPage } from '@/modules/flows/Flows.page';
 import { InboxPage } from '@/modules/inbox/Inbox.page';
+import { InfraCostsPage } from '@/modules/infra/InfraCosts.page';
+import { InfraEnvironmentsPage } from '@/modules/infra/InfraEnvironments.page';
 import { AgentsPage } from '@/modules/agents/Agents.page';
 import { LeadsPage } from '@/modules/leads/Leads.page';
 import { NotificationPage } from '@/modules/notification/Notification.page';
@@ -63,6 +65,10 @@ export function PanelSectionView({ section }: PanelSectionViewProps) {
       return <NotificationPage />;
     case PANEL_SECTION.AGENTS:
       return <AgentsPage />;
+    case PANEL_SECTION.INFRA_ENVIRONMENTS:
+      return <InfraEnvironmentsPage />;
+    case PANEL_SECTION.INFRA_COSTS:
+      return <InfraCostsPage />;
   }
 }
 

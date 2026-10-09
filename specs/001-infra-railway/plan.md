@@ -94,7 +94,7 @@ A trava "uma operação por ambiente" usa `SET NX` no Redis, com TTL de 15 min e
 | POST | `/v1/panel/infra/environments/:environmentId/power-on` | body `{ keepOnUntil? }` (obrigatório fora da janela de uma agenda ativa; ≤ 24 h) → 202 `{ data: { operationId } }` |
 | GET | `/v1/panel/infra/operations/:operationId` | `{ data: { status, serviceResults, startedAt, finishedAt } }` |
 | PUT | `/v1/panel/infra/environments/:environmentId/schedule` | body `{ activeWeekdays, powerOnTime, powerOffTime, isEnabled }` → `{ data: { ...schedule, nextScheduledAction } }` |
-| GET | `/v1/panel/infra/costs` | `{ data: { periodStart, periodEnd, currency: 'USD', totalCost, projectedTotal, projects: [{ projectId, projectName, cost, projected, environments: [{ environmentName, isProduction, cost, byMeasurement }] }], pricingCheckedAt } }` |
+| GET | `/v1/panel/infra/costs` (campos reais além dos abaixo: `windowSource`, `officialTotal`, `divergencePercent`, `isDivergent`, `projectionMethod`, `pricingSource`, `isStale`; serviço em `environments[].services[]` usa `powerState` = running\|stopped\|no_deployment\|transitioning, não `status`) | `{ data: { periodStart, periodEnd, currency: 'USD', totalCost, projectedTotal, projects: [{ projectId, projectName, cost, projected, environments: [{ environmentName, isProduction, cost, byMeasurement }] }], pricingCheckedAt } }` |
 
 - **Rate limit:** escrita usa `RATE_LIMIT.PANEL_WRITE`. As rotas de power usam um preset mais duro, criado se ainda não existir.
 - **Códigos de erro:** novo grupo `infra` em `shared/errors/codes.ts`.
