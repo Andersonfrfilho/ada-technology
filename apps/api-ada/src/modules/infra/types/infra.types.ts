@@ -8,9 +8,13 @@
 
 import type { z } from 'zod';
 
+import type { infraEnvironmentSchedules, infraPowerOperations } from '@/infra/database/schema/infra.schema';
 import type {
+  InfraAccessStatus,
   InfraEnvironmentClassification,
+  InfraEnvironmentPowerState,
   InfraPowerDirection,
+  InfraServicePowerState,
 } from '@/modules/infra/infra.constant';
 
 export type RailwayServiceInstance = {
@@ -91,4 +95,69 @@ export type OrderServicesForPowerResult = {
 export type CreateRailwayGatewayParams = {
   readonly token: string;
   readonly workspaceId: string;
+};
+
+export type InfraServiceResultOutcome = 'ok' | 'failed' | 'skipped';
+export type InfraServiceResult = {
+  readonly serviceName: string;
+  readonly outcome: InfraServiceResultOutcome;
+  readonly errorCode?: string | undefined;
+};
+
+export type InfraOperationRow = typeof infraPowerOperations.$inferSelect;
+export type InfraOperationRecord = Omit<InfraOperationRow, 'serviceResults'> & {
+  readonly serviceResults: readonly InfraServiceResult[];
+};
+export type InfraScheduleRecord = typeof infraEnvironmentSchedules.$inferSelect;
+
+export type CreateInfraOperationParams = {
+  readonly railwayProjectId: string;
+  readonly railwayEnvironmentId: string;
+  readonly kind: string;
+  readonly trigger: string;
+  readonly actorAgentId?: string;
+};
+export type FinishInfraOperationParams = {
+  readonly id: string;
+  readonly status: string;
+  readonly serviceResults: readonly InfraServiceResult[];
+  readonly finishedAt: Date;
+};
+export type MarkStaleRunningAsInterruptedParams = { readonly olderThan: Date };
+
+export type UpsertInfraScheduleParams = {
+  readonly railwayProjectId: string;
+  readonly railwayEnvironmentId: string;
+  readonly activeWeekdays: readonly number[];
+  readonly powerOnTime: string;
+  readonly powerOffTime: string;
+  readonly isEnabled: boolean;
+  readonly updatedByAgentId?: string;
+};
+
+export type InfraServiceView = {
+  readonly serviceName: string;
+  readonly isDatabase: boolean;
+  readonly powerState: InfraServicePowerState;
+};
+
+export type InfraEnvironmentView = {
+  readonly environmentId: string;
+  readonly environmentName: string;
+  readonly classification: InfraEnvironmentClassification;
+  readonly state: InfraEnvironmentPowerState;
+  readonly services: readonly InfraServiceView[];
+  readonly schedule?: InfraScheduleRecord;
+  readonly runningOperationId?: string;
+};
+
+export type InfraProjectView = {
+  readonly projectId: string;
+  readonly projectName: string;
+  readonly environments: readonly InfraEnvironmentView[];
+};
+
+export type ListInfraEnvironmentsResult = {
+  readonly access: InfraAccessStatus;
+  readonly projects: readonly InfraProjectView[];
 };

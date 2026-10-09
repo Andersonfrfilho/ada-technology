@@ -56,6 +56,18 @@ export const INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS = 30;
 export const INFRA_COSTS_CACHE_TTL_SECONDS = 900;
 export const INFRA_ACCESS_CACHE_TTL_SECONDS = 300;
 
+export const INFRA_INVENTORY_CACHE_KEY = 'infra:inventory';
+export const INFRA_ACCESS_CACHE_KEY = 'infra:access';
+
+export const INFRA_ENVIRONMENT_POWER_STATE = {
+  RUNNING: 'running',
+  STOPPED: 'stopped',
+  PARTIAL: 'partial',
+  TRANSITIONING: 'transitioning',
+} as const;
+export type InfraEnvironmentPowerState =
+  (typeof INFRA_ENVIRONMENT_POWER_STATE)[keyof typeof INFRA_ENVIRONMENT_POWER_STATE];
+
 export const INFRA_OPERATION_LOCK_KEY_PREFIX = 'infra:operation-lock:';
 
 export const INFRA_KEEP_ON_UNTIL_DEFAULT_HOURS = 2;
