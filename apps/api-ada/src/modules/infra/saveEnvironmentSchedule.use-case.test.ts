@@ -15,9 +15,11 @@ import {
   InfraInvalidScheduleError,
   InfraNotConfiguredError,
 } from '@/modules/infra/infra.error';
-import { buildPowerHarness, buildProject, buildService, type PowerHarness } from '@/modules/infra/infraFakes';
+import { type PowerHarness, buildPowerHarness } from '@/modules/infra/infraFakes/buildPowerHarness';
+import { buildProject } from '@/modules/infra/infraFakes/buildProject';
+import { buildService } from '@/modules/infra/infraFakes/buildService';
 import { SaveEnvironmentScheduleUseCase } from '@/modules/infra/saveEnvironmentSchedule.use-case';
-import type { SaveEnvironmentScheduleParams } from '@/modules/infra/types/infra.types';
+import type { SaveEnvironmentScheduleParams } from '@/modules/infra/types/infraSchedule.types';
 
 const ENVIRONMENT_ID = 'env-staging';
 const AGENT_ID = '33333333-3333-4333-8333-333333333333';

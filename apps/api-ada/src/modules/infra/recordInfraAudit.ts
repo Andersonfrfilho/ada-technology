@@ -8,7 +8,7 @@
 
 import type { RecordAuditLogUseCase } from '@/modules/audit/recordAuditLog.use-case';
 import type { RecordAuditLogParams } from '@/modules/audit/types/audit.types';
-import type { InfraLogger } from '@/modules/infra/types/infra.types';
+import type { InfraLogger } from '@/modules/infra/types/infraRuntime.types';
 
 type RecordInfraAuditParams = {
   readonly recordAudit: Pick<RecordAuditLogUseCase, 'execute'>;

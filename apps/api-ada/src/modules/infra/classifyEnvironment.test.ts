@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'bun:test';
 
 import { classifyEnvironment } from '@/modules/infra/classifyEnvironment';
-import type { ClassifyEnvironmentParams } from '@/modules/infra/types/infra.types';
+import type { ClassifyEnvironmentParams } from '@/modules/infra/types/railwayInventory.types';
 
 const DEFAULT_PATTERN = 'staging';
 

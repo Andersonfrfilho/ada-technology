@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'bun:test';
 
 import { orderServicesForPower } from '@/modules/infra/orderServicesForPower';
-import type { RailwayServiceInstance } from '@/modules/infra/types/infra.types';
+import type { RailwayServiceInstance } from '@/modules/infra/types/railwayInventory.types';
 
 function buildService(serviceName: string, sourceImage?: string): RailwayServiceInstance {
   return {

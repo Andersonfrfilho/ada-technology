@@ -6,13 +6,23 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import { RAILWAY_GRAPHQL_URL, INFRA_ACCESS_STATUS, type InfraAccessStatus } from '@/modules/infra/infra.constant';
+import { INFRA_ACCESS_STATUS, type InfraAccessStatus } from '@/modules/infra/infra.constant';
+import { RailwayRejectedError, RailwayRequestFailedError } from '@/modules/infra/infra.error';
+import { normalizeInventory } from '@/modules/infra/normalizeInventory';
+import { normalizeServiceInstance } from '@/modules/infra/normalizeServiceInstance';
+import { RailwayGraphqlClient } from '@/modules/infra/RailwayGraphqlClient';
 import {
-  RailwayRateLimitedError,
-  RailwayRejectedError,
-  RailwayRequestFailedError,
-} from '@/modules/infra/infra.error';
-import { resolveRateLimitWaitSeconds } from '@/modules/infra/resolveRateLimitWaitSeconds';
+  BILLING_CYCLE_QUERY,
+  ENVIRONMENT_SERVICES_QUERY,
+  ESTIMATED_USAGE_QUERY,
+  INVENTORY_QUERY,
+  RAILWAY_OPERATION,
+  REDEPLOY_MUTATION,
+  RESTART_MUTATION,
+  STOP_MUTATION,
+  USAGE_QUERY,
+  WORKSPACE_QUERY,
+} from '@/modules/infra/railwayGateway.documents';
 import {
   billingCycleResponseSchema,
   deploymentRestartResponseSchema,
@@ -20,101 +30,26 @@ import {
   environmentServicesResponseSchema,
   estimatedUsageResponseSchema,
   inventoryResponseSchema,
-  railwayEnvelopeSchema,
   serviceInstanceRedeployResponseSchema,
   usageResponseSchema,
   workspaceResponseSchema,
-  type InventoryResponse,
-  type ServiceInstanceNode,
 } from '@/modules/infra/railwayGateway.schema';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 import type {
-  ExecuteRailwayParams,
   GetEnvironmentServicesParams,
   GetUsageParams,
-  RailwayBillingCycle,
-  RailwayEstimatedUsageRow,
   RailwayGatewayDependencies,
-  RailwayProject,
-  RailwayServiceInstance,
-  RailwayUsageRow,
   RedeployServiceParams,
   RestartDeploymentParams,
   StopDeploymentParams,
-} from '@/modules/infra/types/infra.types';
-
-const REQUEST_TIMEOUT_MILLISECONDS = 20_000;
-const HTTP_TOO_MANY_REQUESTS = 429;
-const AUTH_FAILURE_STATUSES: readonly number[] = [401, 403];
-const AUTH_FAILURE_MESSAGE_PATTERN = /not authorized|unauthorized|unauthenticated/i;
-const MILLISECONDS_PER_SECOND = 1000;
-const EXITED_INSTANCE_STATUS = 'EXITED';
-
-const OPERATION = {
-  INVENTORY: 'listInventory',
-  ENVIRONMENT_SERVICES: 'getEnvironmentServices',
-  STOP: 'deploymentStop',
-  RESTART: 'deploymentRestart',
-  REDEPLOY: 'serviceInstanceRedeploy',
-  BILLING_CYCLE: 'getBillingCycle',
-  USAGE: 'getUsage',
-  ESTIMATED_USAGE: 'getEstimatedUsage',
-  VERIFY_WORKSPACE: 'verifyWorkspace',
-} as const;
-
-const INVENTORY_QUERY = `query ListInventory($workspaceId: String!) {
-  projects(workspaceId: $workspaceId) {
-    edges { node {
-      id name
-      environments { edges { node {
-        id name
-        serviceInstances { edges { node {
-          serviceId serviceName
-          source { image repo }
-          latestDeployment { id status deploymentStopped instances { status } }
-          activeDeployments { id deploymentStopped }
-        } } }
-      } } }
-    } }
-  }
-}`;
-
-const ENVIRONMENT_SERVICES_QUERY = `query EnvironmentServices($id: String!) {
-  environment(id: $id) {
-    serviceInstances { edges { node {
-      serviceId serviceName
-      source { image repo }
-      latestDeployment { id status deploymentStopped instances { status } }
-      activeDeployments { id deploymentStopped }
-    } } }
-  }
-}`;
-
-const STOP_MUTATION = 'mutation StopDeployment($id: String!) { deploymentStop(id: $id) }';
-const RESTART_MUTATION = 'mutation RestartDeployment($id: String!) { deploymentRestart(id: $id) }';
-const REDEPLOY_MUTATION = `mutation RedeployService($environmentId: String!, $serviceId: String!) {
-  serviceInstanceRedeploy(environmentId: $environmentId, serviceId: $serviceId)
-}`;
-
-const WORKSPACE_QUERY = 'query VerifyWorkspace($workspaceId: String!) { workspace(workspaceId: $workspaceId) { id } }';
-
-const BILLING_CYCLE_QUERY = `query BillingCycle($workspaceId: String!) {
-  workspace(workspaceId: $workspaceId) { customer { currentUsage billingPeriod { start end } } }
-}`;
-
-const USAGE_QUERY = `query Usage($workspaceId: String!, $startDate: DateTime!, $endDate: DateTime!) {
-  usage(
-    workspaceId: $workspaceId, startDate: $startDate, endDate: $endDate,
-    measurements: [CPU_USAGE, MEMORY_USAGE_GB, NETWORK_TX_GB, DISK_USAGE_GB],
-    groupBy: [PROJECT_ID, ENVIRONMENT_ID]
-  ) { measurement value tags { projectId environmentId } }
-}`;
-
-const ESTIMATED_USAGE_QUERY = `query EstimatedUsage($workspaceId: String!) {
-  estimatedUsage(workspaceId: $workspaceId, measurements: [CPU_USAGE, MEMORY_USAGE_GB]) {
-    measurement estimatedValue projectId
-  }
-}`;
+} from '@/modules/infra/types/railwayGateway.types';
+import type {
+  RailwayBillingCycle,
+  RailwayEstimatedUsageRow,
+  RailwayProject,
+  RailwayServiceInstance,
+  RailwayUsageRow,
+} from '@/modules/infra/types/railwayInventory.types';
 
 /**
  * A borda entre a API GraphQL do Railway e o dominio.
@@ -123,18 +58,19 @@ const ESTIMATED_USAGE_QUERY = `query EstimatedUsage($workspaceId: String!) {
  * O token so vai no header; nunca entra em mensagem, contexto de erro ou log.
  */
 export class RailwayGateway implements RailwayGatewayInterface {
-  private readonly fetchImplementation: typeof fetch;
-  private readonly now: () => number;
-  private blockedUntilMilliseconds = 0;
+  private readonly client: RailwayGraphqlClient;
 
   constructor(private readonly dependencies: RailwayGatewayDependencies) {
-    this.fetchImplementation = dependencies.fetchImplementation ?? fetch;
-    this.now = dependencies.now ?? Date.now;
+    this.client = new RailwayGraphqlClient({
+      token: dependencies.token,
+      fetchImplementation: dependencies.fetchImplementation ?? fetch,
+      now: dependencies.now ?? Date.now,
+    });
   }
 
   async listInventory(): Promise<readonly RailwayProject[]> {
-    const data = await this.execute({
-      operationName: OPERATION.INVENTORY,
+    const data = await this.client.execute({
+      operationName: RAILWAY_OPERATION.INVENTORY,
       query: INVENTORY_QUERY,
       variables: { workspaceId: this.dependencies.workspaceId },
       schema: inventoryResponseSchema,
@@ -144,8 +80,8 @@ export class RailwayGateway implements RailwayGatewayInterface {
   }
 
   async getEnvironmentServices(params: GetEnvironmentServicesParams): Promise<readonly RailwayServiceInstance[]> {
-    const data = await this.execute({
-      operationName: OPERATION.ENVIRONMENT_SERVICES,
+    const data = await this.client.execute({
+      operationName: RAILWAY_OPERATION.ENVIRONMENT_SERVICES,
       query: ENVIRONMENT_SERVICES_QUERY,
       variables: { id: params.environmentId },
       schema: environmentServicesResponseSchema,
@@ -155,41 +91,41 @@ export class RailwayGateway implements RailwayGatewayInterface {
   }
 
   async stopDeployment(params: StopDeploymentParams): Promise<void> {
-    const data = await this.execute({
-      operationName: OPERATION.STOP,
+    const data = await this.client.execute({
+      operationName: RAILWAY_OPERATION.STOP,
       query: STOP_MUTATION,
       variables: { id: params.deploymentId },
       schema: deploymentStopResponseSchema,
     });
 
-    assertAccepted(data.deploymentStop, OPERATION.STOP);
+    assertAccepted(data.deploymentStop, RAILWAY_OPERATION.STOP);
   }
 
   async restartDeployment(params: RestartDeploymentParams): Promise<void> {
-    const data = await this.execute({
-      operationName: OPERATION.RESTART,
+    const data = await this.client.execute({
+      operationName: RAILWAY_OPERATION.RESTART,
       query: RESTART_MUTATION,
       variables: { id: params.deploymentId },
       schema: deploymentRestartResponseSchema,
     });
 
-    assertAccepted(data.deploymentRestart, OPERATION.RESTART);
+    assertAccepted(data.deploymentRestart, RAILWAY_OPERATION.RESTART);
   }
 
   async redeployService(params: RedeployServiceParams): Promise<void> {
-    const data = await this.execute({
-      operationName: OPERATION.REDEPLOY,
+    const data = await this.client.execute({
+      operationName: RAILWAY_OPERATION.REDEPLOY,
       query: REDEPLOY_MUTATION,
       variables: { environmentId: params.environmentId, serviceId: params.serviceId },
       schema: serviceInstanceRedeployResponseSchema,
     });
 
-    assertAccepted(data.serviceInstanceRedeploy, OPERATION.REDEPLOY);
+    assertAccepted(data.serviceInstanceRedeploy, RAILWAY_OPERATION.REDEPLOY);
   }
 
   async getBillingCycle(): Promise<RailwayBillingCycle> {
-    const data = await this.execute({
-      operationName: OPERATION.BILLING_CYCLE,
+    const data = await this.client.execute({
+      operationName: RAILWAY_OPERATION.BILLING_CYCLE,
       query: BILLING_CYCLE_QUERY,
       variables: { workspaceId: this.dependencies.workspaceId },
       schema: billingCycleResponseSchema,
@@ -200,8 +136,8 @@ export class RailwayGateway implements RailwayGatewayInterface {
   }
 
   async getUsage(params: GetUsageParams): Promise<readonly RailwayUsageRow[]> {
-    const data = await this.execute({
-      operationName: OPERATION.USAGE,
+    const data = await this.client.execute({
+      operationName: RAILWAY_OPERATION.USAGE,
       query: USAGE_QUERY,
       variables: {
         workspaceId: this.dependencies.workspaceId,
@@ -220,8 +156,8 @@ export class RailwayGateway implements RailwayGatewayInterface {
   }
 
   async getEstimatedUsage(): Promise<readonly RailwayEstimatedUsageRow[]> {
-    const data = await this.execute({
-      operationName: OPERATION.ESTIMATED_USAGE,
+    const data = await this.client.execute({
+      operationName: RAILWAY_OPERATION.ESTIMATED_USAGE,
       query: ESTIMATED_USAGE_QUERY,
       variables: { workspaceId: this.dependencies.workspaceId },
       schema: estimatedUsageResponseSchema,
@@ -232,8 +168,8 @@ export class RailwayGateway implements RailwayGatewayInterface {
 
   async verifyAccess(): Promise<InfraAccessStatus> {
     try {
-      await this.execute({
-        operationName: OPERATION.VERIFY_WORKSPACE,
+      await this.client.execute({
+        operationName: RAILWAY_OPERATION.VERIFY_WORKSPACE,
         query: WORKSPACE_QUERY,
         variables: { workspaceId: this.dependencies.workspaceId },
         schema: workspaceResponseSchema,
@@ -252,106 +188,12 @@ export class RailwayGateway implements RailwayGatewayInterface {
         : INFRA_ACCESS_STATUS.UNAVAILABLE;
     }
   }
-
-  private async execute<TData>(params: ExecuteRailwayParams<TData>): Promise<TData> {
-    const { operationName, query, variables, schema } = params;
-    this.assertNotBlocked();
-
-    try {
-      const response = await this.fetchImplementation(RAILWAY_GRAPHQL_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.dependencies.token}`,
-        },
-        body: JSON.stringify({ query, variables }),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MILLISECONDS),
-      });
-
-      if (response.status === HTTP_TOO_MANY_REQUESTS) throw this.blockAfterRateLimit(response.headers);
-      if (AUTH_FAILURE_STATUSES.includes(response.status)) {
-        throw new RailwayRejectedError({ operation: operationName, isAuthFailure: true });
-      }
-      if (!response.ok) throw new RailwayRequestFailedError(operationName);
-
-      const envelope = railwayEnvelopeSchema.safeParse(await response.json());
-      if (!envelope.success) throw new RailwayRequestFailedError(operationName);
-      if (envelope.data.errors && envelope.data.errors.length > 0) {
-        throw new RailwayRejectedError({
-          operation: operationName,
-          isAuthFailure: envelope.data.errors.some(isAuthErrorEntry),
-        });
-      }
-
-      const parsed = schema.safeParse(envelope.data.data);
-      if (!parsed.success) throw new RailwayRequestFailedError(operationName);
-
-      return parsed.data;
-    } catch (error) {
-      if (error instanceof RailwayRateLimitedError || error instanceof RailwayRequestFailedError) throw error;
-
-      throw new RailwayRequestFailedError(operationName);
-    }
-  }
-
-  // Enquanto o Railway pede espera, nao ha motivo para gastar uma chamada que ele vai recusar.
-  private assertNotBlocked(): void {
-    const remainingMilliseconds = this.blockedUntilMilliseconds - this.now();
-    if (remainingMilliseconds <= 0) return;
-
-    throw new RailwayRateLimitedError(Math.ceil(remainingMilliseconds / MILLISECONDS_PER_SECOND));
-  }
-
-  private blockAfterRateLimit(headers: Headers): RailwayRateLimitedError {
-    const nowMilliseconds = this.now();
-    const { seconds } = resolveRateLimitWaitSeconds({ headers, nowMilliseconds });
-    this.blockedUntilMilliseconds = nowMilliseconds + seconds * MILLISECONDS_PER_SECOND;
-
-    return new RailwayRateLimitedError(seconds);
-  }
 }
 
 function isAuthFailure(error: unknown): boolean {
   return error instanceof RailwayRejectedError && error.isAuthFailure;
 }
 
-function isAuthErrorEntry(entry: unknown): boolean {
-  if (typeof entry !== 'object' || entry === null || !('message' in entry)) return false;
-  return typeof entry.message === 'string' && AUTH_FAILURE_MESSAGE_PATTERN.test(entry.message);
-}
-
 function assertAccepted(isAccepted: boolean, operationName: string): void {
   if (!isAccepted) throw new RailwayRequestFailedError(operationName);
-}
-
-function normalizeInventory(data: InventoryResponse): RailwayProject[] {
-  return data.projects.edges.map(({ node: project }) => ({
-    id: project.id,
-    name: project.name,
-    environments: project.environments.edges.map(({ node: environment }) => ({
-      id: environment.id,
-      name: environment.name,
-      services: environment.serviceInstances.edges.map(({ node }) => normalizeServiceInstance(node)),
-    })),
-  }));
-}
-
-function normalizeServiceInstance(node: ServiceInstanceNode): RailwayServiceInstance {
-  const deployment = node.latestDeployment;
-  const activeDeployment = node.activeDeployments?.[0];
-  const instanceStatus = deployment?.instances[0]?.status;
-  const sourceImage = node.source?.image;
-  // O deployment ativo e o que de fato roda: o ultimo pode estar em build ou ter falhado.
-  const isDeploymentStopped = (activeDeployment ?? deployment)?.deploymentStopped === true;
-
-  return {
-    serviceId: node.serviceId,
-    serviceName: node.serviceName,
-    ...(sourceImage ? { sourceImage } : {}),
-    ...(deployment ? { latestDeploymentId: deployment.id } : {}),
-    ...(activeDeployment ? { activeDeploymentId: activeDeployment.id } : {}),
-    hasDeployment: Boolean(deployment),
-    isStopped: isDeploymentStopped || instanceStatus === EXITED_INSTANCE_STATUS,
-    ...(instanceStatus ? { instanceStatus } : {}),
-  };
 }

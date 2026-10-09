@@ -7,7 +7,7 @@
  */
 
 import { INFRA_DATABASE_IMAGE_NAMES, INFRA_DATABASE_NAME_PATTERN } from '@/modules/infra/infra.constant';
-import type { RailwayServiceInstance } from '@/modules/infra/types/infra.types';
+import type { RailwayServiceInstance } from '@/modules/infra/types/railwayInventory.types';
 
 const DATABASE_IMAGE_NAMES: ReadonlySet<string> = new Set(INFRA_DATABASE_IMAGE_NAMES);
 

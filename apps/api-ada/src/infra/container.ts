@@ -131,7 +131,7 @@ import { SimulateInboundMessageUseCase } from '@/modules/simulation/simulateInbo
 import { WhatsAppInboundSimulator } from '@/modules/simulation/WhatsAppInboundSimulator';
 import { RedisUserRefreshTokenStore } from '@/modules/user/RedisUserRefreshTokenStore';
 import type { PowerEnvironmentDependencies } from '@/modules/infra/powerEnvironment.use-case';
-import type { InfraLogger } from '@/modules/infra/types/infra.types';
+import type { InfraLogger } from '@/modules/infra/types/infraRuntime.types';
 import { logger } from '@/shared/logger';
 
 // Estado inicial de sessao nova. O modulo nao conhece a maquina de estados do produto.

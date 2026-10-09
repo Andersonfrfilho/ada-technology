@@ -13,7 +13,7 @@ import type {
   CalculateUsageCostResult,
   EnvironmentCost,
   ProjectCost,
-} from '@/modules/infra/types/infra.types';
+} from '@/modules/infra/types/infraCosts.types';
 
 const MEASUREMENTS = Object.values(RAILWAY_USAGE_MEASUREMENT) as readonly string[];
 

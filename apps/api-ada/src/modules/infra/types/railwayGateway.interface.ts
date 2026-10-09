@@ -10,15 +10,17 @@ import type { InfraAccessStatus } from '@/modules/infra/infra.constant';
 import type {
   GetEnvironmentServicesParams,
   GetUsageParams,
+  RedeployServiceParams,
+  RestartDeploymentParams,
+  StopDeploymentParams,
+} from '@/modules/infra/types/railwayGateway.types';
+import type {
   RailwayBillingCycle,
   RailwayEstimatedUsageRow,
   RailwayProject,
   RailwayServiceInstance,
   RailwayUsageRow,
-  RedeployServiceParams,
-  RestartDeploymentParams,
-  StopDeploymentParams,
-} from '@/modules/infra/types/infra.types';
+} from '@/modules/infra/types/railwayInventory.types';
 
 export interface RailwayGatewayInterface {
   listInventory(): Promise<readonly RailwayProject[]>;

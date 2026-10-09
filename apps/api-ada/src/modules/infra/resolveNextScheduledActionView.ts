@@ -10,7 +10,7 @@ import { resolveScheduleAction } from '@/modules/infra/resolveScheduleAction';
 import type {
   InfraNextScheduledActionView,
   ResolveNextScheduledActionViewParams,
-} from '@/modules/infra/types/infra.types';
+} from '@/modules/infra/types/infraSchedule.types';
 
 export function resolveNextScheduledActionView(
   params: ResolveNextScheduledActionViewParams,

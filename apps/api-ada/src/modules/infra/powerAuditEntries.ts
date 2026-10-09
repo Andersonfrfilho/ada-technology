@@ -8,7 +8,7 @@
 
 import { ACTOR_TYPE, AUDIT_ACTION, AUDIT_TARGET } from '@/modules/audit/audit.constant';
 import type { RecordAuditLogParams } from '@/modules/audit/types/audit.types';
-import type { InfraPowerDirection } from '@/modules/infra/infra.constant';
+import { INFRA_POWER_DIRECTION, type InfraPowerDirection } from '@/modules/infra/infra.constant';
 import {
   InfraEnvironmentNotFoundError,
   InfraEnvironmentProtectedError,
@@ -16,7 +16,8 @@ import {
   InfraOperationInProgressError,
 } from '@/modules/infra/infra.error';
 import { isUuid } from '@/modules/infra/isUuid';
-import type { PowerEnvironmentParams } from '@/modules/infra/types/infra.types';
+import type { ServiceOutcomeCounts } from '@/modules/infra/resolveOperationStatus';
+import type { PowerEnvironmentParams, PowerOutcomeParams } from '@/modules/infra/types/infraOperation.types';
 
 type ActorFields = Pick<RecordAuditLogParams, 'actorType' | 'actorId' | 'ipAddress'>;
 
@@ -28,13 +29,19 @@ type PowerRequestedParams = {
   readonly environmentName: string;
 };
 
+type PowerCompletedParams = {
+  readonly outcome: PowerOutcomeParams;
+  readonly direction: InfraPowerDirection;
+  readonly counts: ServiceOutcomeCounts;
+};
+
 type PowerDeniedParams = {
   readonly params: PowerEnvironmentParams;
   readonly direction: InfraPowerDirection;
   readonly reason: string;
 };
 
-function buildActorFields(params: PowerEnvironmentParams): ActorFields {
+function buildActorFields(params: Pick<PowerEnvironmentParams, 'actor' | 'ipAddress'>): ActorFields {
   return {
     actorType: params.actor.type,
     ...(params.actor.type === ACTOR_TYPE.AGENT && params.actor.agentId ? { actorId: params.actor.agentId } : {}),
@@ -75,5 +82,28 @@ export function buildPowerDeniedEntry(params: PowerDeniedParams): RecordAuditLog
     targetType: AUDIT_TARGET.INFRA_ENVIRONMENT,
     ...(isUuid(params.params.environmentId) ? { targetId: params.params.environmentId } : {}),
     metadata: { direction: params.direction, trigger: params.params.trigger, reason: params.reason },
+  };
+}
+
+export function buildPowerCompletedEntry(options: PowerCompletedParams): RecordAuditLogParams {
+  const { outcome, direction, counts } = options;
+  const { params, status, serviceResults } = outcome;
+  return {
+    ...buildActorFields(params),
+    action:
+      direction === INFRA_POWER_DIRECTION.OFF
+        ? AUDIT_ACTION.INFRA_ENVIRONMENT_POWERED_OFF
+        : AUDIT_ACTION.INFRA_ENVIRONMENT_POWERED_ON,
+    targetType: AUDIT_TARGET.INFRA_ENVIRONMENT,
+    targetId: params.environmentId,
+    metadata: {
+      operationId: params.operationId,
+      projectName: params.projectName,
+      environmentName: params.environmentName,
+      trigger: params.trigger,
+      status,
+      serviceResults,
+      counts,
+    },
   };
 }

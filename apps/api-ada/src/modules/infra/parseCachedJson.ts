@@ -8,7 +8,7 @@
 
 import type { z } from 'zod';
 
-import type { ParseCachedJsonParams } from '@/modules/infra/types/infra.types';
+import type { ParseCachedJsonParams } from '@/modules/infra/types/infraCache.types';
 
 /** Cache e entrada nao confiavel: JSON quebrado ou de forma antiga e miss, nunca excecao. */
 export function parseCachedJson<TData>(params: ParseCachedJsonParams<TData>): TData | undefined {

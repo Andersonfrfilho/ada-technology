@@ -6,7 +6,7 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import type { ValidateScheduleWindowParams } from '@/modules/infra/types/infra.types';
+import type { ValidateScheduleWindowParams } from '@/modules/infra/types/infraSchedule.types';
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const MINUTES_PER_HOUR = 60;

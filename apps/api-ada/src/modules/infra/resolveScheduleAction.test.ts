@@ -10,7 +10,7 @@ import { describe, expect, it } from 'bun:test';
 
 import { INFRA_SCHEDULE_ACTION } from '@/modules/infra/infra.constant';
 import { isInsideScheduleWindow, resolveScheduleAction } from '@/modules/infra/resolveScheduleAction';
-import type { InfraScheduleWindowInput } from '@/modules/infra/types/infra.types';
+import type { InfraScheduleWindowInput } from '@/modules/infra/types/infraSchedule.types';
 
 // Outubro/2026: 09 sexta, 10 sábado, 11 domingo, 12 segunda, 14 quarta. BRT = UTC-3.
 function brt(day: number, hour: number, minute: number): Date {

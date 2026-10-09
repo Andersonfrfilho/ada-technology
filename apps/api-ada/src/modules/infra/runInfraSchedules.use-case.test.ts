@@ -12,18 +12,14 @@ import { describe, expect, it } from 'bun:test';
 import { ACTOR_TYPE, AUDIT_ACTION } from '@/modules/audit/audit.constant';
 import { INFRA_OPERATION_LOCK_KEY_PREFIX, INFRA_OPERATION_TRIGGER } from '@/modules/infra/infra.constant';
 import { RailwayRequestFailedError } from '@/modules/infra/infra.error';
-import {
-  buildPowerHarness,
-  buildProject,
-  buildService,
-  type FakeGatewayOptions,
-  type PowerHarness,
-  type ServiceShape,
-} from '@/modules/infra/infraFakes';
+import { type FakeGatewayOptions } from '@/modules/infra/infraFakes/buildFakeGateway';
+import { type PowerHarness, buildPowerHarness } from '@/modules/infra/infraFakes/buildPowerHarness';
+import { buildProject } from '@/modules/infra/infraFakes/buildProject';
+import { type ServiceShape, buildService } from '@/modules/infra/infraFakes/buildService';
 import { PowerOffEnvironmentUseCase } from '@/modules/infra/powerOffEnvironment.use-case';
 import { PowerOnEnvironmentUseCase } from '@/modules/infra/powerOnEnvironment.use-case';
 import { RunInfraSchedulesUseCase } from '@/modules/infra/runInfraSchedules.use-case';
-import type { InfraScheduleRecord } from '@/modules/infra/types/infra.types';
+import type { InfraScheduleRecord } from '@/modules/infra/types/infraSchedule.types';
 
 const MINUTE_MS = 60_000;
 const MINUTES_PER_DAY = 1440;

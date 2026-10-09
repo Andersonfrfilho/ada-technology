@@ -16,7 +16,7 @@ import type {
   RecordScheduleEvaluationParams,
   SetKeepOnUntilParams,
   UpsertInfraScheduleParams,
-} from '@/modules/infra/types/infra.types';
+} from '@/modules/infra/types/infraSchedule.types';
 
 export class DrizzleInfraScheduleRepository implements InfraScheduleRepositoryInterface {
   async findByEnvironmentId(environmentId: string): Promise<InfraScheduleRecord | undefined> {

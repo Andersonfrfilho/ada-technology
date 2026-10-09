@@ -11,7 +11,7 @@ import { describe, expect, it } from 'bun:test';
 import { INFRA_POWER_DIRECTION } from '@/modules/infra/infra.constant';
 import { RunPowerOperation } from '@/modules/infra/runPowerOperation';
 import type { InfraPowerDirection } from '@/modules/infra/infra.constant';
-import type { RailwayServiceInstance } from '@/modules/infra/types/infra.types';
+import type { RailwayServiceInstance } from '@/modules/infra/types/railwayInventory.types';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 
 const ENVIRONMENT_ID = 'env-staging';

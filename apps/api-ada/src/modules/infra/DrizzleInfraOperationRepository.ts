@@ -21,7 +21,7 @@ import type {
   InfraOperationRow,
   ListRunningOperationsParams,
   MarkStaleRunningAsInterruptedParams,
-} from '@/modules/infra/types/infra.types';
+} from '@/modules/infra/types/infraOperation.types';
 
 function toRecord(row: InfraOperationRow): InfraOperationRecord {
   return { ...row, serviceResults: infraServiceResultsSchema.parse(row.serviceResults) };

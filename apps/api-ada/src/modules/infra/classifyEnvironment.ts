@@ -7,7 +7,10 @@
  */
 
 import { INFRA_ENVIRONMENT_CLASSIFICATION } from '@/modules/infra/infra.constant';
-import type { ClassifyEnvironmentParams, ClassifyEnvironmentResult } from '@/modules/infra/types/infra.types';
+import type {
+  ClassifyEnvironmentParams,
+  ClassifyEnvironmentResult,
+} from '@/modules/infra/types/railwayInventory.types';
 
 // 'prod' cobre production e abreviações; falhar para o lado seguro é melhor que desligar produção por nome fora do padrão.
 const PRODUCTION_MARKER = 'prod';

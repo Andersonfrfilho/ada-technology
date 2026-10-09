@@ -23,10 +23,13 @@ import { PowerOnEnvironmentUseCase } from '@/modules/infra/powerOnEnvironment.us
 import { GetInfraCostsUseCase } from '@/modules/infra/getInfraCosts.use-case';
 import { ListInfraEnvironmentsUseCase } from '@/modules/infra/listInfraEnvironments.use-case';
 import { SaveEnvironmentScheduleUseCase } from '@/modules/infra/saveEnvironmentSchedule.use-case';
-import { buildPowerHarness, buildProject, buildService } from '@/modules/infra/infraFakes';
+import { buildPowerHarness } from '@/modules/infra/infraFakes/buildPowerHarness';
+import { buildProject } from '@/modules/infra/infraFakes/buildProject';
+import { buildService } from '@/modules/infra/infraFakes/buildService';
 import { InfraOperationInProgressError } from '@/modules/infra/infra.error';
 import { INFRA_OPERATION_LOCK_KEY_PREFIX } from '@/modules/infra/infra.constant';
-import type { InfraScheduleRecord, PowerEnvironmentParams } from '@/modules/infra/types/infra.types';
+import type { PowerEnvironmentParams } from '@/modules/infra/types/infraOperation.types';
+import type { InfraScheduleRecord } from '@/modules/infra/types/infraSchedule.types';
 import { AGENT_ROLE } from '@/shared/constants/domain.constant';
 
 const ENVIRONMENT_ID = '22222222-2222-4222-8222-222222222222';

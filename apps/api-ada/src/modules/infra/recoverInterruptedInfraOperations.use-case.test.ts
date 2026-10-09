@@ -8,7 +8,8 @@
 
 import { describe, expect, it } from 'bun:test';
 
-import { buildPowerHarness, FakeOperationRepository } from '@/modules/infra/infraFakes';
+import { FakeOperationRepository } from '@/modules/infra/infraFakes/FakeOperationRepository';
+import { buildPowerHarness } from '@/modules/infra/infraFakes/buildPowerHarness';
 import { RecoverInterruptedInfraOperationsUseCase } from '@/modules/infra/recoverInterruptedInfraOperations.use-case';
 
 const NOW = new Date('2026-10-09T12:00:00.000Z');
@@ -92,5 +93,16 @@ describe('RecoverInterruptedInfraOperationsUseCase', () => {
 
     expect(await useCase.execute()).toBe(1);
     expect(repository.operations[0]?.status).toBe('failed');
+  });
+
+  it('keeps auditing the other operations when one audit entry cannot be built', async () => {
+    const { harness, repository, useCase } = buildSetup({ databaseWaitSeconds: 120 });
+    await seedOperation({ repository, environmentId: ENVIRONMENT_ID, startedAt: new Date('2026-10-09T11:00:00.000Z') });
+    await seedOperation({ repository, environmentId: ENVIRONMENT_ID, startedAt: new Date('invalid') });
+    await seedOperation({ repository, environmentId: ENVIRONMENT_ID, startedAt: new Date('2026-10-09T11:10:00.000Z') });
+
+    expect(await useCase.execute()).toBe(3);
+    expect(harness.auditCalls.map((call) => call.metadata?.operationId)).toEqual(['operation-1', 'operation-3']);
+    expect(harness.logMessages).toContain('Nao foi possivel auditar a operacao de infra interrompida');
   });
 });

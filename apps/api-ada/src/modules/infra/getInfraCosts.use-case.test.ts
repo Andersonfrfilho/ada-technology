@@ -16,8 +16,14 @@ import {
 } from '@/modules/infra/infra.constant';
 import { InfraNotConfiguredError, RailwayRateLimitedError, RailwayRequestFailedError } from '@/modules/infra/infra.error';
 import { GetInfraCostsUseCase } from '@/modules/infra/getInfraCosts.use-case';
-import { FakeInfraCache, buildFakeGateway } from '@/modules/infra/infraFakes';
-import type { GetUsageParams, RailwayBillingCycle, RailwayProject, RailwayUsageRow } from '@/modules/infra/types/infra.types';
+import { FakeInfraCache } from '@/modules/infra/infraFakes/FakeInfraCache';
+import { buildFakeGateway } from '@/modules/infra/infraFakes/buildFakeGateway';
+import type { GetUsageParams } from '@/modules/infra/types/railwayGateway.types';
+import type {
+  RailwayBillingCycle,
+  RailwayProject,
+  RailwayUsageRow,
+} from '@/modules/infra/types/railwayInventory.types';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 
 const CYCLE: RailwayBillingCycle = { start: '2026-09-19T14:00:00.000Z', end: '2026-10-19T14:00:00.000Z', currentUsage: 10 };

@@ -15,7 +15,7 @@ import { validateScheduleWindow } from '@/modules/infra/validateScheduleWindow';
 import type {
   SaveEnvironmentScheduleParams,
   SaveEnvironmentScheduleResult,
-} from '@/modules/infra/types/infra.types';
+} from '@/modules/infra/types/infraSchedule.types';
 import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 

@@ -13,7 +13,7 @@ import {
 import type {
   ResolveRateLimitWaitSecondsParams,
   ResolveRateLimitWaitSecondsResult,
-} from '@/modules/infra/types/infra.types';
+} from '@/modules/infra/types/railwayGateway.types';
 
 const MILLISECONDS_PER_SECOND = 1000;
 // Acima disso o valor so pode ser um instante absoluto (epoch em segundos), nunca uma duracao.

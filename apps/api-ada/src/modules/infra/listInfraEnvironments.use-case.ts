@@ -28,13 +28,12 @@ import { resolveServicePowerState } from '@/modules/infra/resolveServicePowerSta
 import type { InfraCacheInterface } from '@/modules/infra/types/infraCache.interface';
 import type {
   InfraEnvironmentView,
-  InfraOperationRecord,
   InfraProjectView,
-  InfraScheduleRecord,
   ListInfraEnvironmentsResult,
-  RailwayEnvironment,
-  RailwayProject,
-} from '@/modules/infra/types/infra.types';
+} from '@/modules/infra/types/infraListing.types';
+import type { InfraOperationRecord } from '@/modules/infra/types/infraOperation.types';
+import type { InfraScheduleRecord } from '@/modules/infra/types/infraSchedule.types';
+import type { RailwayEnvironment, RailwayProject } from '@/modules/infra/types/railwayInventory.types';
 import type { InfraOperationRepositoryInterface } from '@/modules/infra/types/infraOperationRepository.interface';
 import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';

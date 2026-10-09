@@ -10,9 +10,12 @@ import { describe, expect, it } from 'bun:test';
 
 import { INFRA_OPERATION_LOCK_KEY_PREFIX } from '@/modules/infra/infra.constant';
 import { RailwayRequestFailedError } from '@/modules/infra/infra.error';
-import { buildPowerHarness, buildProject, buildService, type PowerHarness } from '@/modules/infra/infraFakes';
+import { type PowerHarness, buildPowerHarness } from '@/modules/infra/infraFakes/buildPowerHarness';
+import { buildProject } from '@/modules/infra/infraFakes/buildProject';
+import { buildService } from '@/modules/infra/infraFakes/buildService';
 import { PowerOnEnvironmentUseCase } from '@/modules/infra/powerOnEnvironment.use-case';
-import type { RailwayServiceInstance, RunOperationParams } from '@/modules/infra/types/infra.types';
+import type { RunOperationParams } from '@/modules/infra/types/infraOperation.types';
+import type { RailwayServiceInstance } from '@/modules/infra/types/railwayInventory.types';
 
 const ENVIRONMENT_ID = 'env-staging';
 const LOCK_KEY = `${INFRA_OPERATION_LOCK_KEY_PREFIX}${ENVIRONMENT_ID}`;

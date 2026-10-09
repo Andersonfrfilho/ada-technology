@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'bun:test';
 
 import { countServiceOutcomes, resolveOperationStatus } from '@/modules/infra/resolveOperationStatus';
-import type { InfraServiceResult } from '@/modules/infra/types/infra.types';
+import type { InfraServiceResult } from '@/modules/infra/types/infraOperation.types';
 
 function results(...outcomes: InfraServiceResult['outcome'][]): InfraServiceResult[] {
   return outcomes.map((outcome, index) => ({ serviceName: `svc-${index}`, outcome }));

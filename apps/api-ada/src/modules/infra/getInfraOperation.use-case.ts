@@ -7,7 +7,7 @@
  */
 
 import { InfraOperationNotFoundError } from '@/modules/infra/infra.error';
-import type { GetInfraOperationParams, GetInfraOperationResult } from '@/modules/infra/types/infra.types';
+import type { GetInfraOperationParams, GetInfraOperationResult } from '@/modules/infra/types/infraOperation.types';
 import type { InfraOperationRepositoryInterface } from '@/modules/infra/types/infraOperationRepository.interface';
 
 type Dependencies = {

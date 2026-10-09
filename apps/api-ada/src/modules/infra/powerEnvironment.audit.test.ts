@@ -16,10 +16,12 @@ import {
   InfraKeepOnUntilRequiredError,
   InfraOperationInProgressError,
 } from '@/modules/infra/infra.error';
-import { buildPowerHarness, buildProject, buildService, type PowerHarness } from '@/modules/infra/infraFakes';
+import { type PowerHarness, buildPowerHarness } from '@/modules/infra/infraFakes/buildPowerHarness';
+import { buildProject } from '@/modules/infra/infraFakes/buildProject';
+import { buildService } from '@/modules/infra/infraFakes/buildService';
 import { PowerOffEnvironmentUseCase } from '@/modules/infra/powerOffEnvironment.use-case';
 import { PowerOnEnvironmentUseCase } from '@/modules/infra/powerOnEnvironment.use-case';
-import type { PowerEnvironmentParams } from '@/modules/infra/types/infra.types';
+import type { PowerEnvironmentParams } from '@/modules/infra/types/infraOperation.types';
 
 const ENVIRONMENT_ID = '22222222-2222-4222-8222-222222222222';
 const AGENT_ID = '11111111-1111-4111-8111-111111111111';

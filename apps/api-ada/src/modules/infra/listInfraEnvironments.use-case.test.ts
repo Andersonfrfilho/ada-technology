@@ -15,12 +15,9 @@ import {
 import { InfraNotConfiguredError } from '@/modules/infra/infra.error';
 import { ListInfraEnvironmentsUseCase } from '@/modules/infra/listInfraEnvironments.use-case';
 import type { InfraAccessStatus } from '@/modules/infra/infra.constant';
-import type {
-  InfraOperationRecord,
-  InfraScheduleRecord,
-  RailwayProject,
-  RailwayServiceInstance,
-} from '@/modules/infra/types/infra.types';
+import type { InfraOperationRecord } from '@/modules/infra/types/infraOperation.types';
+import type { InfraScheduleRecord } from '@/modules/infra/types/infraSchedule.types';
+import type { RailwayProject, RailwayServiceInstance } from '@/modules/infra/types/railwayInventory.types';
 import type { InfraCacheInterface } from '@/modules/infra/types/infraCache.interface';
 import type { InfraOperationRepositoryInterface } from '@/modules/infra/types/infraOperationRepository.interface';
 import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';

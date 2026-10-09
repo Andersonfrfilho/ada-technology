@@ -7,7 +7,7 @@
  */
 
 import { RailwayGateway } from '@/modules/infra/RailwayGateway';
-import type { CreateRailwayGatewayParams } from '@/modules/infra/types/infra.types';
+import type { CreateRailwayGatewayParams } from '@/modules/infra/types/railwayGateway.types';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 
 export function createRailwayGateway(params: CreateRailwayGatewayParams): RailwayGatewayInterface | undefined {

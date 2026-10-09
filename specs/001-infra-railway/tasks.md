@@ -190,6 +190,8 @@ Cada achado foi conferido no código antes de entrar aqui. **Corrigir (R1–R3):
   - O scheduler só lê o inventário quando alguma agenda tem ação a executar (código 9).
   - Rate limit de power também **por agente**, dentro do handler (segurança 2).
 
+- [x] **R4 Conformidade de tamanho (achada na auditoria §15 da T6.3).** Oito arquivos passavam de 200 linhas e duas funções de 40; refatoração pura, sem mudar comportamento, mais `Promise.all` → `Promise.allSettled` na recuperação de operações interrompidas (uma auditoria que falha não descarta as outras).
+
 **Aceitos sem mudança (registrados no ADR):** classificação por nome sem revalidar durante a operação (segurança 4); retry de agenda sem teto (segurança 6, mitigado em parte por R3); `GET operations` aceita qualquer UUID de qualquer admin, sistema de um workspace só (segurança 10); `X-Forwarded-For` é comportamento anterior do roteador (segurança 2, parte do IP); falha de auditoria só logada, a operação grava o resultado (código 14); falha ao parar app não impede parar o banco (código 15, RF7); janela alterada não gera transição retroativa (código 12, RF8a).
 
 ---

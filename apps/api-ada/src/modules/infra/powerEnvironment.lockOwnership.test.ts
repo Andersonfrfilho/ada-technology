@@ -9,9 +9,11 @@
 import { describe, expect, it } from 'bun:test';
 
 import { INFRA_OPERATION_LOCK_KEY_PREFIX } from '@/modules/infra/infra.constant';
-import { buildPowerHarness, buildProject, buildService, type PowerHarness } from '@/modules/infra/infraFakes';
+import { type PowerHarness, buildPowerHarness } from '@/modules/infra/infraFakes/buildPowerHarness';
+import { buildProject } from '@/modules/infra/infraFakes/buildProject';
+import { buildService } from '@/modules/infra/infraFakes/buildService';
 import { PowerOffEnvironmentUseCase } from '@/modules/infra/powerOffEnvironment.use-case';
-import type { PowerEnvironmentParams } from '@/modules/infra/types/infra.types';
+import type { PowerEnvironmentParams } from '@/modules/infra/types/infraOperation.types';
 
 const ENVIRONMENT_ID = '22222222-2222-4222-8222-222222222222';
 const LOCK_KEY = `${INFRA_OPERATION_LOCK_KEY_PREFIX}${ENVIRONMENT_ID}`;

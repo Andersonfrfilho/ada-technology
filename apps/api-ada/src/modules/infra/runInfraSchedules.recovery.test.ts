@@ -8,7 +8,10 @@
 
 import { describe, expect, it } from 'bun:test';
 
-import { buildPowerHarness, buildProject, buildService, FakeOperationRepository } from '@/modules/infra/infraFakes';
+import { FakeOperationRepository } from '@/modules/infra/infraFakes/FakeOperationRepository';
+import { buildPowerHarness } from '@/modules/infra/infraFakes/buildPowerHarness';
+import { buildProject } from '@/modules/infra/infraFakes/buildProject';
+import { buildService } from '@/modules/infra/infraFakes/buildService';
 import { PowerOffEnvironmentUseCase } from '@/modules/infra/powerOffEnvironment.use-case';
 import { RecoverInterruptedInfraOperationsUseCase } from '@/modules/infra/recoverInterruptedInfraOperations.use-case';
 import { RunInfraSchedulesUseCase } from '@/modules/infra/runInfraSchedules.use-case';

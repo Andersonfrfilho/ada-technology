@@ -6,7 +6,11 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import type { ReleaseIfOwnerParams, RenewIfOwnerParams, SetIfAbsentParams } from '@/modules/infra/types/infra.types';
+import type {
+  ReleaseIfOwnerParams,
+  RenewIfOwnerParams,
+  SetIfAbsentParams,
+} from '@/modules/infra/types/infraCache.types';
 
 export interface InfraCacheInterface {
   get(key: string): Promise<string | null>;

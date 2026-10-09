@@ -7,7 +7,7 @@
  */
 
 import { INFRA_SERVICE_POWER_STATE, type InfraServicePowerState } from '@/modules/infra/infra.constant';
-import type { RailwayServiceInstance } from '@/modules/infra/types/infra.types';
+import type { RailwayServiceInstance } from '@/modules/infra/types/railwayInventory.types';
 
 const RUNNING_INSTANCE_STATUS = 'RUNNING';
 

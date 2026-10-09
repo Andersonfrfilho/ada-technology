@@ -7,7 +7,6 @@
  */
 
 import {
-  INFRA_DATABASE_POLL_INTERVAL_SECONDS,
   INFRA_POWER_DIRECTION,
   INFRA_SERVICE_OUTCOME,
   INFRA_SERVICE_POWER_STATE,
@@ -16,13 +15,11 @@ import { isDatabaseService } from '@/modules/infra/isDatabaseService';
 import { orderServicesForPower } from '@/modules/infra/orderServicesForPower';
 import { resolveServiceErrorCode } from '@/modules/infra/resolveServiceErrorCode';
 import { resolveServicePowerState } from '@/modules/infra/resolveServicePowerState';
-import type {
-  InfraServiceResult,
-  InfraSleep,
-  RailwayServiceInstance,
-  RunPowerOperationParams,
-} from '@/modules/infra/types/infra.types';
+import type { InfraServiceResult, RunPowerOperationParams } from '@/modules/infra/types/infraOperation.types';
+import type { InfraSleep } from '@/modules/infra/types/infraRuntime.types';
+import type { RailwayServiceInstance } from '@/modules/infra/types/railwayInventory.types';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
+import { waitForDatabases } from '@/modules/infra/waitForDatabases';
 import { ERROR_CODES } from '@/shared/errors/codes';
 
 type Dependencies = {
@@ -49,14 +46,6 @@ type StartServiceParams = {
   readonly service: RailwayServiceInstance;
   readonly environmentId: string;
 };
-
-type WaitForDatabasesParams = {
-  readonly environmentId: string;
-  readonly serviceNames: readonly string[];
-  readonly onProgress: () => Promise<void>;
-};
-
-const MILLISECONDS_PER_SECOND = 1000;
 
 // O ativo e o que roda; o ultimo pode estar em build ou ter falhado, e parar/religar nele erra o alvo.
 function resolveTargetDeploymentId(service: RailwayServiceInstance): string | undefined {
@@ -102,7 +91,8 @@ export class RunPowerOperation {
     const handler: ServiceHandler = (service) => this.startService({ service, environmentId: params.environmentId });
     const startedDatabases = await this.runGroup({ services: databases, handler, onProgress: params.onProgress });
 
-    const notReadyNames = await this.waitForDatabases({
+    const notReadyNames = await waitForDatabases({
+      ...this.dependencies,
       environmentId: params.environmentId,
       serviceNames: startedDatabases
         .filter((result) => result.outcome !== INFRA_SERVICE_OUTCOME.FAILED)
@@ -180,41 +170,5 @@ export class RunPowerOperation {
 
     await railwayGateway.redeployService({ environmentId, serviceId: service.serviceId });
     return buildResult(service, INFRA_SERVICE_OUTCOME.OK);
-  }
-
-  /** Devolve os bancos que nao ficaram RUNNING no prazo; a espera e uma consulta de estado a cada 5 s. */
-  private async waitForDatabases(params: WaitForDatabasesParams): Promise<ReadonlySet<string>> {
-    const { environmentId, serviceNames, onProgress } = params;
-    const { sleep, databaseWaitSeconds } = this.dependencies;
-    const maxPolls = Math.floor(databaseWaitSeconds / INFRA_DATABASE_POLL_INTERVAL_SECONDS);
-    let pendingNames: ReadonlySet<string> = new Set(serviceNames);
-
-    // Sequencial por natureza: cada consulta depende de a anterior ter dito que ainda nao esta pronto.
-    for (let poll = 0; pendingNames.size > 0 && poll <= maxPolls; poll += 1) {
-      pendingNames = await this.findNotRunning({ environmentId, serviceNames: pendingNames });
-      if (pendingNames.size === 0 || poll === maxPolls) break;
-      await sleep(INFRA_DATABASE_POLL_INTERVAL_SECONDS * MILLISECONDS_PER_SECOND);
-      await onProgress();
-    }
-
-    return pendingNames;
-  }
-
-  private async findNotRunning(params: {
-    readonly environmentId: string;
-    readonly serviceNames: ReadonlySet<string>;
-  }): Promise<ReadonlySet<string>> {
-    // Leitura que falha uma vez nao reprova o banco: conta como "ainda nao pronto" e tenta na proxima rodada.
-    const services = await this.dependencies.railwayGateway
-      .getEnvironmentServices({ environmentId: params.environmentId })
-      .catch(() => undefined);
-    if (services === undefined) return params.serviceNames;
-
-    const runningNames = new Set(
-      services
-        .filter((service) => resolveServicePowerState(service) === INFRA_SERVICE_POWER_STATE.RUNNING)
-        .map((service) => service.serviceName),
-    );
-    return new Set([...params.serviceNames].filter((serviceName) => !runningNames.has(serviceName)));
   }
 }

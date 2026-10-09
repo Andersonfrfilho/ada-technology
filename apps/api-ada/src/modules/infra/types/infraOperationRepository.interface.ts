@@ -8,12 +8,12 @@
 
 import type {
   CreateInfraOperationParams,
-  FinishInfraOperationParams,
   FindRunningOperationParams,
+  FinishInfraOperationParams,
   InfraOperationRecord,
   ListRunningOperationsParams,
   MarkStaleRunningAsInterruptedParams,
-} from '@/modules/infra/types/infra.types';
+} from '@/modules/infra/types/infraOperation.types';
 
 export interface InfraOperationRepositoryInterface {
   create(params: CreateInfraOperationParams): Promise<InfraOperationRecord>;

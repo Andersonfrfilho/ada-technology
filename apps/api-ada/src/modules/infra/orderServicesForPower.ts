@@ -8,7 +8,10 @@
 
 import { INFRA_POWER_DIRECTION } from '@/modules/infra/infra.constant';
 import { isDatabaseService } from '@/modules/infra/isDatabaseService';
-import type { OrderServicesForPowerParams, OrderServicesForPowerResult } from '@/modules/infra/types/infra.types';
+import type {
+  OrderServicesForPowerParams,
+  OrderServicesForPowerResult,
+} from '@/modules/infra/types/railwayInventory.types';
 
 export function orderServicesForPower(params: OrderServicesForPowerParams): OrderServicesForPowerResult {
   const { services, direction } = params;

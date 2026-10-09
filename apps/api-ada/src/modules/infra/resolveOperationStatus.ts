@@ -11,7 +11,7 @@ import {
   INFRA_SERVICE_OUTCOME,
   type InfraOperationStatus,
 } from '@/modules/infra/infra.constant';
-import type { InfraServiceResult, ResolveOperationStatusParams } from '@/modules/infra/types/infra.types';
+import type { InfraServiceResult, ResolveOperationStatusParams } from '@/modules/infra/types/infraOperation.types';
 
 export type ServiceOutcomeCounts = { readonly ok: number; readonly failed: number; readonly skipped: number };
 

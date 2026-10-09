@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'bun:test';
 
 import { isDatabaseService } from '@/modules/infra/isDatabaseService';
-import type { RailwayServiceInstance } from '@/modules/infra/types/infra.types';
+import type { RailwayServiceInstance } from '@/modules/infra/types/railwayInventory.types';
 
 function buildService(overrides: Partial<RailwayServiceInstance>): RailwayServiceInstance {
   return {

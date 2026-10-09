@@ -9,7 +9,7 @@
 import { classifyEnvironment } from '@/modules/infra/classifyEnvironment';
 import { INFRA_ENVIRONMENT_CLASSIFICATION } from '@/modules/infra/infra.constant';
 import { InfraEnvironmentNotFoundError, InfraEnvironmentProtectedError } from '@/modules/infra/infra.error';
-import type { LocatedEnvironment, LocateManagedEnvironmentParams } from '@/modules/infra/types/infra.types';
+import type { LocateManagedEnvironmentParams, LocatedEnvironment } from '@/modules/infra/types/railwayGateway.types';
 
 /** Inventario fresco, sem cache: a decisao de mexer no ambiente nao pode usar leitura de 30 s atras. */
 export async function locateManagedEnvironment(params: LocateManagedEnvironmentParams): Promise<LocatedEnvironment> {
