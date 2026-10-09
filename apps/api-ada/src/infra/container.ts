@@ -98,6 +98,7 @@ import { notificationAuthResolver } from '@/modules/notification/notificationAut
 import { notificationRecipientResolver } from '@/modules/notification/notificationRecipientResolver';
 import { createPasswordResetNotifier } from '@/modules/notification/passwordResetNotifier';
 import { SendAgentPasswordResetUseCase } from '@/modules/agent/sendAgentPasswordReset.use-case';
+import { createRailwayGateway } from '@/modules/infra/createRailwayGateway';
 import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
 import { SeedNotificationTemplatesUseCase } from '@/modules/notification/seedNotificationTemplates.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
@@ -346,6 +347,11 @@ export const postWidgetAudio = new PostWidgetAudioUseCase({
 });
 
 export const recordAuditLog = new RecordAuditLogUseCase();
+
+export const railwayGateway = createRailwayGateway({
+  token: environment.RAILWAY_API_TOKEN,
+  workspaceId: environment.RAILWAY_WORKSPACE_ID,
+});
 export const agentRepository = new DrizzleAgentRepository();
 export const refreshTokens = new RedisRefreshTokenStore();
 

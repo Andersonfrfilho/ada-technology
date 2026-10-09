@@ -69,7 +69,7 @@ com trabalho de outra sessão.
 - [x] **T1.4 Funções puras.**
   - `classifyEnvironment`, `orderServicesForPower` (banco por `source.image`, nome só como reforço; testar serviço renomeado com imagem de banco), com TDD.
   - Aceite: testes de produção, autoproteção, padrão, não gerenciado e ordem off/on.
-- [ ] **T1.5 Container.**
+- [x] **T1.5 Container.**
   - Instanciar o gateway só com token.
   - Registrar os use cases (stubs não; só os que existirem ao fim de cada task).
   - Aceite: a API sobe sem `RAILWAY_API_TOKEN` (teste do boot ou do container).

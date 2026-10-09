@@ -87,3 +87,8 @@ export type OrderServicesForPowerParams = {
 export type OrderServicesForPowerResult = {
   readonly ordered: RailwayServiceInstance[];
 };
+
+export type CreateRailwayGatewayParams = {
+  readonly token: string;
+  readonly workspaceId: string;
+};
