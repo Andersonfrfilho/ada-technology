@@ -166,6 +166,12 @@ export type ListInfraEnvironmentsResult = {
   readonly projects: readonly InfraProjectView[];
 };
 
+export type GetInfraOperationParams = { readonly operationId: string };
+export type GetInfraOperationResult = Pick<
+  InfraOperationRecord,
+  'id' | 'kind' | 'status' | 'trigger' | 'serviceResults' | 'startedAt' | 'finishedAt' | 'railwayEnvironmentId'
+>;
+
 export type PowerEnvironmentParams = {
   readonly environmentId: string;
   readonly actor: { readonly type: ActorType; readonly agentId?: string };

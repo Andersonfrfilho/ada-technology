@@ -89,7 +89,7 @@ com trabalho de outra sessão.
   - Auditoria e invalidação do cache.
   - "Pronto" = `deploymentStopped` falso e instância `RUNNING`; trava com TTL renovado; no boot, operações `running` antigas viram `failed` (interrompida).
   - Aceite: testes de protegido (zero mutações), trava (409), falha parcial, ator na auditoria, deployment `SUCCESS` com `deploymentStopped=true` (não conta como pronto) e operação interrompida.
-- [ ] **T2.4 Rotas.**
+- [x] **T2.4 Rotas.**
   - `GET environments`, `POST power-off|power-on`, `GET operations/:id` em `infra.controller.ts`.
   - Registrar em `index.ts`; preset de rate limit mais duro.
   - Aceite: testes de rota (403 não-admin, 503 sem token, 202).

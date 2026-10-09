@@ -30,6 +30,7 @@ import { whatsappRoutes } from '@/modules/channel/whatsapp/whatsapp.controller';
 import { widgetRoutes } from '@/modules/channel/widget/widget.controller';
 import { panelFlowRoutes } from '@/modules/flow/flow.controller';
 import { healthRoutes } from '@/modules/health/health.controller';
+import { infraRoutes } from '@/modules/infra/infra.controller';
 import { notificationAttachmentRoutes } from '@/modules/notification/notificationAttachment.controller';
 import { notificationTestRoutes } from '@/modules/notification/notificationTest.controller';
 import { notificationRoutes } from '@/modules/notification/notification.controller';
@@ -70,6 +71,7 @@ const routes: readonly Route[] = [
   ...notificationRoutes,
   ...notificationAttachmentRoutes,
   ...notificationTestRoutes,
+  ...infraRoutes,
 ];
 
 const handleRequest = createRouter({ routes, authenticate: authenticateRequest });
