@@ -9,14 +9,18 @@
 import type { RecordAuditLogParams } from '@/modules/audit/types/audit.types';
 import type {
   CreateInfraOperationParams,
+  FindRunningOperationParams,
   FinishInfraOperationParams,
   InfraOperationRecord,
   InfraScheduleRecord,
   InfraSleep,
+  ListRunningOperationsParams,
   MarkStaleRunningAsInterruptedParams,
   RailwayProject,
   RailwayServiceInstance,
   RecordScheduleEvaluationParams,
+  ReleaseIfOwnerParams,
+  RenewIfOwnerParams,
   SetIfAbsentParams,
   SetKeepOnUntilParams,
   UpsertInfraScheduleParams,
@@ -122,6 +126,8 @@ export class FakeInfraCache implements InfraCacheInterface {
   readonly setIfAbsentCalls: SetIfAbsentParams[] = [];
   readonly setCalls: { readonly key: string; readonly ttlSeconds: number | undefined }[] = [];
   readonly deletedKeys: string[] = [];
+  readonly renewCalls: RenewIfOwnerParams[] = [];
+  readonly releaseCalls: ReleaseIfOwnerParams[] = [];
 
   async get(key: string): Promise<string | null> {
     return this.store.get(key) ?? null;
@@ -139,6 +145,23 @@ export class FakeInfraCache implements InfraCacheInterface {
     return true;
   }
 
+  async renewIfOwner(params: RenewIfOwnerParams): Promise<boolean> {
+    this.renewCalls.push(params);
+    return this.store.get(params.key) === params.owner;
+  }
+
+  async releaseIfOwner(params: ReleaseIfOwnerParams): Promise<boolean> {
+    this.releaseCalls.push(params);
+    if (this.store.get(params.key) !== params.owner) return false;
+    this.store.delete(params.key);
+    return true;
+  }
+
+  /** Simula o TTL vencendo: a chave some sem passar por `delete`. */
+  expire(key: string): void {
+    this.store.delete(key);
+  }
+
   async delete(key: string): Promise<void> {
     this.deletedKeys.push(key);
     this.store.delete(key);
@@ -148,7 +171,9 @@ export class FakeInfraCache implements InfraCacheInterface {
 export class FakeOperationRepository implements InfraOperationRepositoryInterface {
   readonly operations: InfraOperationRecord[] = [];
   readonly staleCalls: MarkStaleRunningAsInterruptedParams[] = [];
-  staleResult = 0;
+  listRunningCalls = 0;
+  /** Instante de início atribuído às próximas operações criadas. */
+  nextStartedAt: Date = new Date('2026-10-09T12:00:00Z');
   /** Quantas chamadas de `finishOperation` ainda devem lancar. */
   finishFailures = 0;
 
@@ -162,7 +187,7 @@ export class FakeOperationRepository implements InfraOperationRepositoryInterfac
       trigger: params.trigger,
       actorAgentId: params.actorAgentId ?? null,
       serviceResults: [],
-      startedAt: new Date('2026-01-01T00:00:00Z'),
+      startedAt: this.nextStartedAt,
       finishedAt: null,
     };
     this.operations.push(record);
@@ -173,10 +198,18 @@ export class FakeOperationRepository implements InfraOperationRepositoryInterfac
     return this.operations.find((operation) => operation.id === id);
   }
 
-  async findRunningByEnvironmentId(environmentId: string): Promise<InfraOperationRecord | undefined> {
+  async findRunningByEnvironmentId(params: FindRunningOperationParams): Promise<InfraOperationRecord | undefined> {
     return this.operations.find(
-      (operation) => operation.railwayEnvironmentId === environmentId && operation.status === 'running',
+      (operation) =>
+        operation.railwayEnvironmentId === params.environmentId &&
+        operation.status === 'running' &&
+        operation.startedAt > params.notOlderThan,
     );
+  }
+
+  async listRunning(params: ListRunningOperationsParams): Promise<readonly InfraOperationRecord[]> {
+    this.listRunningCalls += 1;
+    return this.operations.filter((operation) => operation.status === 'running' && operation.startedAt > params.notOlderThan);
   }
 
   async finishOperation(params: FinishInfraOperationParams): Promise<void> {
@@ -195,9 +228,18 @@ export class FakeOperationRepository implements InfraOperationRepositoryInterfac
     };
   }
 
-  async markStaleRunningAsInterrupted(params: MarkStaleRunningAsInterruptedParams): Promise<number> {
+  async markStaleRunningAsInterrupted(
+    params: MarkStaleRunningAsInterruptedParams,
+  ): Promise<readonly InfraOperationRecord[]> {
     this.staleCalls.push(params);
-    return this.staleResult;
+    const marked: InfraOperationRecord[] = [];
+    this.operations.forEach((operation, index) => {
+      if (operation.status !== 'running' || operation.startedAt >= params.olderThan) return;
+      const interrupted = { ...operation, status: 'failed', finishedAt: new Date() };
+      this.operations[index] = interrupted;
+      marked.push(interrupted);
+    });
+    return marked;
   }
 }
 

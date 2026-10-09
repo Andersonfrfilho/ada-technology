@@ -132,6 +132,8 @@ export type FinishInfraOperationParams = {
   readonly finishedAt: Date;
 };
 export type MarkStaleRunningAsInterruptedParams = { readonly olderThan: Date };
+export type FindRunningOperationParams = { readonly environmentId: string; readonly notOlderThan: Date };
+export type ListRunningOperationsParams = { readonly notOlderThan: Date };
 
 export type UpsertInfraScheduleParams = {
   readonly railwayProjectId: string;
@@ -210,6 +212,8 @@ export type RunOperationParams = {
   readonly services: readonly RailwayServiceInstance[];
   readonly actor: PowerEnvironmentParams['actor'];
   readonly trigger: InfraOperationTrigger;
+  /** Valor gravado na trava de Redis por esta operacao: so quem o tem renova ou libera a trava. */
+  readonly lockOwner: string;
   readonly ipAddress?: string;
 };
 
@@ -235,6 +239,13 @@ export type SetIfAbsentParams = {
   readonly value: string;
   readonly ttlSeconds: number;
 };
+
+export type RenewIfOwnerParams = {
+  readonly key: string;
+  readonly owner: string;
+  readonly ttlSeconds: number;
+};
+export type ReleaseIfOwnerParams = { readonly key: string; readonly owner: string };
 
 export type CalculateUsageCostParams = {
   readonly rows: readonly RailwayUsageRow[];

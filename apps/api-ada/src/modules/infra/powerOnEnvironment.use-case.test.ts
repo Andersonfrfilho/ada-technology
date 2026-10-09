@@ -65,6 +65,7 @@ async function startOperation(
     services,
     actor: { type: 'agent', agentId: '11111111-1111-4111-8111-111111111111' },
     trigger: 'manual',
+    lockOwner: 'mine',
   };
 }
 

@@ -34,6 +34,9 @@ export const AUDIT_ACTION = {
   INFRA_ENVIRONMENT_POWERED_OFF: 'infra.environment_powered_off',
   INFRA_ENVIRONMENT_POWERED_ON: 'infra.environment_powered_on',
   INFRA_SCHEDULE_CHANGED: 'infra.schedule_changed',
+  INFRA_ENVIRONMENT_POWER_REQUESTED: 'infra.environment_power_requested',
+  INFRA_ENVIRONMENT_POWER_DENIED: 'infra.environment_power_denied',
+  INFRA_OPERATION_INTERRUPTED: 'infra.operation_interrupted',
 } as const;
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
 

@@ -28,6 +28,7 @@ import type { PowerEnvironmentParams, RailwayServiceInstance, RunOperationParams
 
 const ENVIRONMENT_ID = 'env-staging';
 const LOCK_KEY = `${INFRA_OPERATION_LOCK_KEY_PREFIX}${ENVIRONMENT_ID}`;
+const LOCK_OWNER = 'mine';
 const AGENT_ID = '11111111-1111-4111-8111-111111111111';
 
 const DEFAULT_SERVICES = [
@@ -91,6 +92,7 @@ async function startOperation(
     services: DEFAULT_SERVICES,
     actor: { type: 'agent', agentId: AGENT_ID },
     trigger: 'manual',
+    lockOwner: LOCK_OWNER,
     ipAddress: '203.0.113.7',
     ...overrides,
   };
@@ -304,7 +306,7 @@ describe('PowerOffEnvironmentUseCase.runOperation', () => {
 
   it('marks the operation failed and releases the lock when the runner blows up unexpectedly', async () => {
     const { harness, useCase } = buildHarness({});
-    harness.cache.store.set(LOCK_KEY, 'mine');
+    harness.cache.store.set(LOCK_KEY, LOCK_OWNER);
     harness.repository.finishFailures = 1;
 
     await useCase.runOperation(await startOperation(harness));
@@ -316,7 +318,7 @@ describe('PowerOffEnvironmentUseCase.runOperation', () => {
 
   it('still releases the lock and logs when even marking failed is impossible', async () => {
     const { harness, useCase } = buildHarness({});
-    harness.cache.store.set(LOCK_KEY, 'mine');
+    harness.cache.store.set(LOCK_KEY, LOCK_OWNER);
     harness.repository.finishFailures = 2;
 
     await useCase.runOperation(await startOperation(harness));
@@ -327,12 +329,13 @@ describe('PowerOffEnvironmentUseCase.runOperation', () => {
 
   it('renews the lock after every processed service with the full TTL', async () => {
     const { harness, useCase } = buildHarness({});
+    harness.cache.store.set(LOCK_KEY, LOCK_OWNER);
 
     await useCase.runOperation(await startOperation(harness));
 
-    const renewals = harness.cache.setCalls.filter((call) => call.key === LOCK_KEY);
+    const renewals = harness.cache.renewCalls.filter((call) => call.key === LOCK_KEY);
     expect(renewals).toHaveLength(4);
-    expect(renewals.every((call) => call.ttlSeconds === 720)).toBe(true);
+    expect(renewals.every((call) => call.owner === LOCK_OWNER && call.ttlSeconds === 720)).toBe(true);
   });
 
   it('invalidates the inventory cache when the operation ends', async () => {
@@ -389,7 +392,7 @@ describe('PowerOffEnvironmentUseCase audit', () => {
   it('does not change the operation status nor keep the lock when the audit write fails', async () => {
     const { harness, useCase } = buildHarness({});
     harness.failAudit = true;
-    harness.cache.store.set(LOCK_KEY, 'mine');
+    harness.cache.store.set(LOCK_KEY, LOCK_OWNER);
 
     await useCase.runOperation(await startOperation(harness));
 

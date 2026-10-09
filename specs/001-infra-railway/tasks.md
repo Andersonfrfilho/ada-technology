@@ -172,7 +172,7 @@ com trabalho de outra sessão.
 
 Cada achado foi conferido no código antes de entrar aqui. **Corrigir (R1–R3):**
 
-- [ ] **R1 Lote A — operações e trava.**
+- [x] **R1 Lote A — operações e trava.**
   - Trava Redis com **dono** (valor aleatório por operação) e liberar/renovar só se for o dono (script Lua compare-and-delete / compare-and-expire), com teste contra Redis real (achados de segurança 3 e de código 8).
   - Operação `running` presa: `findRunningByEnvironmentId` ignora operações mais velhas que o TTL da trava e a recuperação roda **a cada tick do scheduler**, não só no boot (código 1, alto).
   - Auditoria: gravar `infra.environment_power_requested` ao aceitar (antes do 202), `infra.environment_power_denied` quando a ação é recusada (ambiente protegido/inexistente/ocupado/keepOnUntil) e `infra.operation_interrupted` na recuperação (segurança 1; código 14).

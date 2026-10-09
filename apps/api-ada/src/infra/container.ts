@@ -385,6 +385,7 @@ export const listInfraEnvironments = new ListInfraEnvironmentsUseCase({
   scheduleRepository: infraScheduleRepository,
   managedPattern: environment.RAILWAY_MANAGED_ENVIRONMENT_PATTERN,
   selfEnvironmentId: environment.RAILWAY_ENVIRONMENT_ID,
+  databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
 });
 
 const infraPowerDependencies: PowerEnvironmentDependencies = {
@@ -421,22 +422,25 @@ export const getInfraOperation = new GetInfraOperationUseCase({ operationReposit
 export const powerOffEnvironment = new PowerOffEnvironmentUseCase(infraPowerDependencies);
 export const powerOnEnvironment = new PowerOnEnvironmentUseCase(infraPowerDependencies);
 
+export const recoverInterruptedInfraOperations = new RecoverInterruptedInfraOperationsUseCase({
+  operationRepository: infraOperationRepository,
+  recordAudit: recordAuditLog,
+  logger: infraLogger,
+  databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
+  now: () => new Date(),
+});
+
 export const infraSchedules = buildInfraSchedulesTask(
   new RunInfraSchedulesUseCase({
     ...(railwayGateway ? { railwayGateway } : {}),
     scheduleRepository: infraScheduleRepository,
     powerOnEnvironment,
     powerOffEnvironment,
+    recoverInterruptedOperations: recoverInterruptedInfraOperations,
     logger: infraLogger,
     now: () => new Date(),
   }),
 );
-
-export const recoverInterruptedInfraOperations = new RecoverInterruptedInfraOperationsUseCase({
-  operationRepository: infraOperationRepository,
-  databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
-  now: () => new Date(),
-});
 
 export const agentRepository = new DrizzleAgentRepository();
 export const refreshTokens = new RedisRefreshTokenStore();

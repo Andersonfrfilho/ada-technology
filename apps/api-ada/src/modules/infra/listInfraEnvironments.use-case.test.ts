@@ -71,7 +71,7 @@ function buildOperation(environmentId: string): InfraOperationRecord {
     trigger: 'manual',
     actorAgentId: null,
     serviceResults: [],
-    startedAt: new Date('2026-01-01T00:00:00Z'),
+    startedAt: new Date('2026-10-09T11:59:00Z'),
     finishedAt: null,
   };
 }
@@ -132,6 +132,12 @@ function buildHarness(params: {
       store.set(setParams.key, setParams.value);
       return true;
     },
+    async renewIfOwner() {
+      return false;
+    },
+    async releaseIfOwner() {
+      return false;
+    },
     async delete(key) {
       store.delete(key);
     },
@@ -144,13 +150,16 @@ function buildHarness(params: {
     async findById() {
       return undefined;
     },
-    async findRunningByEnvironmentId(environmentId) {
+    async findRunningByEnvironmentId() {
+      throw new Error('N+1: the listing must use listRunning');
+    },
+    async listRunning(listParams) {
       counters.operations += 1;
-      return operations.find((operation) => operation.railwayEnvironmentId === environmentId);
+      return operations.filter((operation) => operation.startedAt > listParams.notOlderThan);
     },
     async finishOperation() {},
     async markStaleRunningAsInterrupted() {
-      return 0;
+      return [];
     },
   };
 
@@ -177,6 +186,7 @@ function buildHarness(params: {
     scheduleRepository,
     managedPattern: 'staging',
     selfEnvironmentId: 'env-self',
+    databaseWaitSeconds: 120,
     now: () => new Date('2026-10-09T12:00:00Z'),
   });
 
@@ -294,6 +304,33 @@ describe('ListInfraEnvironmentsUseCase', () => {
     expect(staging?.runningOperationId).toBe('operation-1');
     expect(dev?.schedule).toBeUndefined();
     expect(dev?.runningOperationId).toBeUndefined();
+  });
+
+  it('reads running operations once per listing, not once per environment', async () => {
+    const projects = [
+      buildProject({
+        name: 'app',
+        environments: ['a', 'b', 'c'].map((name) => ({ id: `env-${name}`, name: `staging-${name}`, services: [] })),
+      }),
+      buildProject({ name: 'api', environments: [{ id: 'env-d', name: 'staging-d', services: [] }] }),
+    ];
+    const harness = buildHarness({ projects });
+    harness.operations.push(buildOperation('env-b'));
+
+    const result = await harness.useCase.execute();
+
+    expect(harness.counters.operations).toBe(1);
+    const running = result.projects.flatMap((project) => project.environments).filter((view) => view.runningOperationId);
+    expect(running.map((view) => view.environmentId)).toEqual(['env-b']);
+  });
+
+  it('ignores a running operation older than the lock TTL (wait 120 s + 600 s grace)', async () => {
+    const harness = buildHarness({ projects: singleEnvironment([buildService()]) });
+    harness.operations.push({ ...buildOperation('env-1'), startedAt: new Date('2026-10-09T11:47:00Z') });
+
+    const result = await harness.useCase.execute();
+
+    expect(result.projects[0]?.environments[0]?.runningOperationId).toBeUndefined();
   });
 
   it('propagates repository failures instead of swallowing them', async () => {

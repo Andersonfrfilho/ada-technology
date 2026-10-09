@@ -19,11 +19,13 @@ import { infraInventoryCacheSchema } from '@/modules/infra/infraInventory.schema
 import { classifyEnvironment } from '@/modules/infra/classifyEnvironment';
 import { isDatabaseService } from '@/modules/infra/isDatabaseService';
 import { resolveEnvironmentPowerState } from '@/modules/infra/resolveEnvironmentPowerState';
+import { resolveRunningOperationCutoff } from '@/modules/infra/resolveRunningOperationCutoff';
 import { resolveNextScheduledActionView } from '@/modules/infra/resolveNextScheduledActionView';
 import { resolveServicePowerState } from '@/modules/infra/resolveServicePowerState';
 import type { InfraCacheInterface } from '@/modules/infra/types/infraCache.interface';
 import type {
   InfraEnvironmentView,
+  InfraOperationRecord,
   InfraProjectView,
   InfraScheduleRecord,
   ListInfraEnvironmentsResult,
@@ -41,6 +43,7 @@ type Dependencies = {
   readonly scheduleRepository: InfraScheduleRepositoryInterface;
   readonly managedPattern: string;
   readonly selfEnvironmentId: string;
+  readonly databaseWaitSeconds: number;
   readonly now?: () => Date;
 };
 
@@ -70,12 +73,11 @@ export class ListInfraEnvironmentsUseCase {
 
     const inventory = await this.resolveInventory(railwayGateway);
     const schedulesByEnvironmentId = await this.indexSchedules();
+    const runningByEnvironmentId = await this.indexRunningOperations();
 
-    const projects = await Promise.all(
-      [...inventory]
-        .sort(byName((project) => project.name))
-        .map((project) => this.buildProjectView({ project, schedulesByEnvironmentId })),
-    );
+    const projects = [...inventory]
+      .sort(byName((project) => project.name))
+      .map((project) => this.buildProjectView({ project, schedulesByEnvironmentId, runningByEnvironmentId }));
 
     return { access, projects };
   }
@@ -108,32 +110,45 @@ export class ListInfraEnvironmentsUseCase {
     return new Map(schedules.map((schedule) => [schedule.railwayEnvironmentId, schedule]));
   }
 
-  private async buildProjectView(params: {
+  // Uma consulta por listagem: o N+1 anterior fazia uma ida ao banco por ambiente.
+  private async indexRunningOperations(): Promise<ReadonlyMap<string, InfraOperationRecord>> {
+    const { operationRepository, databaseWaitSeconds } = this.dependencies;
+    const now = (this.dependencies.now ?? (() => new Date()))();
+    const running = await operationRepository.listRunning({
+      notOlderThan: resolveRunningOperationCutoff({ now, databaseWaitSeconds }),
+    });
+    return new Map(running.map((operation) => [operation.railwayEnvironmentId, operation]));
+  }
+
+  private buildProjectView(params: {
     readonly project: RailwayProject;
     readonly schedulesByEnvironmentId: ReadonlyMap<string, InfraScheduleRecord>;
-  }): Promise<InfraProjectView> {
-    const { project, schedulesByEnvironmentId } = params;
-    const environments = await Promise.all(
-      [...project.environments]
-        .sort(byName((environment) => environment.name))
-        .map((environment) =>
-          this.buildEnvironmentView({ environment, schedule: schedulesByEnvironmentId.get(environment.id) }),
-        ),
-    );
+    readonly runningByEnvironmentId: ReadonlyMap<string, InfraOperationRecord>;
+  }): InfraProjectView {
+    const { project, schedulesByEnvironmentId, runningByEnvironmentId } = params;
+    const environments = [...project.environments]
+      .sort(byName((environment) => environment.name))
+      .map((environment) =>
+        this.buildEnvironmentView({
+          environment,
+          schedule: schedulesByEnvironmentId.get(environment.id),
+          runningOperation: runningByEnvironmentId.get(environment.id),
+        }),
+      );
 
     return { projectId: project.id, projectName: project.name, environments };
   }
 
-  private async buildEnvironmentView(params: {
+  private buildEnvironmentView(params: {
     readonly environment: RailwayEnvironment;
     readonly schedule: InfraScheduleRecord | undefined;
-  }): Promise<InfraEnvironmentView> {
-    const { environment, schedule } = params;
-    const { managedPattern, selfEnvironmentId, operationRepository } = this.dependencies;
+    readonly runningOperation: InfraOperationRecord | undefined;
+  }): InfraEnvironmentView {
+    const { environment, schedule, runningOperation } = params;
+    const { managedPattern, selfEnvironmentId } = this.dependencies;
     const nextScheduledAction = schedule
       ? resolveNextScheduledActionView({ schedule, now: (this.dependencies.now ?? (() => new Date()))() })
       : undefined;
-    const runningOperation = await operationRepository.findRunningByEnvironmentId(environment.id);
 
     const services = environment.services.map((service) => ({
       serviceName: service.serviceName,

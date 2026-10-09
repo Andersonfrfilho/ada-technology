@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'bun:test';
 
-import { ACTOR_TYPE } from '@/modules/audit/audit.constant';
+import { ACTOR_TYPE, AUDIT_ACTION } from '@/modules/audit/audit.constant';
 import { INFRA_OPERATION_LOCK_KEY_PREFIX, INFRA_OPERATION_TRIGGER } from '@/modules/infra/infra.constant';
 import { RailwayRequestFailedError } from '@/modules/infra/infra.error';
 import {
@@ -194,7 +194,9 @@ describe('RunInfraSchedulesUseCase', () => {
     const operations = scenario.harness.repository.operations;
     expect(operations.every((operation) => operation.trigger === INFRA_OPERATION_TRIGGER.SCHEDULE)).toBe(true);
     expect(operations.every((operation) => operation.actorAgentId === null)).toBe(true);
-    expect(scenario.harness.auditCalls).toHaveLength(10);
+    const outcomeAudits = scenario.harness.auditCalls.filter((call) => call.action !== AUDIT_ACTION.INFRA_ENVIRONMENT_POWER_REQUESTED);
+    expect(outcomeAudits).toHaveLength(10);
+    expect(scenario.harness.auditCalls).toHaveLength(20);
     expect(scenario.harness.auditCalls.every((call) => call.actorType === ACTOR_TYPE.SYSTEM)).toBe(true);
     expect(scenario.environments[0]?.shape).toBe('stopped');
   }, 120_000);

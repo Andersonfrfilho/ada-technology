@@ -16,6 +16,7 @@ import {
 } from '@/modules/infra/infra.constant';
 import { InfraEnvironmentProtectedError, InfraOperationInProgressError } from '@/modules/infra/infra.error';
 import type { PowerEnvironmentUseCase } from '@/modules/infra/powerEnvironment.use-case';
+import type { RecoverInterruptedInfraOperationsUseCase } from '@/modules/infra/recoverInterruptedInfraOperations.use-case';
 import { resolveEnvironmentPowerState } from '@/modules/infra/resolveEnvironmentPowerState';
 import { resolveScheduleAction } from '@/modules/infra/resolveScheduleAction';
 import { resolveServiceErrorCode } from '@/modules/infra/resolveServiceErrorCode';
@@ -36,6 +37,7 @@ type Dependencies = {
   readonly scheduleRepository: InfraScheduleRepositoryInterface;
   readonly powerOnEnvironment: PowerUseCase;
   readonly powerOffEnvironment: PowerUseCase;
+  readonly recoverInterruptedOperations?: Pick<RecoverInterruptedInfraOperationsUseCase, 'execute'>;
   readonly logger: InfraLogger;
   readonly now: () => Date;
 };
@@ -83,6 +85,7 @@ export class RunInfraSchedulesUseCase {
     const { railwayGateway, scheduleRepository, logger } = this.dependencies;
     if (!railwayGateway) return;
 
+    await this.recoverInterruptedOperations();
     const schedules = (await scheduleRepository.listAll()).filter((schedule) => schedule.isEnabled);
     if (schedules.length === 0) return;
 
@@ -99,6 +102,18 @@ export class RunInfraSchedulesUseCase {
         errorCode: resolveServiceErrorCode(outcome.reason),
       });
     });
+  }
+
+  // Fallback: recuperar historico nunca pode impedir as agendas do minuto de rodarem.
+  private async recoverInterruptedOperations(): Promise<void> {
+    const { recoverInterruptedOperations, logger } = this.dependencies;
+    if (!recoverInterruptedOperations) return;
+    try {
+      const recovered = await recoverInterruptedOperations.execute();
+      if (recovered > 0) logger.info('Operacoes de infra interrompidas recuperadas', { count: recovered });
+    } catch (error) {
+      logger.error('Falha ao recuperar operacoes de infra interrompidas', { errorCode: resolveServiceErrorCode(error) });
+    }
   }
 
   private async processSchedule(params: ProcessScheduleParams): Promise<void> {

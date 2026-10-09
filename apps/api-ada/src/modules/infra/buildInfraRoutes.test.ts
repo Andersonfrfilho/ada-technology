@@ -97,6 +97,7 @@ function buildSetup(params: {
       scheduleRepository: harness.scheduleRepository,
       managedPattern: 'staging',
       selfEnvironmentId: 'env-self',
+      databaseWaitSeconds: 120,
     }),
     powerOffEnvironment: recordingPowerOff,
     powerOnEnvironment: new PowerOnEnvironmentUseCase(harness.dependencies),

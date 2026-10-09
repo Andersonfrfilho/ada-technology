@@ -6,7 +6,7 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import { and, eq, lt } from 'drizzle-orm';
+import { and, eq, gt, lt } from 'drizzle-orm';
 
 import { database } from '@/infra/database/client';
 import { infraPowerOperations } from '@/infra/database/schema';
@@ -15,9 +15,11 @@ import { infraServiceResultsSchema } from '@/modules/infra/infraOperation.schema
 import type { InfraOperationRepositoryInterface } from '@/modules/infra/types/infraOperationRepository.interface';
 import type {
   CreateInfraOperationParams,
+  FindRunningOperationParams,
   FinishInfraOperationParams,
   InfraOperationRecord,
   InfraOperationRow,
+  ListRunningOperationsParams,
   MarkStaleRunningAsInterruptedParams,
 } from '@/modules/infra/types/infra.types';
 
@@ -53,19 +55,34 @@ export class DrizzleInfraOperationRepository implements InfraOperationRepository
     return row ? toRecord(row) : undefined;
   }
 
-  async findRunningByEnvironmentId(environmentId: string): Promise<InfraOperationRecord | undefined> {
+  async findRunningByEnvironmentId(params: FindRunningOperationParams): Promise<InfraOperationRecord | undefined> {
     const [row] = await database
       .select()
       .from(infraPowerOperations)
       .where(
         and(
-          eq(infraPowerOperations.railwayEnvironmentId, environmentId),
+          eq(infraPowerOperations.railwayEnvironmentId, params.environmentId),
           eq(infraPowerOperations.status, INFRA_OPERATION_STATUS.RUNNING),
+          gt(infraPowerOperations.startedAt, params.notOlderThan),
         ),
       )
       .limit(1);
 
     return row ? toRecord(row) : undefined;
+  }
+
+  async listRunning(params: ListRunningOperationsParams): Promise<readonly InfraOperationRecord[]> {
+    const rows = await database
+      .select()
+      .from(infraPowerOperations)
+      .where(
+        and(
+          eq(infraPowerOperations.status, INFRA_OPERATION_STATUS.RUNNING),
+          gt(infraPowerOperations.startedAt, params.notOlderThan),
+        ),
+      );
+
+    return rows.map(toRecord);
   }
 
   async finishOperation(params: FinishInfraOperationParams): Promise<void> {
@@ -79,7 +96,7 @@ export class DrizzleInfraOperationRepository implements InfraOperationRepository
       .where(eq(infraPowerOperations.id, params.id));
   }
 
-  async markStaleRunningAsInterrupted(params: MarkStaleRunningAsInterruptedParams): Promise<number> {
+  async markStaleRunningAsInterrupted(params: MarkStaleRunningAsInterruptedParams): Promise<readonly InfraOperationRecord[]> {
     const rows = await database
       .update(infraPowerOperations)
       .set({ status: INFRA_OPERATION_STATUS.FAILED, finishedAt: new Date() })
@@ -89,8 +106,8 @@ export class DrizzleInfraOperationRepository implements InfraOperationRepository
           lt(infraPowerOperations.startedAt, params.olderThan),
         ),
       )
-      .returning({ id: infraPowerOperations.id });
+      .returning();
 
-    return rows.length;
+    return rows.map(toRecord);
   }
 }

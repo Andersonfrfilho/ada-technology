@@ -6,6 +6,8 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import { randomUUID } from 'node:crypto';
+
 import { ACTOR_TYPE, AUDIT_ACTION, AUDIT_TARGET } from '@/modules/audit/audit.constant';
 import type { RecordAuditLogUseCase } from '@/modules/audit/recordAuditLog.use-case';
 import {
@@ -26,6 +28,12 @@ import {
   InfraOperationInProgressError,
 } from '@/modules/infra/infra.error';
 import { locateManagedEnvironment } from '@/modules/infra/locateManagedEnvironment';
+import {
+  buildPowerDeniedEntry,
+  buildPowerRequestedEntry,
+  resolveDenialReason,
+} from '@/modules/infra/powerAuditEntries';
+import { recordInfraAudit } from '@/modules/infra/recordInfraAudit';
 import { countServiceOutcomes, resolveOperationStatus } from '@/modules/infra/resolveOperationStatus';
 import { isInsideScheduleWindow } from '@/modules/infra/resolveScheduleAction';
 import { resolveServiceErrorCode } from '@/modules/infra/resolveServiceErrorCode';
@@ -37,6 +45,7 @@ import type {
   InfraSleep,
   PowerEnvironmentParams,
   PowerEnvironmentResult,
+  RailwayEnvironment,
   RailwayProject,
   RunOperationParams,
 } from '@/modules/infra/types/infra.types';
@@ -63,6 +72,23 @@ type Dependencies = PowerEnvironmentDependencies & { readonly direction: InfraPo
 
 const MS_PER_HOUR = 3_600_000;
 
+type AdmitParams = {
+  readonly params: PowerEnvironmentParams;
+  readonly railwayGateway: RailwayGatewayInterface;
+};
+
+type Admission = {
+  readonly project: RailwayProject;
+  readonly environment: RailwayEnvironment;
+  readonly keepOnUntilChange: Date | null | undefined;
+  readonly lockOwner: string;
+};
+
+type LockParams = {
+  readonly environmentId: string;
+  readonly lockOwner: string;
+};
+
 type OutcomeParams = {
   readonly params: RunOperationParams;
   readonly status: InfraOperationStatus;
@@ -80,28 +106,31 @@ export class PowerEnvironmentUseCase {
   constructor(private readonly dependencies: Dependencies) {}
 
   async execute(params: PowerEnvironmentParams): Promise<PowerEnvironmentResult> {
-    const { cache, operationRepository, direction } = this.dependencies;
+    const { direction, logger } = this.dependencies;
     const railwayGateway = this.requireGateway();
 
-    const { managedPattern, selfEnvironmentId } = this.dependencies;
-    const { project, environment } = await locateManagedEnvironment({
+    const { project, environment, keepOnUntilChange, lockOwner } = await this.admitOrAuditDenial({
+      params,
       railwayGateway,
-      environmentId: params.environmentId,
-      managedPattern,
-      selfEnvironmentId,
     });
-    // Antes da trava e de qualquer operacao: um keepOnUntil recusado nao pode deixar rastro.
-    const keepOnUntilChange = await this.resolveKeepOnUntilChange({ params, environmentId: environment.id });
-
-    const isLockAcquired = await cache.setIfAbsent({
-      key: this.lockKey(environment.id),
-      value: new Date().toISOString(),
-      ttlSeconds: this.lockTtlSeconds(),
+    const operation = await this.registerOperationReleasingLockOnFailure({
+      params,
+      project,
+      keepOnUntilChange,
+      lockOwner,
     });
-    if (!isLockAcquired) throw new InfraOperationInProgressError();
-
-    const operation = await this.registerOperationReleasingLockOnFailure({ params, project, keepOnUntilChange });
     await this.invalidateInventory();
+    await recordInfraAudit({
+      recordAudit: this.dependencies.recordAudit,
+      logger,
+      entry: buildPowerRequestedEntry({
+        params,
+        direction,
+        operationId: operation.id,
+        projectName: project.name,
+        environmentName: environment.name,
+      }),
+    });
 
     const runParams: RunOperationParams = {
       operationId: operation.id,
@@ -112,10 +141,11 @@ export class PowerEnvironmentUseCase {
       services: environment.services,
       actor: params.actor,
       trigger: params.trigger,
+      lockOwner,
       ...(params.ipAddress ? { ipAddress: params.ipAddress } : {}),
     };
     void this.runOperation(runParams).catch((error: unknown) => {
-      this.dependencies.logger.error('Falha inesperada no runner de infra', {
+      logger.error('Falha inesperada no runner de infra', {
         operationId: operation.id,
         direction,
         errorCode: resolveServiceErrorCode(error),
@@ -125,6 +155,48 @@ export class PowerEnvironmentUseCase {
     return { operationId: operation.id };
   }
 
+  // Fallback de auditoria: a recusa e registrada e o MESMO erro segue para o chamador.
+  private async admitOrAuditDenial(params: AdmitParams): Promise<Admission> {
+    try {
+      return await this.admit(params);
+    } catch (error) {
+      const reason = resolveDenialReason(error);
+      if (reason) {
+        await recordInfraAudit({
+          recordAudit: this.dependencies.recordAudit,
+          logger: this.dependencies.logger,
+          entry: buildPowerDeniedEntry({ params: params.params, direction: this.dependencies.direction, reason }),
+        });
+      }
+      throw error;
+    }
+  }
+
+  private async admit(params: AdmitParams): Promise<Admission> {
+    const { managedPattern, selfEnvironmentId, cache } = this.dependencies;
+    const { project, environment } = await locateManagedEnvironment({
+      railwayGateway: params.railwayGateway,
+      environmentId: params.params.environmentId,
+      managedPattern,
+      selfEnvironmentId,
+    });
+    // Antes da trava e de qualquer operacao: um keepOnUntil recusado nao pode deixar rastro.
+    const keepOnUntilChange = await this.resolveKeepOnUntilChange({
+      params: params.params,
+      environmentId: environment.id,
+    });
+
+    const lockOwner = randomUUID();
+    const isLockAcquired = await cache.setIfAbsent({
+      key: this.lockKey(environment.id),
+      value: lockOwner,
+      ttlSeconds: this.lockTtlSeconds(),
+    });
+    if (!isLockAcquired) throw new InfraOperationInProgressError();
+
+    return { project, environment, keepOnUntilChange, lockOwner };
+  }
+
   /** Nunca rejeita: qualquer falha marca a operacao como `failed`, e a trava e sempre liberada. */
   async runOperation(params: RunOperationParams): Promise<void> {
     try {
@@ -132,13 +204,13 @@ export class PowerEnvironmentUseCase {
         direction: this.dependencies.direction,
         environmentId: params.environmentId,
         services: params.services,
-        onProgress: () => this.renewLock(params.environmentId),
+        onProgress: () => this.renewLock(params),
       });
       await this.completeOperation({ params, status: resolveOperationStatus({ serviceResults }), serviceResults });
     } catch (error) {
       await this.failOperation({ params, error });
     } finally {
-      await this.releaseLock(params.environmentId);
+      await this.releaseLock(params);
     }
   }
 
@@ -194,8 +266,9 @@ export class PowerEnvironmentUseCase {
     readonly params: PowerEnvironmentParams;
     readonly project: RailwayProject;
     readonly keepOnUntilChange: Date | null | undefined;
+    readonly lockOwner: string;
   }): Promise<InfraOperationRecord> {
-    const { params: powerParams, project, keepOnUntilChange } = params;
+    const { params: powerParams, project, keepOnUntilChange, lockOwner } = params;
     try {
       if (keepOnUntilChange !== undefined) {
         await this.dependencies.scheduleRepository.setKeepOnUntil({
@@ -211,7 +284,7 @@ export class PowerEnvironmentUseCase {
         ...(powerParams.actor.agentId ? { actorAgentId: powerParams.actor.agentId } : {}),
       });
     } catch (error) {
-      await this.releaseLock(powerParams.environmentId);
+      await this.releaseLock({ environmentId: powerParams.environmentId, lockOwner });
       throw error;
     }
   }
@@ -307,19 +380,35 @@ export class PowerEnvironmentUseCase {
   }
 
   /** Renovar a trava e melhor esforco: falhar aqui nao pode reprovar um servico que ja foi ligado/desligado. */
-  private async renewLock(environmentId: string): Promise<void> {
+  private async renewLock(params: LockParams): Promise<void> {
+    const { environmentId, lockOwner } = params;
     try {
-      await this.dependencies.cache.set(this.lockKey(environmentId), new Date().toISOString(), this.lockTtlSeconds());
+      const isOwner = await this.dependencies.cache.renewIfOwner({
+        key: this.lockKey(environmentId),
+        owner: lockOwner,
+        ttlSeconds: this.lockTtlSeconds(),
+      });
+      if (!isOwner) this.logLockLost({ environmentId, action: 'renew' });
     } catch {
       this.dependencies.logger.error('Nao foi possivel renovar a trava da operacao de infra', { environmentId });
     }
   }
 
-  private async releaseLock(environmentId: string): Promise<void> {
+  private async releaseLock(params: LockParams): Promise<void> {
+    const { environmentId, lockOwner } = params;
     try {
-      await this.dependencies.cache.delete(this.lockKey(environmentId));
+      const isOwner = await this.dependencies.cache.releaseIfOwner({
+        key: this.lockKey(environmentId),
+        owner: lockOwner,
+      });
+      if (!isOwner) this.logLockLost({ environmentId, action: 'release' });
     } catch {
       this.dependencies.logger.error('Nao foi possivel liberar a trava da operacao de infra', { environmentId });
     }
+  }
+
+  // A trava expirou (e talvez outra operacao a tenha): mexer nela derrubaria a protecao da outra.
+  private logLockLost(params: { readonly environmentId: string; readonly action: 'renew' | 'release' }): void {
+    this.dependencies.logger.info('Trava da operacao de infra nao pertence mais a esta operacao', params);
   }
 }
