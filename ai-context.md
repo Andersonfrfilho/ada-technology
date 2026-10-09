@@ -129,6 +129,12 @@ headers de segurança e `X-Trace-Id`. Rate limit por IP declarado na própria ro
 | `POST` | `/v1/panel/realtime/tickets` | 🔒 `agent`. `{ conversationId? }` → bilhete de 30s para o SSE. |
 | `GET` | `/v1/panel/events` | Bilhete no `?ticket`. SSE do canal `global`. |
 | `GET` | `/v1/panel/conversations/:id/events` | Bilhete no `?ticket`, amarrado àquela conversa. |
+| `GET` | `/v1/panel/infra/environments` | 🔒 `admin`. Projetos e ambientes do workspace Railway, com estado, custo do ciclo e agenda. `PANEL_READ`. `503 INFRA_NOT_CONFIGURED` sem `RAILWAY_API_TOKEN`. |
+| `POST` | `/v1/panel/infra/environments/:environmentId/power-off` | 🔒 `admin`. Desliga em segundo plano. `202 { operationId }`. `PANEL_INFRA_POWER` (3/min). |
+| `POST` | `/v1/panel/infra/environments/:environmentId/power-on` | 🔒 `admin`. Liga em segundo plano. Corpo opcional `{ keepOnUntil }` (ISO com offset, até 24 h à frente). `202 { operationId }`. `PANEL_INFRA_POWER`. |
+| `PUT` | `/v1/panel/infra/environments/:environmentId/schedule` | 🔒 `admin`. Salva `{ activeWeekdays, powerOnTime, powerOffTime, isEnabled }`. Auditado (`infra.schedule_changed`). Devolve `nextScheduledAction`. `PANEL_WRITE`. |
+| `GET` | `/v1/panel/infra/operations/:operationId` | 🔒 `admin`. Estado de uma operação de ligar ou desligar, com o resultado por serviço. `404 INFRA_OPERATION_NOT_FOUND`. `PANEL_READ`. |
+| `GET` | `/v1/panel/infra/costs` | 🔒 `admin`. Custo do ciclo de cobrança por projeto e ambiente, com o total oficial do Railway ao lado. `PANEL_READ`. |
 
 O catálogo de produtos vem inteiro do `@adatechnology/catalog-module`, montado sob
 `/v1/panel/catalog` (produtos, catálogos, seções, importação em lote), todas 🔒 `admin`. O
@@ -264,6 +270,16 @@ o envio por ausência.** Montagem em `infra/email/emailDriver.ts`, sobre
 - **Templates falha fechado.** Sem `WHATSAPP_ENABLED` / `WHATSAPP_BUSINESS_ACCOUNT_ID` não há
   provider e o catálogo responde `503 CHANNEL_WHATSAPP_DISABLED`. O nome já salvo vem pela rota de
   `template-settings`, que é independente — a tela abre e continua editável.
+- **Infra é só admin e só existe com token.** Sem `RAILWAY_API_TOKEN` as rotas `/v1/panel/infra/*` respondem `503 INFRA_NOT_CONFIGURED`, e o resto da API sobe normal.
+- **Protegido não liga nem desliga.** Ambiente com `prod` no nome e o ambiente onde a própria API roda (`RAILWAY_ENVIRONMENT_ID`) respondem `403 INFRA_ENVIRONMENT_PROTECTED` antes de qualquer mutation. O painel não tem forma de liberar isso.
+- **Ligar e desligar são assíncronos.** `power-off` e `power-on` respondem `202` com `operationId` e rodam em segundo plano; o painel consulta a operação. Uma trava Redis por ambiente faz uma segunda chamada no mesmo ambiente responder `409 INFRA_OPERATION_IN_PROGRESS`.
+- **"Pronto" exige duas coisas.** Um serviço só conta como ligado com deployment não parado **e** instância `RUNNING`. Deployment parado continua `SUCCESS` e segue em `activeDeployments`, então o status sozinho não basta.
+- **Desligar e religar não refazem build.** Desligar usa `deploymentStop` e religar usa `deploymentRestart` no mesmo deployment. `numReplicas: 0` é recusado pelo Railway. Serviço sem deployment volta por `serviceInstanceRedeploy`, que pode exigir build.
+- **Ordem.** Desligar para as aplicações e depois os bancos. Ligar sobe os bancos primeiro, esperando até `RAILWAY_DATABASE_WAIT_SECONDS`, e só então as aplicações. Banco que não fica pronto faz as aplicações serem puladas com `INFRA_DATABASE_NOT_READY`.
+- **Ligar fora da janela exige `keepOnUntil`.** Sem ele, `power-on` fora da janela responde `400 INFRA_KEEP_ON_UNTIL_REQUIRED`. O prazo máximo é de 24 h; ao vencer, a agenda desliga no minuto seguinte.
+- **A agenda age só na transição.** Ela usa o fuso `America/Sao_Paulo` e compara com a última avaliação: age quando o horário muda de lado da janela, sem reaplicar o estado a cada minuto. Por isso desligar à mão no meio da janela não é desfeito. Janela que cruza a meia-noite é recusada com `400 INFRA_INVALID_SCHEDULE`.
+- **O scheduler roda dentro da `api`.** É uma tarefa a mais no scheduler em processo, com tick de 1 minuto, e pressupõe **uma réplica** da `api`. Com mais de uma, a tarefa dispara uma vez por réplica; a decisão de agenda precisa ser revista antes de escalar.
+- **Custo usa o ciclo de cobrança.** A janela é `customer.billingPeriod` do workspace, hoje do dia 19 ao dia 19, e não o mês-calendário. A consulta de `usage` não aceita `endDate` igual a agora, então usa o fim do ciclo. Se o ciclo não puder ser lido, cai no mês-calendário e a resposta não traz total oficial.
 
 ## Painel
 
@@ -295,6 +311,10 @@ de carregamento aparece clara antes de a aplicação montar.
 | Templates | `WhatsAppTemplatesSettings` | Componente é presentacional — todo o estado vive em `templateSettings.hook.ts`. |
 | Documentos | `DocumentsWorkspace` | `dateFilter={false}` e `categories={[]}`: a rota só entende `search`, `source`, `sortDirection` e paginação. Filtro que o servidor descarta faria lista crua parecer filtrada. |
 | Clientes | `LeadsPage` | Leads capturados pelo bot: nome, contato, e-mail, interesse, origem, quando, link para a conversa. A coluna Contato lê `coalesce(leadPhone, leadContact)` — `leadContact` é o campo único de antes da separação entre WhatsApp e e-mail. |
+| Infra › Ambientes | Projetos e ambientes do workspace Railway, com ligar, desligar e agenda por ambiente. | Só admin. Produção e o ambiente da própria API mostram selo de protegido, sem botões. Desligar exige digitar o nome exato do ambiente. |
+| Infra › Custos | Custo do ciclo de cobrança por projeto e ambiente, com projeção de fechamento e o total oficial do Railway ao lado. | Só admin. A divergência entre o cálculo e o total oficial fica visível. |
+
+Decisões, proteções e riscos da área Infra estão em `docs/adr/0004-infra-railway-no-painel.md`.
 
 **A tela composta é o padrão de consumo** (`pluggable-module.md` §4): o pacote entra inteiro,
 customizado por `labels` e slots. Nada de fork.
@@ -353,6 +373,15 @@ Postgres e Redis. Passo a passo, tabela de variáveis e verificação pós-deplo
   pelo shell do serviço.
 - `style-src` ainda carrega `'unsafe-inline'` nos dois frontends — divergência registrada em
   `docs/SECURITY.md` com o encaminhamento.
+- **Módulo Infra.** Só a `api` lê as variáveis `RAILWAY_*`, e só a `api` de produção recebe `RAILWAY_API_TOKEN`. Procedimento de token e ordem de rollout em `docs/deploy-railway.md`, seção 11.
+
+| Variável | Obrigatória quando | Default | Nota |
+|---|---|---|---|
+| `RAILWAY_API_TOKEN` | opcional | vazio | token de workspace; vazio desliga o módulo Infra (`503 INFRA_NOT_CONFIGURED`) |
+| `RAILWAY_WORKSPACE_ID` | `RAILWAY_API_TOKEN` definido | vazio | id do workspace do Railway |
+| `RAILWAY_ENVIRONMENT_ID` | `RAILWAY_API_TOKEN` definido | vazio | injetada pelo próprio Railway; sem ela a proteção do ambiente de produção não funciona |
+| `RAILWAY_MANAGED_ENVIRONMENT_PATTERN` | nunca (opcional) | `staging` | expressão regular dos ambientes que o painel pode ligar e desligar; inválida falha no boot |
+| `RAILWAY_DATABASE_WAIT_SECONDS` | nunca (opcional) | `120` | tempo de espera pelo banco ao ligar; entre 10 e 600 |
 
 ## Convenções
 

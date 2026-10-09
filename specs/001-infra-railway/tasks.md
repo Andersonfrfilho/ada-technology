@@ -150,10 +150,10 @@ com trabalho de outra sessão.
 ## Fase 6 — Documentação e auditoria final
 > 🤖 Modelo: `haiku` (T6.3 → `sonnet`)
 
-- [ ] **T6.1 `ai-context.md`.**
+- [x] **T6.1 `ai-context.md`.**
   - Rotas em "## Rotas HTTP" e regras não óbvias (autoproteção, produção bloqueada, trava, agenda em réplica única).
   - Telas em "## Painel" e variáveis em "## Deploy".
-- [ ] **T6.2 Documentos de deploy e segurança.**
+- [x] **T6.2 Documentos de deploy e segurança.**
   - `docs/deploy-railway.md`: como criar o token de workspace e onde colocá-lo (só em produção, só na `api`).
   - `docs/SECURITY.md`: achado datado do token de workspace e procedimento de rotação.
 - [ ] **T6.3 Auditoria final (§15 das regras + `security.md`) e roteiro manual.**

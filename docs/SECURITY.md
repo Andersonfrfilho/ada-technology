@@ -5,6 +5,60 @@ Item so sai daqui quando esta resolvido — e ai fica na secao de fechados, com 
 
 ## Abertos
 
+### 2026-10-09 — Token de workspace do Railway na `api-ada`
+
+**Regra:** `security.md` §2 (escopo enumerado e token rotacionavel, nada de credencial larga e eterna)
+e §4 (segredo so como variavel validada, nunca em log ou terminal).
+
+**Estado:** aberto. Vale a partir da configuracao de `RAILWAY_API_TOKEN` na `api` de producao, pelo
+procedimento de `docs/deploy-railway.md`, secao 11. Nao ha forma de reduzir o poder do token: o de
+projeto nao serve, porque enxerga um ambiente so (ADR 0004, D1).
+
+**Risco:** o token age sobre **todos** os projetos do workspace Railway, com o que um membro faz pela
+API: apaga servicos, volumes e projetos, le variaveis de producao (`DATABASE_URL`, chaves da Meta,
+segredos de JWT) e troca a imagem de um deploy. A `api` passa a guardar o segredo mais poderoso do
+workspace. Por isso ele e o item de maior impacto desta lista.
+
+**Mitigacoes em vigor:**
+
+- documentos GraphQL fixos em `RailwayGateway.ts`; nenhuma consulta monta texto a partir de entrada;
+- token so na `api` de producao; vazio em dev, test, staging e CI;
+- ambiente de producao e o da propria API protegidos por codigo (`classifyEnvironment`), que
+  responde `403` antes de qualquer mutation;
+- token nunca em log, e o header `authorization` sempre redigido;
+- auditoria de cada ligar, desligar e mudanca de agenda, com ator, alvo e resultado por servico.
+
+**O que elas nao cobrem:**
+
+- uso do token fora do painel (console do Railway, CLI, script com o valor copiado): essas acoes
+  nao aparecem na auditoria da Ada;
+- vazamento da propria producao: quem le o ambiente de producao le o token, e as travas do nosso
+  codigo deixam de valer para quem tem o token fora da `api`;
+- admin que age dentro do painel: a auditoria registra a acao, nao a impede.
+
+**Antecedente:** durante a T0.4 (2026-10-09) um token de verificacao apareceu na tela do terminal. O
+registro de evidencia da spec 001 trata esse token como queimado e pede a revogacao.
+
+**Rotacao (sem suspeita de vazamento):**
+
+1. criar um token de workspace novo no Railway;
+2. trocar `RAILWAY_API_TOKEN` somente na `api` de producao;
+3. conferir que `GET /v1/panel/infra/environments` responde com `access` `ok`;
+4. revogar o token antigo.
+
+**Vazamento (suspeita ou confirmacao):**
+
+1. revogar o token no Railway, sem esperar;
+2. criar outro e trocar somente na `api` de producao;
+3. tratar como queimados os segredos de **todos** os projetos do workspace (banco, Meta, JWT, S3,
+   e-mail) e rotaciona-los, porque o token permitia le-los;
+4. revisar no Railway os deployments e as mudancas de variaveis desde a data provavel do vazamento.
+
+**Risco operacional ligado ao mesmo modulo:** com staging desligado pela agenda, o webhook do WhatsApp
+responde erro, e a Meta reenvia por ate 7 dias com uma rajada ao religar. O dedup de 300 s depende de
+`x-request-id`, que ainda nao foi confirmado que a Meta envia; sem ele, o dedup nao deduplica. Detalhes
+em `docs/adr/0004-infra-railway-no-painel.md`, secao sobre o webhook.
+
 ### 2026-08-08 — `style-src 'unsafe-inline'` no painel
 
 **Regra:** `security.md` §3 — "CSP sem `unsafe-inline` no frontend".
