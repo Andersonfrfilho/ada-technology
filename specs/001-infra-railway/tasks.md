@@ -29,8 +29,10 @@ com trabalho de outra sessão.
   - quanto tempo leva para voltar a `SUCCESS`;
   - qual campo da query de estado mostra "desligado".
   - Confirmar também o shape real da query de estado do plan §2.2, e como distinguir banco de aplicação (nome × `source.image`).
+  - Conferir também, depois de religar: o domínio público do serviço continua o mesmo e responde, e o `GET` de verificação do webhook (`hub.challenge`) volta a passar.
   - **Parar e pedir confirmação ao usuário antes de mexer em qualquer serviço.**
-  - Aceite: tabela no `evidence.md`.
+  - **Alvo do teste:** serviços sem webhook do WhatsApp (`worker-uploads` e `Redis`). Não desligar `financing-backend` nem mandar mensagem real de WhatsApp sem nova autorização.
+  - Aceite: tabela no `evidence.md`, com a conclusão sobre o domínio e o webhook.
 - [ ] **T0.2 Unidade e preço do `usage`.**
   - Rodar a query `usage` do mês corrente para o workspace.
   - Converter com os preços do plan §2.3 e comparar com o painel de uso do Railway (pedir o número ao usuário se a CLI não expuser).

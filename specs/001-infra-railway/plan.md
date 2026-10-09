@@ -173,6 +173,8 @@ Gráfico de custos: segue a skill `dataviz` (barras empilhadas staging × produ�
 | Mecanismo de desligar não religa igual (ex.: `deploymentRemove` perde a imagem e força build) | spike T0.1 mede antes de codar; `on` cai para `serviceInstanceRedeploy` |
 | Banco desligado corrompe ou demora a subir | ordem fixa; espera com teto; volumes não são tocados |
 | Desligar o ambiente que hospeda o próprio painel | autoproteção por `RAILWAY_ENVIRONMENT_ID` (RF3) |
+| Staging com webhook do WhatsApp (ex.: `cbni-staging`) desligado perde mensagem | a Meta reentrega por até 7 dias com frequência decrescente a qualquer resposta não-200, então nada se perde; ao religar chega uma rajada de mensagens atrasadas (o bot pode responder a conversa velha) e a WABA tem 3 apps assinados, então a reentrega vai a todos. Mitigação: desligar só fora do horário de uso, religar com bancos primeiro, e o webhook responder 500 (nunca 200) quando Redis/Postgres estiverem fora — o `Webhook.controller` do financiamento já faz isso |
+| Dedup do webhook falha após religar | o `ReceiveWhatsAppWebhook` guarda o nonce (`x-request-id`, ou `Date.now()` se o header faltar) no Redis por 300 s; reentrega fora desses 5 min, ou com o Redis zerado, não é barrada. Verificar no T0.1 se a Meta envia `x-request-id`; se não, o dedup só vale por `wamid` |
 | API com 2+ réplicas dispara a agenda N vezes | `last_evaluated_at` + trava Redis; nota no `ai-context.md` |
 | Agenda derruba staging no meio de um teste | modelo por transição (não reaplica no meio da janela) + `keepOnUntil` obrigatório fora da janela |
 | Unidade de `usage` errada → custo errado | T0.2 compara com o painel de uso do Railway antes do T3 |
