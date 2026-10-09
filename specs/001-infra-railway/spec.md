@@ -68,9 +68,8 @@ Um workspace: `AdA Technology` (id `42450f5c-a76c-40d9-b77f-cc627906ead1`).
   - todo ambiente cujo nome contém `production`;
   - o ambiente onde a própria `api-ada` está rodando (`RAILWAY_ENVIRONMENT_ID`, injetado pelo Railway).
   Ambiente protegido não exibe botão e a API responde 403 `INFRA_ENVIRONMENT_PROTECTED`.
-- **RF4** Desligar: aplicações primeiro, depois bancos (serviços cujo nome casa com
-  `^(Postgres|Redis|MySQL|MongoDB)`, ou cuja origem é imagem de banco — definido no spike T0.1).
-- **RF5** Ligar: bancos primeiro, espera até ficarem `SUCCESS` (teto configurável, padrão 120 s),
+- **RF4** Desligar: aplicações primeiro, depois bancos (banco = `source.image` casa com uma lista de imagens de banco em `infra.constant.ts` — `postgres`, `postgres-ssl`, `redis`, `mysql`, `mongo`; o nome `^(Postgres|Redis|MySQL|MongoDB)` só vale como reforço quando `source.image` vier nulo — decisão do spike T0.1).
+- **RF5** Ligar: bancos primeiro, espera até ficarem **prontos** (`deploymentStopped` falso **e** instância `RUNNING`; o status `SUCCESS` sozinho não serve, porque um deployment parado também é `SUCCESS`) (teto configurável, padrão 120 s),
   depois aplicações.
 - **RF6** Ligar/desligar é **assíncrono**: a API responde 202 com o id da operação e o estado é
   consultado depois. Uma operação por ambiente por vez (409 `INFRA_OPERATION_IN_PROGRESS`).
@@ -137,7 +136,7 @@ Um workspace: `AdA Technology` (id `42450f5c-a76c-40d9-b77f-cc627906ead1`).
 
 1. Admin vê os 5 projetos e seus ambientes; não-admin não vê o menu, e a API responde 403.
 2. Desligar `cbni-staging` pelo painel deixa todos os serviços sem instância ativa em menos de 2 min.
-   Religar devolve todos a `SUCCESS` em menos de 5 min, e o bot de staging responde.
+   Religar devolve todos a prontos (`deploymentStopped` falso e instância `RUNNING`) em menos de 5 min, e o bot de staging responde.
 3. Tentar desligar `cbni-production`, `production` ou o ambiente da própria `api-ada`: 403, e nada muda no Railway.
 4. Com a agenda seg–sex 08:00–20:00 em `cbni-staging`: às 20:00 desliga e às 08:00 do dia útil
    seguinte liga, sozinha, com auditoria de ator `system`. No sábado, ligar com "manter até +2 h"

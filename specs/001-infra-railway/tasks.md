@@ -37,8 +37,8 @@ com trabalho de outra sessão.
   - Rodar a query `usage` do mês corrente para o workspace.
   - Converter com os preços do plan §2.3 e comparar com o painel de uso do Railway (pedir o número ao usuário se a CLI não expuser).
   - Aceite: diferença ≤ 5% registrada no `evidence.md`; se não bater, corrigir a tabela de preço/unidade no plan antes da Fase 3.
-- [ ] **T0.3 🧠 ADR `docs/adr/0004-infra-railway-no-painel.md`.**
-  - Registrar D1–D5 da spec, com o resultado do T0.1 fechando a D2, e o risco do token de workspace.
+- [x] **T0.3 🧠 ADR `docs/adr/0004-infra-railway-no-painel.md`.**
+  - Registrar D1–D6 da spec, com o resultado do T0.1 fechando a D2, e o risco do token de workspace.
   - Aceite: ADR no formato dos ADRs 0001–0003; plan §2.2 atualizado com a mutação escolhida.
 
 ## Fase 1 — Fundação da API
@@ -46,12 +46,12 @@ com trabalho de outra sessão.
 
 - [ ] **T1.1 Variáveis de ambiente.**
   - Adicionar as cinco variáveis do plan §2.4 em `infra/config/environment.ts`.
-  - Regras de `superRefine`: workspace obrigatório com token; o padrão precisa compilar como regex.
+  - Regras de `superRefine`: workspace e `RAILWAY_ENVIRONMENT_ID` obrigatórios quando há token; o padrão precisa compilar como regex.
   - Valores vazios em `envs/env.dev` e `envs/env.test`.
-  - Aceite: `typecheck` e testes do `environment` cobrindo token sem workspace e regex inválida.
+  - Aceite: `typecheck` e testes do `environment` cobrindo token sem workspace, token sem `RAILWAY_ENVIRONMENT_ID` e regex inválida.
 - [ ] **T1.2 Códigos de erro e constantes.**
   - Grupo `infra` em `shared/errors/codes.ts`.
-  - `infra.error.ts` com as seis classes do plan §2.1.
+  - `infra.error.ts` com todas as classes do plan §2.1 (oito, incluindo `InfraKeepOnUntilRequiredError` e `InfraInvalidScheduleError`).
   - `infra.constant.ts`.
   - `AUDIT_ACTION`/`AUDIT_TARGET` (e `ACTOR_TYPE.SYSTEM`, se faltar).
   - Aceite: `typecheck`.
@@ -61,7 +61,7 @@ com trabalho de outra sessão.
   - 429 vira `RailwayRateLimitedError`; `errors` do GraphQL e resposta inválida viram `RailwayRequestFailedError`.
   - Aceite: testes com `fetch` falso cobrindo os quatro caminhos.
 - [ ] **T1.4 Funções puras.**
-  - `classifyEnvironment`, `orderServicesForPower`, com TDD.
+  - `classifyEnvironment`, `orderServicesForPower` (banco por `source.image`, nome só como reforço; testar serviço renomeado com imagem de banco), com TDD.
   - Aceite: testes de produção, autoproteção, padrão, não gerenciado e ordem off/on.
 - [ ] **T1.5 Container.**
   - Instanciar o gateway só com token.
@@ -81,7 +81,8 @@ com trabalho de outra sessão.
 - [ ] **T2.3 `runPowerOperation` + `powerOffEnvironment` + `powerOnEnvironment`.**
   - Trava Redis, registro da operação, execução em segundo plano, espera dos bancos com teto e resultado por serviço.
   - Auditoria e invalidação do cache.
-  - Aceite: testes de protegido (zero mutações), trava (409), falha parcial e ator na auditoria.
+  - "Pronto" = `deploymentStopped` falso e instância `RUNNING`; trava com TTL renovado; no boot, operações `running` antigas viram `failed` (interrompida).
+  - Aceite: testes de protegido (zero mutações), trava (409), falha parcial, ator na auditoria, deployment `SUCCESS` com `deploymentStopped=true` (não conta como pronto) e operação interrompida.
 - [ ] **T2.4 Rotas.**
   - `GET environments`, `POST power-off|power-on`, `GET operations/:id` em `infra.controller.ts`.
   - Registrar em `index.ts`; preset de rate limit mais duro.
@@ -153,6 +154,8 @@ com trabalho de outra sessão.
   - Auditoria: N+1 nas chamadas ao Railway, `Promise.all` versus `allSettled` no executor (falha de um serviço não pode derrubar os outros), log sem token nem PII, 500 sem stack.
   - Roteiro manual contra `cbni-staging`: desligar → conferir no Railway → religar → bot responde.
     Depois, agenda com janela curta (ex.: hoje, agora+5 min até agora+15 min) → liga e desliga sozinha → apagar a agenda de teste.
+  - O roteiro exige a feature rodando com `RAILWAY_API_TOKEN` na `api-ada` de produção (D1: o token só existe lá). Configurar o token e fazer o deploy pedem confirmação; sem isso, o roteiro fica registrado como pendente. Alternativa só com autorização expressa: token temporário local, revogado ao fim e anotado no `docs/SECURITY.md`.
+  - Verificar também: o deployment parado deixa de cobrar (comparar `MEMORY_USAGE_GB` numa janela desligada) e, se houver Postgres no alvo, confirmar backup do volume antes.
   - **Parar e pedir confirmação antes de executar o roteiro**, porque mexe em infra real.
   - Aceite: critérios 1–7 da spec marcados no `evidence.md`.
 

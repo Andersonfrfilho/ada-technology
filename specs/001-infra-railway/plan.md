@@ -33,7 +33,7 @@ Infra → Custos     ──GET──────▶     ├─ listInfraEnvironm
 | `calculateUsageCost.ts` | função pura: linhas de `usage` + tabela de preço → custo por projeto/ambiente/medida |
 | `listInfraEnvironments.use-case.ts` | projetos → ambientes → serviços com estado e classificação; cache 30 s |
 | `powerOffEnvironment.use-case.ts` / `powerOnEnvironment.use-case.ts` | valida a classificação, trava, cria a operação, executa em segundo plano e audita |
-| `runPowerOperation.ts` | executor comum: percorre os serviços na ordem, registra resultado por serviço e respeita a espera dos bancos |
+| `runPowerOperation.ts` | executor comum: percorre os serviços na ordem, registra resultado por serviço e respeita a espera dos bancos. "Pronto" = `deploymentStopped` falso **e** instância `RUNNING` (nunca só `SUCCESS`). A trava Redis tem TTL = espera dos bancos + folga para build e é renovada enquanto a operação roda. No boot, operações `running` mais antigas que esse TTL viram `failed` (código de "interrompida"), para um deploy no meio não deixar o painel preso |
 | `getInfraCosts.use-case.ts` | `usage` do mês + `estimatedUsage` → visão de custos; cache 15 min |
 | `saveEnvironmentSchedule.use-case.ts` / `listEnvironmentSchedules.use-case.ts` | CRUD da agenda; valida dias (0–6, ao menos um), `HH:mm`, `powerOnTime < powerOffTime` |
 | `resolveScheduleAction.ts` | função pura: `{ schedule, now, lastEvaluatedAt, keepOnUntil }` → `power_on \| power_off \| none` e `nextScheduledAction` |
@@ -53,7 +53,7 @@ O `container.ts` instancia o `RailwayGateway` **só se** `RAILWAY_API_TOKEN` nã
 | `usage(workspaceId, startDate: billingPeriod.start, endDate: billingPeriod.end, measurements, groupBy: [PROJECT_ID, ENVIRONMENT_ID])` | custo acumulado. `endDate` = fim do ciclo (futuro); `endDate` = agora dá `Problem processing request`. Sem `BACKUP_USAGE_GB` aqui (só agrupa por projeto) |
 | `estimatedUsage(workspaceId, measurements)` | projeção do mês por projeto |
 
-Medidas consultadas: `CPU_USAGE`, `MEMORY_USAGE_GB`, `NETWORK_TX_GB`, `DISK_USAGE_GB`, `BACKUP_USAGE_GB`.
+Medidas consultadas por projeto × ambiente: `CPU_USAGE`, `MEMORY_USAGE_GB`, `NETWORK_TX_GB`, `DISK_USAGE_GB`. `BACKUP_USAGE_GB` só em consulta separada agrupada por `PROJECT_ID` (o T0.2 mostrou que com `ENVIRONMENT_ID` a consulta falha).
 Amostra real de 2026-10-01 a 09: `CPU_USAGE` ≈ 91 e `MEMORY_USAGE_GB` ≈ 2589 num ambiente, compatíveis com vCPU-minuto e GB-minuto. A unidade é confirmada no T0.2.
 
 ### 2.3 Preços (fonte: docs.railway.com, consultados em 2026-10-09; reconferir no T0.2)
@@ -73,7 +73,7 @@ Amostra real de 2026-10-01 a 09: `CPU_USAGE` ≈ 91 e `MEMORY_USAGE_GB` ≈ 2589
 | `RAILWAY_WORKSPACE_ID` | `z.string().default('')` | obrigatória via `superRefine` quando há token |
 | `RAILWAY_MANAGED_ENVIRONMENT_PATTERN` | `z.string().default('staging')` | regex; validar que compila |
 | `RAILWAY_DATABASE_WAIT_SECONDS` | `z.coerce.number().int().min(10).max(600).default(120)` | teto da espera dos bancos |
-| `RAILWAY_ENVIRONMENT_ID` | `z.string().default('')` | injetada pelo próprio Railway; usada para a autoproteção |
+| `RAILWAY_ENVIRONMENT_ID` | `z.string().default('')` | injetada pelo próprio Railway; usada para a autoproteção. **`superRefine`: obrigatória (não vazia) quando há `RAILWAY_API_TOKEN`** — sem ela a API não se reconheceria e a autoproteção sumiria sem erro; o boot falha |
 
 ### 2.5 Banco (Drizzle, `infra/database/schema/infra.schema.ts`)
 
@@ -174,8 +174,8 @@ Gráfico de custos: segue a skill `dataviz` (barras empilhadas staging × produ�
 | Mecanismo de desligar não religa igual (ex.: `deploymentRemove` perde a imagem e força build) | spike T0.1 mede antes de codar; `on` cai para `serviceInstanceRedeploy` |
 | Banco desligado corrompe ou demora a subir | ordem fixa; espera com teto; volumes não são tocados |
 | Desligar o ambiente que hospeda o próprio painel | autoproteção por `RAILWAY_ENVIRONMENT_ID` (RF3) |
-| Staging com webhook do WhatsApp (ex.: `cbni-staging`) desligado perde mensagem | a Meta reentrega por até 7 dias com frequência decrescente a qualquer resposta não-200, então nada se perde; ao religar chega uma rajada de mensagens atrasadas (o bot pode responder a conversa velha) e a WABA tem 3 apps assinados, então a reentrega vai a todos. Mitigação: desligar só fora do horário de uso, religar com bancos primeiro, e o webhook responder 500 (nunca 200) quando Redis/Postgres estiverem fora — o `Webhook.controller` do financiamento já faz isso |
-| Dedup do webhook falha após religar | o `ReceiveWhatsAppWebhook` guarda o nonce (`x-request-id`, ou `Date.now()` se o header faltar) no Redis por 300 s; reentrega fora desses 5 min, ou com o Redis zerado, não é barrada. Verificar no T0.1 se a Meta envia `x-request-id`; se não, o dedup só vale por `wamid` |
+| Staging com webhook do WhatsApp (ex.: `cbni-staging`) desligado perde mensagem | a Meta reentrega por até 7 dias com frequência decrescente a qualquer resposta não-200, então, dentro desses 7 dias, nada se perde; ao religar chega uma rajada de mensagens atrasadas (o bot pode responder a conversa velha) e a WABA tem 3 apps assinados, então a reentrega vai a todos. Mitigação: desligar só fora do horário de uso, religar com bancos primeiro, e o webhook responder 500 (nunca 200) quando Redis/Postgres estiverem fora — o `Webhook.controller` do financiamento já faz isso |
+| Dedup do webhook falha após religar | o `ReceiveWhatsAppWebhook` guarda o nonce (`x-request-id`, ou `Date.now()` se o header faltar) no Redis por 300 s; reentrega fora desses 5 min, ou com o Redis zerado, não é barrada. O fallback `Date.now()` gera um nonce novo a cada requisição e **não deduplica nada**. Verificar se a Meta envia `x-request-id`; se não, o dedup só vale por `waMessageId` (o `LogMessage` já evita registro duplicado, mas não está confirmado se a resposta do bot depende disso) — correção no repo do financiamento, fora desta spec |
 | API com 2+ réplicas dispara a agenda N vezes | `last_evaluated_at` + trava Redis; nota no `ai-context.md` |
 | Agenda derruba staging no meio de um teste | modelo por transição (não reaplica no meio da janela) + `keepOnUntil` obrigatório fora da janela |
 | Unidade de `usage` errada → custo errado | T0.2 conferiu: +1,2% contra `customer.currentUsage`. A tela mostra os dois totais; divergência > 5% vira aviso |
