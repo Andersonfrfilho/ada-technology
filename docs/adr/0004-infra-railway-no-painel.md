@@ -108,7 +108,7 @@ de desligar no mesmo dia) e não teriam como representar "manter ligado até".
 
 ### Proteções que não dependem de configuração
 
-- Todo ambiente com `production` no nome é **protegido**: não mostra botão, a API responde 403
+- Todo ambiente com `prod` no nome (cobre `production`) é **protegido**, mesmo que case com o padrão de gerenciáveis: não mostra botão, a API responde 403
   `INFRA_ENVIRONMENT_PROTECTED` e nenhuma mutação é enviada.
 - O ambiente onde a própria `api-ada` roda, identificado por `RAILWAY_ENVIRONMENT_ID` (o Railway injeta),
   também é protegido, e a variável é obrigatória no boot quando há token, para a proteção nunca sumir em

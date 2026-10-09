@@ -65,7 +65,7 @@ Um workspace: `AdA Technology` (id `42450f5c-a76c-40d9-b77f-cc627906ead1`).
 - **RF2** Um ambiente é **gerenciável** quando o nome casa com `RAILWAY_MANAGED_ENVIRONMENT_PATTERN`
   (padrão `staging`, que cobre `staging` e `cbni-staging`) **e** não é protegido.
 - **RF3** São **protegidos**, sem exceção configurável pelo painel:
-  - todo ambiente cujo nome contém `production`;
+  - todo ambiente cujo nome contém `prod` (cobre `production`, `prod` e abreviações; fail-closed);
   - o ambiente onde a própria `api-ada` está rodando (`RAILWAY_ENVIRONMENT_ID`, injetado pelo Railway).
   Ambiente protegido não exibe botão e a API responde 403 `INFRA_ENVIRONMENT_PROTECTED`.
 - **RF4** Desligar: aplicações primeiro, depois bancos (banco = `source.image` casa com uma lista de imagens de banco em `infra.constant.ts` — `postgres`, `postgres-ssl`, `redis`, `mysql`, `mongo`; o nome `^(Postgres|Redis|MySQL|MongoDB)` só vale como reforço quando `source.image` vier nulo — decisão do spike T0.1).

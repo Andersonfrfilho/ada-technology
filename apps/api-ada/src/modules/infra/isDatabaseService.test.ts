@@ -1,0 +1,52 @@
+/**
+ * Copyright (c) 2026 Ada Technology. All rights reserved.
+ *
+ * This source code is proprietary and confidential. Unauthorized copying,
+ * modification, distribution, or use of this file, via any medium, is
+ * strictly prohibited without prior written permission from Ada Technology.
+ */
+
+import { describe, expect, it } from 'bun:test';
+
+import { isDatabaseService } from '@/modules/infra/isDatabaseService';
+import type { RailwayServiceInstance } from '@/modules/infra/types/infra.types';
+
+function buildService(overrides: Partial<RailwayServiceInstance>): RailwayServiceInstance {
+  return {
+    serviceId: 'svc-1',
+    serviceName: 'app',
+    hasDeployment: true,
+    isStopped: false,
+    ...overrides,
+  };
+}
+
+describe('isDatabaseService', () => {
+  it('detects postgres-ssl from a registry path with tag', () => {
+    const service = buildService({ serviceName: 'Postgres', sourceImage: 'ghcr.io/railwayapp-templates/postgres-ssl:18' });
+    expect(isDatabaseService(service)).toBe(true);
+  });
+
+  it('detects redis with a version tag', () => {
+    expect(isDatabaseService(buildService({ serviceName: 'Redis', sourceImage: 'redis:8.2.9' }))).toBe(true);
+  });
+
+  it('detects a renamed service by its image', () => {
+    expect(isDatabaseService(buildService({ serviceName: 'cache', sourceImage: 'redis:8' }))).toBe(true);
+  });
+
+  it('image wins over a database-looking name', () => {
+    expect(isDatabaseService(buildService({ serviceName: 'Postgres-proxy', sourceImage: 'n8nio/n8n:latest' }))).toBe(
+      false,
+    );
+  });
+
+  it('falls back to the name when there is no image', () => {
+    expect(isDatabaseService(buildService({ serviceName: 'Redis' }))).toBe(true);
+    expect(isDatabaseService(buildService({ serviceName: 'Redis', sourceImage: '' }))).toBe(true);
+  });
+
+  it('does not flag an application name without image', () => {
+    expect(isDatabaseService(buildService({ serviceName: 'worker-uploads' }))).toBe(false);
+  });
+});

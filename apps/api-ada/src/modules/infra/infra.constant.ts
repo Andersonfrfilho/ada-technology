@@ -46,6 +46,12 @@ export type InfraServicePowerState = (typeof INFRA_SERVICE_POWER_STATE)[keyof ty
 export const INFRA_DATABASE_IMAGE_PATTERNS = ['postgres', 'postgres-ssl', 'redis', 'mysql', 'mongo'] as const;
 export const INFRA_DATABASE_NAME_PATTERN = /^(Postgres|Redis|MySQL|MongoDB)/;
 
+export const INFRA_POWER_DIRECTION = {
+  OFF: 'off',
+  ON: 'on',
+} as const;
+export type InfraPowerDirection = (typeof INFRA_POWER_DIRECTION)[keyof typeof INFRA_POWER_DIRECTION];
+
 export const INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS = 30;
 export const INFRA_COSTS_CACHE_TTL_SECONDS = 900;
 export const INFRA_ACCESS_CACHE_TTL_SECONDS = 300;

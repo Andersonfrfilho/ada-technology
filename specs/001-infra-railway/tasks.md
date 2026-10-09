@@ -66,7 +66,7 @@ com trabalho de outra sessão.
   - 429 vira `RailwayRateLimitedError`; `errors` do GraphQL e resposta inválida viram `RailwayRequestFailedError`.
   - `fetch` direto para `https://backboard.railway.com/graphql/v2` (nunca CLI); `errors` no corpo conta como falha mesmo com HTTP 200; `verifyAccess()` conforme D7.
   - Aceite: testes com `fetch` falso cobrindo os quatro caminhos, o erro com HTTP 200 e os três resultados de `verifyAccess()`.
-- [ ] **T1.4 Funções puras.**
+- [x] **T1.4 Funções puras.**
   - `classifyEnvironment`, `orderServicesForPower` (banco por `source.image`, nome só como reforço; testar serviço renomeado com imagem de banco), com TDD.
   - Aceite: testes de produção, autoproteção, padrão, não gerenciado e ordem off/on.
 - [ ] **T1.5 Container.**

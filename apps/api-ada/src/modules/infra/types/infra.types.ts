@@ -8,6 +8,11 @@
 
 import type { z } from 'zod';
 
+import type {
+  InfraEnvironmentClassification,
+  InfraPowerDirection,
+} from '@/modules/infra/infra.constant';
+
 export type RailwayServiceInstance = {
   readonly serviceId: string;
   readonly serviceName: string;
@@ -65,4 +70,20 @@ export type ExecuteRailwayParams<TData> = {
   readonly query: string;
   readonly variables: Readonly<Record<string, unknown>>;
   readonly schema: z.ZodType<TData>;
+};
+
+export type ClassifyEnvironmentParams = {
+  readonly environmentName: string;
+  readonly environmentId: string;
+  readonly managedPattern: string;
+  readonly selfEnvironmentId: string;
+};
+export type ClassifyEnvironmentResult = InfraEnvironmentClassification;
+
+export type OrderServicesForPowerParams = {
+  readonly services: readonly RailwayServiceInstance[];
+  readonly direction: InfraPowerDirection;
+};
+export type OrderServicesForPowerResult = {
+  readonly ordered: RailwayServiceInstance[];
 };
