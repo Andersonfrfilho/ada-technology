@@ -27,6 +27,34 @@ Conferências após religar tudo:
 Formato da consulta de estado (campos confirmados): `serviceInstances { serviceId serviceName source { image repo } latestDeployment { id status deploymentStopped instances { status } } activeDeployments { id status } }`.
 Banco × aplicação: dá para distinguir por `source.image` (`postgres-ssl`, `redis`), sem depender só do nome.
 
+## T0.2 — Unidade e preço do `usage` (2026-10-09, 1 a 9/out) — aguardando conferência
+
+`usage(workspaceId, 2026-10-01 → 2026-10-31, [CPU_USAGE, MEMORY_USAGE_GB, NETWORK_TX_GB, DISK_USAGE_GB], groupBy [PROJECT_ID, ENVIRONMENT_ID])`.
+Unidades: `CPU_USAGE` em vCPU-minuto, `MEMORY_USAGE_GB` e `DISK_USAGE_GB` em GB-minuto, `NETWORK_TX_GB` em GB.
+Preços aplicados: CPU US$ 20/vCPU-mês, memória US$ 10/GB-mês, disco US$ 0,15/GB-mês (mês = 43 200 min), rede US$ 0,05/GB.
+
+| Projeto / ambiente | US$ (1–9/out) | CPU | Memória | Rede | Disco |
+|---|---|---|---|---|---|
+| transportada / production | 20,01 | 0,31 | 19,54 | 0,13 | 0,04 |
+| transportada / staging | 19,58 | 0,40 | 19,06 | 0,08 | 0,04 |
+| financiamento-imobiliario-bot / cbni-production | 2,93 | 0,03 | 2,80 | 0,07 | 0,03 |
+| transportada-ops / production | 2,60 | 0,05 | 2,48 | 0,00 | 0,07 |
+| financiamento-imobiliario-bot / cbni-staging | 2,45 | 0,03 | 2,39 | 0,00 | 0,04 |
+| quickcart / staging | 1,31 | 0,08 | 1,20 | 0,00 | 0,03 |
+| ada-technology / production | 0,85 | 0,07 | 0,74 | 0,00 | 0,04 |
+| ada-technology / staging | 0,84 | 0,05 | 0,75 | 0,00 | 0,03 |
+| **Total** | **50,57** | | | | |
+
+Leituras:
+- **Staging é 48% do total** (US$ 24,18 de 50,57); só `transportada / staging` custa quase o mesmo que a produção dela.
+- **Memória é ~95% do custo**; CPU é desprezível. Desligar staging corta praticamente toda a fatura do ambiente.
+- `quickcart / production` não aparece (sem uso registrado no período).
+- Falta comparar com a tela de uso do Railway (aceite: diferença ≤ 5%). Pendente do número do usuário.
+
+Achados para o `RailwayGateway`:
+- `usage` com `endDate` igual a "agora" falha com `Problem processing request`; com data futura (ex.: fim do mês) funciona. Usar sempre o último instante do mês.
+- `BACKUP_USAGE_GB` só funciona agrupando por `PROJECT_ID`, sem `ENVIRONMENT_ID`; ficar fora da consulta principal (o custo de backup é por projeto).
+
 ### Decisão D2
 
 - **Desligar:** `deploymentStop(id do deployment ativo)`. **Religar:** `deploymentRestart(id)`. Sem build, ~7 s, mesmo deployment.
