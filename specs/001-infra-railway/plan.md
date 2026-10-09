@@ -34,7 +34,7 @@ Infra → Custos     ──GET──────▶     ├─ listInfraEnvironm
 | `listInfraEnvironments.use-case.ts` | projetos → ambientes → serviços com estado e classificação; cache 30 s |
 | `powerOffEnvironment.use-case.ts` / `powerOnEnvironment.use-case.ts` | valida a classificação, trava, cria a operação, executa em segundo plano e audita |
 | `runPowerOperation.ts` | executor comum: percorre os serviços na ordem, registra resultado por serviço e respeita a espera dos bancos. "Pronto" = `deploymentStopped` falso **e** instância `RUNNING` (nunca só `SUCCESS`). A trava Redis tem TTL = espera dos bancos + folga para build e é renovada enquanto a operação roda. No boot, operações `running` mais antigas que esse TTL viram `failed` (código de "interrompida"), para um deploy no meio não deixar o painel preso |
-| `getInfraCosts.use-case.ts` | `usage` do mês + `estimatedUsage` → visão de custos; cache 15 min |
+| `getInfraCosts.use-case.ts` | `usage` do ciclo + `estimatedUsage` → visão de custos; cache 15 min. A consulta `usage` falhou de forma intermitente ("Problem processing request") em 2 de ~6 execuções: uma única nova tentativa após 2 s e, se falhar de novo, devolver o último resultado em cache marcado como desatualizado |
 | `saveEnvironmentSchedule.use-case.ts` / `listEnvironmentSchedules.use-case.ts` | CRUD da agenda; valida dias (0–6, ao menos um), `HH:mm`, `powerOnTime < powerOffTime` |
 | `resolveScheduleAction.ts` | função pura: `{ schedule, now, lastEvaluatedAt, keepOnUntil }` → `power_on \| power_off \| none` e `nextScheduledAction` |
 | `infraSchedules.ts` | `ScheduledTask` de 1 min: para cada agenda ativa, chama `resolveScheduleAction` e executa a ação (ator `system`) |

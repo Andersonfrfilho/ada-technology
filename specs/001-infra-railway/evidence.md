@@ -8,6 +8,7 @@ Uma linha por task: comando, resultado, commit. Escaladas de modelo também entr
 | T0.1 | spike em `cbni-staging` (abaixo) | mecanismo decidido: D2 = `deploymentStop` / `deploymentRestart` | — |
 | T1.1 | `bun run typecheck` (api-ada); `bun test --env-file=../../envs/env.test src/infra/config/environment.test.ts`; `make validate` | typecheck limpo; 7 testes novos passam; `make validate` verde (api-ada 232 testes, 0 falhas) | T1.1 |
 | T1.2 | `bun run typecheck` (api-ada); `bun test --env-file=../../envs/env.test src/modules/infra`; `make validate` | typecheck limpo; 18 testes novos (9 classes: code, status, `instanceof DomainError`, mensagem sem token); `make validate` verde (api-ada 250 testes, 0 falhas) | T1.2 |
+| T1.3 | `bun run typecheck` (api-ada); `bun test --env-file=../../envs/env.test src/modules/infra`; `make validate`; leituras reais via `railway api` (5 projetos/9 ambientes, ciclo 19/set–19/out, 96 linhas de `usage`, 10 de `estimatedUsage`, `verifyAccess`=ok); introspecção das mutations (`id: String!`, `environmentId/serviceId: String!`) | typecheck limpo; 41 testes passam (22 novos do gateway); `make validate` verde (api-ada 273); **nenhuma mutation executada** e `cbni-staging` com os 6 serviços no ar; `usage` falhou 1 vez de forma intermitente (tratada no plan) | T1.3 |
 
 ## T0.1 — Spike do mecanismo de desligar (2026-10-09, `cbni-staging`)
 

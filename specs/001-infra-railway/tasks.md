@@ -60,7 +60,7 @@ com trabalho de outra sessão.
   - `infra.constant.ts`.
   - `AUDIT_ACTION`/`AUDIT_TARGET` (e `ACTOR_TYPE.SYSTEM`, se faltar).
   - Aceite: `typecheck`.
-- [ ] **T1.3 `RailwayGateway` + schemas zod + interface.**
+- [x] **T1.3 `RailwayGateway` + schemas zod + interface.**
   - Documentos fixos do plan §2.2.
   - Sem log do token.
   - 429 vira `RailwayRateLimitedError`; `errors` do GraphQL e resposta inválida viram `RailwayRequestFailedError`.
