@@ -166,6 +166,8 @@ function buildHarness(params: {
     async upsert() {
       throw new Error('not used');
     },
+    async recordEvaluation() {},
+    async setKeepOnUntil() {},
   };
 
   const useCase = new ListInfraEnvironmentsUseCase({
@@ -175,6 +177,7 @@ function buildHarness(params: {
     scheduleRepository,
     managedPattern: 'staging',
     selfEnvironmentId: 'env-self',
+    now: () => new Date('2026-10-09T12:00:00Z'),
   });
 
   return { useCase, counters, schedules, operations };
@@ -313,5 +316,26 @@ describe('ListInfraEnvironmentsUseCase', () => {
     const result = await useCase.execute();
     expect(result.projects.map((project) => project.projectName)).toEqual(['alpha', 'zeta']);
     expect(result.projects[0]?.environments.map((environment) => environment.environmentName)).toEqual(['dev', 'staging']);
+  });
+});
+
+describe('ListInfraEnvironmentsUseCase - nextScheduledAction', () => {
+  it('traz a proxima acao calculada no servidor para ambiente com agenda', async () => {
+    const harness = buildHarness({ projects: singleEnvironment([buildService()]) });
+    harness.schedules.push({ ...buildSchedule('env-1'), activeWeekdays: [1, 2, 3, 4, 5] });
+
+    const result = await harness.useCase.execute();
+
+    // Sexta 09:00 BRT esta dentro da janela: a proxima acao e desligar as 20:00 BRT (23:00Z).
+    expect(result.projects[0]?.environments[0]?.nextScheduledAction).toEqual({
+      kind: 'power_off',
+      at: '2026-10-09T23:00:00.000Z',
+    });
+  });
+
+  it('omite nextScheduledAction quando nao ha agenda', async () => {
+    const result = await buildHarness({ projects: singleEnvironment([buildService()]) }).useCase.execute();
+
+    expect(result.projects[0]?.environments[0]).not.toHaveProperty('nextScheduledAction');
   });
 });

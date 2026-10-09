@@ -106,6 +106,7 @@ import { GetInfraOperationUseCase } from '@/modules/infra/getInfraOperation.use-
 import { ListInfraEnvironmentsUseCase } from '@/modules/infra/listInfraEnvironments.use-case';
 import { PowerOffEnvironmentUseCase } from '@/modules/infra/powerOffEnvironment.use-case';
 import { PowerOnEnvironmentUseCase } from '@/modules/infra/powerOnEnvironment.use-case';
+import { SaveEnvironmentScheduleUseCase } from '@/modules/infra/saveEnvironmentSchedule.use-case';
 import { RecoverInterruptedInfraOperationsUseCase } from '@/modules/infra/recoverInterruptedInfraOperations.use-case';
 import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
 import { SeedNotificationTemplatesUseCase } from '@/modules/notification/seedNotificationTemplates.use-case';
@@ -388,13 +389,23 @@ const infraPowerDependencies: PowerEnvironmentDependencies = {
   ...(railwayGateway ? { railwayGateway } : {}),
   cache: infraCache,
   operationRepository: infraOperationRepository,
+  scheduleRepository: infraScheduleRepository,
   recordAudit: recordAuditLog,
   logger: infraLogger,
   sleep: (milliseconds) => Bun.sleep(milliseconds),
   managedPattern: environment.RAILWAY_MANAGED_ENVIRONMENT_PATTERN,
   selfEnvironmentId: environment.RAILWAY_ENVIRONMENT_ID,
   databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
+  now: () => new Date(),
 };
+
+export const saveEnvironmentSchedule = new SaveEnvironmentScheduleUseCase({
+  ...(railwayGateway ? { railwayGateway } : {}),
+  scheduleRepository: infraScheduleRepository,
+  recordAudit: recordAuditLog,
+  managedPattern: environment.RAILWAY_MANAGED_ENVIRONMENT_PATTERN,
+  selfEnvironmentId: environment.RAILWAY_ENVIRONMENT_ID,
+});
 
 export const getInfraCosts = new GetInfraCostsUseCase({
   ...(railwayGateway ? { railwayGateway } : {}),

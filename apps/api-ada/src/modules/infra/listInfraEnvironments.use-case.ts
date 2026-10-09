@@ -21,6 +21,7 @@ import { InfraNotConfiguredError } from '@/modules/infra/infra.error';
 import { infraInventoryCacheSchema } from '@/modules/infra/infraInventory.schema';
 import { classifyEnvironment } from '@/modules/infra/classifyEnvironment';
 import { isDatabaseService } from '@/modules/infra/isDatabaseService';
+import { resolveNextScheduledActionView } from '@/modules/infra/resolveNextScheduledActionView';
 import { resolveServicePowerState } from '@/modules/infra/resolveServicePowerState';
 import type { InfraCacheInterface } from '@/modules/infra/types/infraCache.interface';
 import type {
@@ -43,6 +44,7 @@ type Dependencies = {
   readonly scheduleRepository: InfraScheduleRepositoryInterface;
   readonly managedPattern: string;
   readonly selfEnvironmentId: string;
+  readonly now?: () => Date;
 };
 
 const ACCESS_STATUSES = Object.values(INFRA_ACCESS_STATUS) as readonly string[];
@@ -147,6 +149,9 @@ export class ListInfraEnvironmentsUseCase {
   }): Promise<InfraEnvironmentView> {
     const { environment, schedule } = params;
     const { managedPattern, selfEnvironmentId, operationRepository } = this.dependencies;
+    const nextScheduledAction = schedule
+      ? resolveNextScheduledActionView({ schedule, now: (this.dependencies.now ?? (() => new Date()))() })
+      : undefined;
     const runningOperation = await operationRepository.findRunningByEnvironmentId(environment.id);
 
     const services = environment.services.map((service) => ({
@@ -167,6 +172,7 @@ export class ListInfraEnvironmentsUseCase {
       state: aggregatePowerState(services),
       services,
       ...(schedule ? { schedule } : {}),
+      ...(nextScheduledAction ? { nextScheduledAction } : {}),
       ...(runningOperation ? { runningOperationId: runningOperation.id } : {}),
     };
   }

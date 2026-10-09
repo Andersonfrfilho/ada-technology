@@ -11,15 +11,20 @@ import type {
   CreateInfraOperationParams,
   FinishInfraOperationParams,
   InfraOperationRecord,
+  InfraScheduleRecord,
   InfraSleep,
   MarkStaleRunningAsInterruptedParams,
   RailwayProject,
   RailwayServiceInstance,
+  RecordScheduleEvaluationParams,
   SetIfAbsentParams,
+  SetKeepOnUntilParams,
+  UpsertInfraScheduleParams,
 } from '@/modules/infra/types/infra.types';
 import type { PowerEnvironmentDependencies } from '@/modules/infra/powerEnvironment.use-case';
 import type { InfraCacheInterface } from '@/modules/infra/types/infraCache.interface';
 import type { InfraOperationRepositoryInterface } from '@/modules/infra/types/infraOperationRepository.interface';
+import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 
 /** Fakes em memoria dos testes de operacao de energia. O gateway registra TODA mutation em `events`. */
@@ -196,11 +201,77 @@ export class FakeOperationRepository implements InfraOperationRepositoryInterfac
   }
 }
 
+export const FAKE_NOW = new Date('2026-10-09T12:00:00Z');
+
+export class FakeScheduleRepository implements InfraScheduleRepositoryInterface {
+  readonly records = new Map<string, InfraScheduleRecord>();
+  readonly upsertCalls: UpsertInfraScheduleParams[] = [];
+  readonly keepOnUntilCalls: SetKeepOnUntilParams[] = [];
+  readonly evaluationCalls: RecordScheduleEvaluationParams[] = [];
+
+  seed(record: InfraScheduleRecord): void {
+    this.records.set(record.railwayEnvironmentId, record);
+  }
+
+  async findByEnvironmentId(environmentId: string): Promise<InfraScheduleRecord | undefined> {
+    return this.records.get(environmentId);
+  }
+
+  async listAll(): Promise<readonly InfraScheduleRecord[]> {
+    return [...this.records.values()];
+  }
+
+  async upsert(params: UpsertInfraScheduleParams): Promise<InfraScheduleRecord> {
+    this.upsertCalls.push(params);
+    const existing = this.records.get(params.railwayEnvironmentId);
+    const record: InfraScheduleRecord = {
+      id: existing?.id ?? `schedule-${this.records.size + 1}`,
+      railwayProjectId: params.railwayProjectId,
+      railwayEnvironmentId: params.railwayEnvironmentId,
+      activeWeekdays: [...params.activeWeekdays],
+      powerOnTime: params.powerOnTime,
+      powerOffTime: params.powerOffTime,
+      timezone: existing?.timezone ?? 'America/Sao_Paulo',
+      isEnabled: params.isEnabled,
+      keepOnUntil: existing?.keepOnUntil ?? null,
+      lastEvaluatedAt: existing?.lastEvaluatedAt ?? null,
+      lastPowerOffAt: existing?.lastPowerOffAt ?? null,
+      lastPowerOnAt: existing?.lastPowerOnAt ?? null,
+      updatedByAgentId: params.updatedByAgentId ?? existing?.updatedByAgentId ?? null,
+      createdAt: existing?.createdAt ?? FAKE_NOW,
+      updatedAt: FAKE_NOW,
+    };
+    this.records.set(params.railwayEnvironmentId, record);
+    return record;
+  }
+
+  async recordEvaluation(params: RecordScheduleEvaluationParams): Promise<void> {
+    this.evaluationCalls.push(params);
+    const current = this.records.get(params.environmentId);
+    if (!current) return;
+    this.records.set(params.environmentId, {
+      ...current,
+      lastEvaluatedAt: params.lastEvaluatedAt,
+      ...(params.keepOnUntil !== undefined ? { keepOnUntil: params.keepOnUntil } : {}),
+      ...(params.lastPowerOnAt ? { lastPowerOnAt: params.lastPowerOnAt } : {}),
+      ...(params.lastPowerOffAt ? { lastPowerOffAt: params.lastPowerOffAt } : {}),
+    });
+  }
+
+  async setKeepOnUntil(params: SetKeepOnUntilParams): Promise<void> {
+    this.keepOnUntilCalls.push(params);
+    const current = this.records.get(params.environmentId);
+    if (!current) return;
+    this.records.set(params.environmentId, { ...current, keepOnUntil: params.keepOnUntil });
+  }
+}
+
 export type PowerHarness = {
   readonly dependencies: PowerEnvironmentDependencies;
   readonly gateway: FakeGateway;
   readonly cache: FakeInfraCache;
   readonly repository: FakeOperationRepository;
+  readonly scheduleRepository: FakeScheduleRepository;
   readonly auditCalls: RecordAuditLogParams[];
   readonly logMessages: string[];
   readonly sleeps: number[];
@@ -211,10 +282,12 @@ export function buildPowerHarness(params: {
   readonly gatewayOptions: FakeGatewayOptions;
   readonly databaseWaitSeconds?: number;
   readonly isConfigured?: boolean;
+  readonly now?: Date;
 }): PowerHarness {
   const gateway = buildFakeGateway(params.gatewayOptions);
   const cache = new FakeInfraCache();
   const repository = new FakeOperationRepository();
+  const scheduleRepository = new FakeScheduleRepository();
   const auditCalls: RecordAuditLogParams[] = [];
   const logMessages: string[] = [];
   const sleeps: number[] = [];
@@ -223,6 +296,7 @@ export function buildPowerHarness(params: {
     gateway,
     cache,
     repository,
+    scheduleRepository,
     auditCalls,
     logMessages,
     sleeps,
@@ -231,6 +305,7 @@ export function buildPowerHarness(params: {
       ...(params.isConfigured === false ? {} : { railwayGateway: gateway }),
       cache,
       operationRepository: repository,
+      scheduleRepository,
       recordAudit: {
         execute: async (auditParams) => {
           if (harness.failAudit) throw new Error('audit down');
@@ -247,6 +322,7 @@ export function buildPowerHarness(params: {
       managedPattern: 'staging',
       selfEnvironmentId: 'env-self',
       databaseWaitSeconds: params.databaseWaitSeconds ?? 120,
+      now: () => params.now ?? FAKE_NOW,
     },
   };
 

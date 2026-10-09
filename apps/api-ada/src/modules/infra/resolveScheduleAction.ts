@@ -9,6 +9,7 @@
 import { INFRA_SCHEDULE_ACTION } from '@/modules/infra/infra.constant';
 import type {
   InfraScheduleAction,
+  IsInsideScheduleWindowParams,
   InfraScheduledTransition,
   InfraScheduleWindowInput,
   ResolveScheduleActionParams,
@@ -59,7 +60,7 @@ function parseMinuteOfDay(time: string): number | undefined {
 }
 
 // Janela inválida ou invertida vira vazia: a invariante é validada fora e aqui nunca lança.
-function parseWindow(schedule: InfraScheduleWindowInput): MinuteWindow | undefined {
+function parseWindow(schedule: Pick<InfraScheduleWindowInput, 'powerOnTime' | 'powerOffTime'>): MinuteWindow | undefined {
   const on = parseMinuteOfDay(schedule.powerOnTime);
   const off = parseMinuteOfDay(schedule.powerOffTime);
   if (on === undefined || off === undefined || on >= off) return undefined;
@@ -159,4 +160,13 @@ export function resolveScheduleAction(params: ResolveScheduleActionParams): Reso
   const nextScheduledAction =
     window === undefined ? undefined : findNextTransition({ schedule, window, now, isInside });
   return { action, shouldClearKeepOn: isKeepOnExpired, nextScheduledAction };
+}
+
+export function isInsideScheduleWindow(params: IsInsideScheduleWindowParams): boolean {
+  const { schedule, at } = params;
+  return isInsideWindow({
+    parts: getZonedParts({ date: at, timezone: schedule.timezone }),
+    activeWeekdays: schedule.activeWeekdays,
+    window: parseWindow(schedule),
+  });
 }

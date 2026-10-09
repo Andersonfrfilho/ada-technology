@@ -12,6 +12,7 @@ import {
   listInfraEnvironments,
   powerOffEnvironment,
   powerOnEnvironment,
+  saveEnvironmentSchedule,
 } from '@/infra/container';
 import type { Route } from '@/infra/http/router';
 import { buildInfraRoutes } from '@/modules/infra/buildInfraRoutes';
@@ -22,4 +23,5 @@ export const infraRoutes: readonly Route[] = buildInfraRoutes({
   powerOnEnvironment,
   getInfraOperation,
   getInfraCosts,
+  saveEnvironmentSchedule,
 });

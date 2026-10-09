@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'bun:test';
 
 import { INFRA_SCHEDULE_ACTION } from '@/modules/infra/infra.constant';
-import { resolveScheduleAction } from '@/modules/infra/resolveScheduleAction';
+import { isInsideScheduleWindow, resolveScheduleAction } from '@/modules/infra/resolveScheduleAction';
 import type { InfraScheduleWindowInput } from '@/modules/infra/types/infra.types';
 
 // Outubro/2026: 09 sexta, 10 sábado, 11 domingo, 12 segunda, 14 quarta. BRT = UTC-3.
@@ -197,5 +197,28 @@ describe('resolveScheduleAction - fusos e entradas inválidas', () => {
     const result = resolve({ powerOnTime: 'xx:yy', lastEvaluatedAt: brt(14, 7, 59) }, brt(14, 8, 0));
     expect(result.action).toBe(INFRA_SCHEDULE_ACTION.NONE);
     expect(result.nextScheduledAction).toBeUndefined();
+  });
+});
+
+describe('isInsideScheduleWindow', () => {
+  const inside = (at: Date, schedule: Partial<InfraScheduleWindowInput> = {}): boolean =>
+    isInsideScheduleWindow({ schedule: { ...BUSINESS_HOURS, ...schedule }, at });
+
+  it('true dentro da janela e em dia ativo', () => {
+    expect(inside(brt(14, 10, 0))).toBe(true);
+  });
+
+  it('limite inferior inclusivo e superior exclusivo', () => {
+    expect(inside(brt(14, 8, 0))).toBe(true);
+    expect(inside(brt(14, 20, 0))).toBe(false);
+  });
+
+  it('false fora do horario e em dia inativo', () => {
+    expect(inside(brt(14, 7, 59))).toBe(false);
+    expect(inside(brt(10, 10, 0))).toBe(false);
+  });
+
+  it('false para janela invalida', () => {
+    expect(inside(brt(14, 10, 0), { powerOnTime: '20:00', powerOffTime: '08:00' })).toBe(false);
   });
 });

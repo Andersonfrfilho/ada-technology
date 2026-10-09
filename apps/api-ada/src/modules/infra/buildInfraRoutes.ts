@@ -11,7 +11,12 @@ import { jsonData } from '@/infra/http/responses';
 import { AUTH_REQUIREMENT, HTTP_METHOD, requireAgent, type RequestContext, type Route } from '@/infra/http/router';
 import { ACTOR_TYPE } from '@/modules/audit/audit.constant';
 import { INFRA_OPERATION_TRIGGER } from '@/modules/infra/infra.constant';
-import { infraEnvironmentParamsSchema, infraOperationParamsSchema } from '@/modules/infra/infra.schema';
+import {
+  infraEnvironmentParamsSchema,
+  infraOperationParamsSchema,
+  infraPowerOnBodySchema,
+  infraScheduleBodySchema,
+} from '@/modules/infra/infra.schema';
 import type {
   CostsResult,
   GetInfraOperationParams,
@@ -20,6 +25,8 @@ import type {
   ListInfraEnvironmentsResult,
   PowerEnvironmentParams,
   PowerEnvironmentResult,
+  SaveEnvironmentScheduleParams,
+  SaveEnvironmentScheduleResult,
 } from '@/modules/infra/types/infra.types';
 
 const ENVIRONMENTS_PATH = '/v1/panel/infra/environments';
@@ -33,6 +40,9 @@ export type InfraRoutesDependencies = {
   readonly powerOnEnvironment: { execute(params: PowerEnvironmentParams): Promise<PowerEnvironmentResult> };
   readonly getInfraOperation: { execute(params: GetInfraOperationParams): Promise<GetInfraOperationResult> };
   readonly getInfraCosts: { execute(): Promise<CostsResult> };
+  readonly saveEnvironmentSchedule: {
+    execute(params: SaveEnvironmentScheduleParams): Promise<SaveEnvironmentScheduleResult>;
+  };
 };
 
 type PowerUseCase = InfraRoutesDependencies['powerOffEnvironment'];
@@ -48,16 +58,22 @@ function toEnvironmentResponse(environment: InfraEnvironmentView): Omit<InfraEnv
   return { ...rest, schedule: publicSchedule };
 }
 
-function buildPowerHandler(useCase: PowerUseCase) {
+function buildPowerHandler(params: { readonly useCase: PowerUseCase; readonly isKeepOnUntilAccepted?: boolean }) {
+  const { useCase, isKeepOnUntilAccepted } = params;
+
   return async (context: RequestContext): Promise<Response> => {
     const { environmentId } = infraEnvironmentParamsSchema.parse(context.params);
     const { agentId } = requireAgent(context);
+    const { keepOnUntil } = isKeepOnUntilAccepted
+      ? infraPowerOnBodySchema.parse(await context.request.json().catch(() => ({})))
+      : { keepOnUntil: undefined };
 
     const result = await useCase.execute({
       environmentId,
       actor: { type: ACTOR_TYPE.AGENT, agentId },
       trigger: INFRA_OPERATION_TRIGGER.MANUAL,
       ipAddress: context.clientAddress,
+      ...(keepOnUntil ? { keepOnUntil: new Date(keepOnUntil) } : {}),
     });
 
     return jsonData({ operationId: result.operationId }, 202);
@@ -89,7 +105,7 @@ export function buildInfraRoutes(dependencies: InfraRoutesDependencies): readonl
     path: `${ENVIRONMENT_PATH}/power-off`,
     auth: AUTH_REQUIREMENT.ADMIN,
     rateLimit: RATE_LIMIT.PANEL_INFRA_POWER,
-    handler: buildPowerHandler(dependencies.powerOffEnvironment),
+    handler: buildPowerHandler({ useCase: dependencies.powerOffEnvironment }),
   };
 
   const powerOnRoute: Route = {
@@ -97,7 +113,7 @@ export function buildInfraRoutes(dependencies: InfraRoutesDependencies): readonl
     path: `${ENVIRONMENT_PATH}/power-on`,
     auth: AUTH_REQUIREMENT.ADMIN,
     rateLimit: RATE_LIMIT.PANEL_INFRA_POWER,
-    handler: buildPowerHandler(dependencies.powerOnEnvironment),
+    handler: buildPowerHandler({ useCase: dependencies.powerOnEnvironment, isKeepOnUntilAccepted: true }),
   };
 
   const getOperationRoute: Route = {
@@ -120,5 +136,27 @@ export function buildInfraRoutes(dependencies: InfraRoutesDependencies): readonl
     handler: async () => jsonData(await dependencies.getInfraCosts.execute()),
   };
 
-  return [listEnvironmentsRoute, powerOffRoute, powerOnRoute, getOperationRoute, getCostsRoute];
+  const saveScheduleRoute: Route = {
+    method: HTTP_METHOD.PUT,
+    path: `${ENVIRONMENT_PATH}/schedule`,
+    auth: AUTH_REQUIREMENT.ADMIN,
+    rateLimit: RATE_LIMIT.PANEL_WRITE,
+    handler: async (context) => {
+      const { environmentId } = infraEnvironmentParamsSchema.parse(context.params);
+      const { agentId } = requireAgent(context);
+      const body = infraScheduleBodySchema.parse(await context.request.json().catch(() => ({})));
+
+      const result = await dependencies.saveEnvironmentSchedule.execute({
+        ...body,
+        environmentId,
+        actor: { type: ACTOR_TYPE.AGENT, agentId },
+        ipAddress: context.clientAddress,
+      });
+      const { updatedByAgentId: _updatedByAgentId, ...schedule } = result.schedule;
+
+      return jsonData({ ...schedule, nextScheduledAction: result.nextScheduledAction });
+    },
+  };
+
+  return [listEnvironmentsRoute, powerOffRoute, powerOnRoute, getOperationRoute, getCostsRoute, saveScheduleRoute];
 }

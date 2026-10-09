@@ -11,7 +11,12 @@ import { eq } from 'drizzle-orm';
 import { database } from '@/infra/database/client';
 import { infraEnvironmentSchedules } from '@/infra/database/schema';
 import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';
-import type { InfraScheduleRecord, UpsertInfraScheduleParams } from '@/modules/infra/types/infra.types';
+import type {
+  InfraScheduleRecord,
+  RecordScheduleEvaluationParams,
+  SetKeepOnUntilParams,
+  UpsertInfraScheduleParams,
+} from '@/modules/infra/types/infra.types';
 
 export class DrizzleInfraScheduleRepository implements InfraScheduleRepositoryInterface {
   async findByEnvironmentId(environmentId: string): Promise<InfraScheduleRecord | undefined> {
@@ -50,5 +55,24 @@ export class DrizzleInfraScheduleRepository implements InfraScheduleRepositoryIn
 
     if (!row) throw new Error('Upsert da agenda de infra nao retornou linha');
     return row;
+  }
+
+  async recordEvaluation(params: RecordScheduleEvaluationParams): Promise<void> {
+    await database
+      .update(infraEnvironmentSchedules)
+      .set({
+        lastEvaluatedAt: params.lastEvaluatedAt,
+        ...(params.keepOnUntil !== undefined ? { keepOnUntil: params.keepOnUntil } : {}),
+        ...(params.lastPowerOnAt ? { lastPowerOnAt: params.lastPowerOnAt } : {}),
+        ...(params.lastPowerOffAt ? { lastPowerOffAt: params.lastPowerOffAt } : {}),
+      })
+      .where(eq(infraEnvironmentSchedules.railwayEnvironmentId, params.environmentId));
+  }
+
+  async setKeepOnUntil(params: SetKeepOnUntilParams): Promise<void> {
+    await database
+      .update(infraEnvironmentSchedules)
+      .set({ keepOnUntil: params.keepOnUntil, updatedAt: new Date() })
+      .where(eq(infraEnvironmentSchedules.railwayEnvironmentId, params.environmentId));
   }
 }

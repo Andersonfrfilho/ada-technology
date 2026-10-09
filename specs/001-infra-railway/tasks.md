@@ -111,11 +111,11 @@ com trabalho de outra sessão.
   - Janela por dia da semana + `HH:mm` no fuso `America/Sao_Paulo`.
   - Detecção de transição via `lastEvaluatedAt`, `keepOnUntil` e `nextScheduledAction` (plan §2.8).
   - Aceite: todos os casos da tabela de testes do plan §4 "Agenda".
-- [ ] **T4.2 `saveEnvironmentSchedule` / `listEnvironmentSchedules` + `PUT schedule`.**
+- [x] **T4.2 `saveEnvironmentSchedule` / `listEnvironmentSchedules` + `PUT schedule`.**
   - Valida dias, horas e `powerOnTime < powerOffTime` (400 `INFRA_INVALID_SCHEDULE`).
   - Recusa ambiente protegido; devolve `nextScheduledAction`; auditoria `INFRA_SCHEDULE_CHANGED`.
   - Aceite: testes de use case e de rota.
-- [ ] **T4.3 `keepOnUntil` no `power-on`/`power-off`.**
+- [x] **T4.3 `keepOnUntil` no `power-on`/`power-off`.**
   - `power-on` fora da janela de agenda ativa exige `keepOnUntil` ≤ 24 h (400 `INFRA_KEEP_ON_UNTIL_REQUIRED`).
   - `power-off` limpa o campo.
   - Aceite: testes de rota.

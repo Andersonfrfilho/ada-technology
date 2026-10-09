@@ -8,10 +8,10 @@
 
 import { ACTOR_TYPE, AUDIT_ACTION, AUDIT_TARGET } from '@/modules/audit/audit.constant';
 import type { RecordAuditLogUseCase } from '@/modules/audit/recordAuditLog.use-case';
-import { classifyEnvironment } from '@/modules/infra/classifyEnvironment';
 import {
-  INFRA_ENVIRONMENT_CLASSIFICATION,
   INFRA_INVENTORY_CACHE_KEY,
+  INFRA_KEEP_ON_UNTIL_MAX_HOURS,
+  INFRA_OPERATION_TRIGGER,
   INFRA_OPERATION_KIND,
   INFRA_OPERATION_LOCK_GRACE_SECONDS,
   INFRA_OPERATION_LOCK_KEY_PREFIX,
@@ -21,12 +21,13 @@ import {
   type InfraPowerDirection,
 } from '@/modules/infra/infra.constant';
 import {
-  InfraEnvironmentNotFoundError,
-  InfraEnvironmentProtectedError,
+  InfraKeepOnUntilRequiredError,
   InfraNotConfiguredError,
   InfraOperationInProgressError,
 } from '@/modules/infra/infra.error';
+import { locateManagedEnvironment } from '@/modules/infra/locateManagedEnvironment';
 import { countServiceOutcomes, resolveOperationStatus } from '@/modules/infra/resolveOperationStatus';
+import { isInsideScheduleWindow } from '@/modules/infra/resolveScheduleAction';
 import { resolveServiceErrorCode } from '@/modules/infra/resolveServiceErrorCode';
 import { RunPowerOperation } from '@/modules/infra/runPowerOperation';
 import type {
@@ -36,37 +37,31 @@ import type {
   InfraSleep,
   PowerEnvironmentParams,
   PowerEnvironmentResult,
-  RailwayEnvironment,
   RailwayProject,
   RunOperationParams,
 } from '@/modules/infra/types/infra.types';
 import type { InfraCacheInterface } from '@/modules/infra/types/infraCache.interface';
 import type { InfraOperationRepositoryInterface } from '@/modules/infra/types/infraOperationRepository.interface';
+import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 
 export type PowerEnvironmentDependencies = {
   readonly railwayGateway?: RailwayGatewayInterface;
   readonly cache: InfraCacheInterface;
   readonly operationRepository: InfraOperationRepositoryInterface;
+  readonly scheduleRepository: InfraScheduleRepositoryInterface;
   readonly recordAudit: Pick<RecordAuditLogUseCase, 'execute'>;
   readonly logger: InfraLogger;
   readonly sleep: InfraSleep;
   readonly managedPattern: string;
   readonly selfEnvironmentId: string;
   readonly databaseWaitSeconds: number;
+  readonly now: () => Date;
 };
 
 type Dependencies = PowerEnvironmentDependencies & { readonly direction: InfraPowerDirection };
 
-type LocatedEnvironment = {
-  readonly project: RailwayProject;
-  readonly environment: RailwayEnvironment;
-};
-
-type LocateEnvironmentParams = {
-  readonly railwayGateway: RailwayGatewayInterface;
-  readonly environmentId: string;
-};
+const MS_PER_HOUR = 3_600_000;
 
 type OutcomeParams = {
   readonly params: RunOperationParams;
@@ -88,10 +83,15 @@ export class PowerEnvironmentUseCase {
     const { cache, operationRepository, direction } = this.dependencies;
     const railwayGateway = this.requireGateway();
 
-    const { project, environment } = await this.locateManagedEnvironment({
+    const { managedPattern, selfEnvironmentId } = this.dependencies;
+    const { project, environment } = await locateManagedEnvironment({
       railwayGateway,
       environmentId: params.environmentId,
+      managedPattern,
+      selfEnvironmentId,
     });
+    // Antes da trava e de qualquer operacao: um keepOnUntil recusado nao pode deixar rastro.
+    const keepOnUntilChange = await this.resolveKeepOnUntilChange({ params, environmentId: environment.id });
 
     const isLockAcquired = await cache.setIfAbsent({
       key: this.lockKey(environment.id),
@@ -100,7 +100,7 @@ export class PowerEnvironmentUseCase {
     });
     if (!isLockAcquired) throw new InfraOperationInProgressError();
 
-    const operation = await this.createOperationReleasingLockOnFailure({ params, project });
+    const operation = await this.registerOperationReleasingLockOnFailure({ params, project, keepOnUntilChange });
     await this.invalidateInventory();
 
     const runParams: RunOperationParams = {
@@ -161,36 +161,48 @@ export class PowerEnvironmentUseCase {
     return this.dependencies.databaseWaitSeconds + INFRA_OPERATION_LOCK_GRACE_SECONDS;
   }
 
-  /** Inventario fresco, sem cache: a decisao de mexer no ambiente nao pode usar leitura de 30 s atras. */
-  private async locateManagedEnvironment(params: LocateEnvironmentParams): Promise<LocatedEnvironment> {
-    const { managedPattern, selfEnvironmentId } = this.dependencies;
-    const inventory = await params.railwayGateway.listInventory();
+  /** `undefined` = nao mexe; `null` = limpa (desligar manual); `Date` = grava (ligar manual fora da janela). */
+  private async resolveKeepOnUntilChange(params: {
+    readonly params: PowerEnvironmentParams;
+    readonly environmentId: string;
+  }): Promise<Date | null | undefined> {
+    const { direction, scheduleRepository } = this.dependencies;
+    if (params.params.trigger !== INFRA_OPERATION_TRIGGER.MANUAL) return undefined;
+    if (direction === INFRA_POWER_DIRECTION.OFF) return null;
 
-    for (const project of inventory) {
-      const environment = project.environments.find((candidate) => candidate.id === params.environmentId);
-      if (!environment) continue;
+    const schedule = await scheduleRepository.findByEnvironmentId(params.environmentId);
+    if (!schedule?.isEnabled) return undefined;
 
-      const classification = classifyEnvironment({
-        environmentName: environment.name,
-        environmentId: environment.id,
-        managedPattern,
-        selfEnvironmentId,
-      });
-      if (classification !== INFRA_ENVIRONMENT_CLASSIFICATION.MANAGED) throw new InfraEnvironmentProtectedError();
+    const now = this.dependencies.now();
+    if (isInsideScheduleWindow({ schedule, at: now })) return undefined;
 
-      return { project, environment };
+    const { keepOnUntil } = params.params;
+    if (!keepOnUntil) throw new InfraKeepOnUntilRequiredError();
+    if (keepOnUntil <= now) throw new InfraKeepOnUntilRequiredError('O horario para manter ligado deve estar no futuro');
+
+    const limit = new Date(now.getTime() + INFRA_KEEP_ON_UNTIL_MAX_HOURS * MS_PER_HOUR);
+    if (keepOnUntil > limit) {
+      throw new InfraKeepOnUntilRequiredError(
+        `O ambiente pode ficar ligado por no maximo ${INFRA_KEEP_ON_UNTIL_MAX_HOURS} horas`,
+      );
     }
-
-    throw new InfraEnvironmentNotFoundError();
+    return keepOnUntil;
   }
 
   // Cleanup de recurso: sem isto a trava ficaria presa ate o TTL por uma falha do banco.
-  private async createOperationReleasingLockOnFailure(params: {
+  private async registerOperationReleasingLockOnFailure(params: {
     readonly params: PowerEnvironmentParams;
     readonly project: RailwayProject;
+    readonly keepOnUntilChange: Date | null | undefined;
   }): Promise<InfraOperationRecord> {
-    const { params: powerParams, project } = params;
+    const { params: powerParams, project, keepOnUntilChange } = params;
     try {
+      if (keepOnUntilChange !== undefined) {
+        await this.dependencies.scheduleRepository.setKeepOnUntil({
+          environmentId: powerParams.environmentId,
+          keepOnUntil: keepOnUntilChange,
+        });
+      }
       return await this.dependencies.operationRepository.create({
         railwayProjectId: project.id,
         railwayEnvironmentId: powerParams.environmentId,

@@ -22,6 +22,7 @@ import { PowerOffEnvironmentUseCase } from '@/modules/infra/powerOffEnvironment.
 import { PowerOnEnvironmentUseCase } from '@/modules/infra/powerOnEnvironment.use-case';
 import { GetInfraCostsUseCase } from '@/modules/infra/getInfraCosts.use-case';
 import { ListInfraEnvironmentsUseCase } from '@/modules/infra/listInfraEnvironments.use-case';
+import { SaveEnvironmentScheduleUseCase } from '@/modules/infra/saveEnvironmentSchedule.use-case';
 import { buildPowerHarness, buildProject, buildService } from '@/modules/infra/infraFakes';
 import { InfraOperationInProgressError } from '@/modules/infra/infra.error';
 import { INFRA_OPERATION_LOCK_KEY_PREFIX } from '@/modules/infra/infra.constant';
@@ -58,8 +59,14 @@ type Setup = {
   readonly harness: ReturnType<typeof buildPowerHarness>;
 };
 
-function buildSetup(params: { readonly identity: Identity; readonly isConfigured?: boolean }): Setup {
+function buildSetup(params: {
+  readonly identity: Identity;
+  readonly isConfigured?: boolean;
+  readonly now?: Date;
+}): Setup {
+  const now = params.now ?? new Date('2026-10-09T12:00:00Z');
   const harness = buildPowerHarness({
+    now,
     gatewayOptions: {
       projects: [
         buildProject({
@@ -72,6 +79,7 @@ function buildSetup(params: { readonly identity: Identity; readonly isConfigured
     ...(params.isConfigured === false ? { isConfigured: false } : {}),
   });
 
+  harness.scheduleRepository.seed(SCHEDULE);
   const powerOffEnvironment = new PowerOffEnvironmentUseCase(harness.dependencies);
   const powerOffCalls: PowerEnvironmentParams[] = [];
   const recordingPowerOff = {
@@ -86,11 +94,7 @@ function buildSetup(params: { readonly identity: Identity; readonly isConfigured
       ...(params.isConfigured === false ? {} : { railwayGateway: harness.gateway }),
       cache: harness.cache,
       operationRepository: harness.repository,
-      scheduleRepository: {
-        listAll: async () => [SCHEDULE],
-        findByEnvironmentId: async () => SCHEDULE,
-        upsert: async () => SCHEDULE,
-      },
+      scheduleRepository: harness.scheduleRepository,
       managedPattern: 'staging',
       selfEnvironmentId: 'env-self',
     }),
@@ -102,6 +106,14 @@ function buildSetup(params: { readonly identity: Identity; readonly isConfigured
       cache: harness.cache,
       sleep: async () => {},
       now: () => new Date('2026-10-09T12:00:00Z'),
+    }),
+    saveEnvironmentSchedule: new SaveEnvironmentScheduleUseCase({
+      ...(params.isConfigured === false ? {} : { railwayGateway: harness.gateway }),
+      scheduleRepository: harness.scheduleRepository,
+      recordAudit: harness.dependencies.recordAudit,
+      managedPattern: 'staging',
+      selfEnvironmentId: 'env-self',
+      now: () => now,
     }),
   });
 
@@ -116,12 +128,29 @@ function request(method: string, path: string): Request {
   return new Request(`${BASE}${path}`, { method });
 }
 
+function jsonRequest(params: { readonly method: string; readonly path: string; readonly body: unknown }): Request {
+  return new Request(`${BASE}${params.path}`, {
+    method: params.method,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(params.body),
+  });
+}
+
+const SCHEDULE_PATH = `/environments/${ENVIRONMENT_ID}/schedule`;
+const VALID_SCHEDULE_BODY = {
+  activeWeekdays: [1, 2, 3, 4, 5],
+  powerOnTime: '09:00',
+  powerOffTime: '18:00',
+  isEnabled: true,
+} as const;
+
 const ALL_ROUTES: readonly (readonly [string, string])[] = [
   ['GET', '/environments'],
   ['POST', `/environments/${ENVIRONMENT_ID}/power-off`],
   ['POST', `/environments/${ENVIRONMENT_ID}/power-on`],
   ['GET', `/operations/${ENVIRONMENT_ID}`],
   ['GET', '/costs'],
+  ['PUT', `/environments/${ENVIRONMENT_ID}/schedule`],
 ];
 
 describe('rotas de infra: autenticacao e papel', () => {
@@ -162,6 +191,7 @@ describe('rotas de infra: erros de dominio', () => {
       powerOnEnvironment: new PowerOnEnvironmentUseCase(harness.dependencies),
       getInfraOperation: new GetInfraOperationUseCase({ operationRepository: harness.repository }),
       getInfraCosts: { execute: async () => { throw new Error('nao chamado'); } },
+      saveEnvironmentSchedule: { execute: async () => { throw new Error('nao chamado'); } },
     }).map(({ rateLimit: _rateLimit, ...route }) => route);
     const handle = createRouter({ routes, authenticate: async () => ADMIN });
 
@@ -282,6 +312,7 @@ describe('rotas de infra: rate limit', () => {
       powerOnEnvironment: noop,
       getInfraOperation: { execute: async () => { throw new Error('nao chamado'); } },
       getInfraCosts: { execute: async () => { throw new Error('nao chamado'); } },
+      saveEnvironmentSchedule: { execute: async () => { throw new Error('nao chamado'); } },
     });
 
     expect(routes.map((route) => route.rateLimit)).toEqual([
@@ -290,7 +321,121 @@ describe('rotas de infra: rate limit', () => {
       RATE_LIMIT.PANEL_INFRA_POWER,
       RATE_LIMIT.PANEL_READ,
       RATE_LIMIT.PANEL_READ,
+      RATE_LIMIT.PANEL_WRITE,
     ]);
     expect(RATE_LIMIT.PANEL_INFRA_POWER.limit).toBeLessThan(RATE_LIMIT.PANEL_WRITE.limit);
+  });
+});
+
+describe('rotas de infra: PUT schedule', () => {
+  it('sem token do Railway responde 503 INFRA_NOT_CONFIGURED', async () => {
+    const setup = buildSetup({ identity: ADMIN, isConfigured: false });
+
+    const response = await setup.handle(
+      jsonRequest({ method: 'PUT', path: SCHEDULE_PATH, body: VALID_SCHEDULE_BODY }),
+    );
+
+    expect(response.status).toBe(503);
+    expect((await response.json()).error.code).toBe('INFRA_NOT_CONFIGURED');
+  });
+
+  it('corpo invalido responde 400 VALIDATION_FAILED com todos os erros de uma vez', async () => {
+    const setup = buildSetup({ identity: ADMIN });
+
+    const response = await setup.handle(
+      jsonRequest({
+        method: 'PUT',
+        path: SCHEDULE_PATH,
+        body: { activeWeekdays: [9], powerOnTime: '25:00', powerOffTime: 'x', isEnabled: 'sim' },
+      }),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe('VALIDATION_FAILED');
+    expect(body.error.details.map((detail: { field: string }) => detail.field).sort()).toEqual([
+      'activeWeekdays.0',
+      'isEnabled',
+      'powerOffTime',
+      'powerOnTime',
+    ]);
+  });
+
+  it('janela invertida responde 400 INFRA_INVALID_SCHEDULE sem stack', async () => {
+    const setup = buildSetup({ identity: ADMIN });
+
+    const response = await setup.handle(
+      jsonRequest({
+        method: 'PUT',
+        path: SCHEDULE_PATH,
+        body: { ...VALID_SCHEDULE_BODY, powerOnTime: '20:00', powerOffTime: '08:00' },
+      }),
+    );
+    const text = await response.text();
+
+    expect(response.status).toBe(400);
+    expect(text).toContain('INFRA_INVALID_SCHEDULE');
+    expect(text).not.toContain('stack');
+  });
+
+  it('200 devolve a agenda sem updatedByAgentId e com nextScheduledAction', async () => {
+    const setup = buildSetup({ identity: ADMIN });
+
+    const response = await setup.handle(
+      jsonRequest({ method: 'PUT', path: SCHEDULE_PATH, body: VALID_SCHEDULE_BODY }),
+    );
+    const text = await response.text();
+    const body = JSON.parse(text);
+
+    expect(response.status).toBe(200);
+    expect(text).not.toContain('updatedByAgentId');
+    expect(body.data).toMatchObject({
+      railwayEnvironmentId: ENVIRONMENT_ID,
+      activeWeekdays: [1, 2, 3, 4, 5],
+      powerOnTime: '09:00',
+      powerOffTime: '18:00',
+      isEnabled: true,
+      nextScheduledAction: { kind: 'power_off', at: '2026-10-09T21:00:00.000Z' },
+    });
+  });
+});
+
+describe('rotas de infra: keepOnUntil no power-on', () => {
+  it('fora da janela sem keepOnUntil responde 400 INFRA_KEEP_ON_UNTIL_REQUIRED e nao muta nada', async () => {
+    const setup = buildSetup({ identity: ADMIN, now: new Date('2026-10-10T15:00:00Z') });
+
+    const response = await setup.handle(request('POST', `/environments/${ENVIRONMENT_ID}/power-on`));
+
+    expect(response.status).toBe(400);
+    expect((await response.json()).error.code).toBe('INFRA_KEEP_ON_UNTIL_REQUIRED');
+    expect(setup.harness.gateway.events).toEqual([]);
+    expect(setup.harness.repository.operations).toHaveLength(0);
+  });
+
+  it('fora da janela com keepOnUntil valido responde 202 e grava', async () => {
+    const setup = buildSetup({ identity: ADMIN, now: new Date('2026-10-10T15:00:00Z') });
+    const keepOnUntil = '2026-10-10T17:00:00.000Z';
+
+    const response = await setup.handle(
+      jsonRequest({ method: 'POST', path: `/environments/${ENVIRONMENT_ID}/power-on`, body: { keepOnUntil } }),
+    );
+
+    expect(response.status).toBe(202);
+    expect(setup.harness.scheduleRepository.keepOnUntilCalls).toEqual([
+      { environmentId: ENVIRONMENT_ID, keepOnUntil: new Date(keepOnUntil) },
+    ]);
+  });
+
+  it('keepOnUntil que nao e data ISO responde 400 VALIDATION_FAILED', async () => {
+    const response = await buildSetup({ identity: ADMIN }).handle(
+      jsonRequest({
+        method: 'POST',
+        path: `/environments/${ENVIRONMENT_ID}/power-on`,
+        body: { keepOnUntil: 'amanha' },
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect((await response.json()).error.code).toBe('VALIDATION_FAILED');
   });
 });

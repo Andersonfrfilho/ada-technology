@@ -22,6 +22,7 @@ import type {
   INFRA_SCHEDULE_ACTION,
 } from '@/modules/infra/infra.constant';
 import type { RailwayUsageMeasurement } from '@/modules/infra/railwayPricing.constant';
+import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 
 export type RailwayServiceInstance = {
   readonly serviceId: string;
@@ -148,6 +149,20 @@ export type InfraServiceView = {
   readonly powerState: InfraServicePowerState;
 };
 
+export type RecordScheduleEvaluationParams = {
+  readonly environmentId: string;
+  readonly lastEvaluatedAt: Date;
+  readonly keepOnUntil?: Date | null;
+  readonly lastPowerOnAt?: Date;
+  readonly lastPowerOffAt?: Date;
+};
+export type SetKeepOnUntilParams = { readonly environmentId: string; readonly keepOnUntil: Date | null };
+
+export type InfraNextScheduledActionView = {
+  readonly kind: InfraScheduledTransition['kind'];
+  readonly at: string;
+};
+
 export type InfraEnvironmentView = {
   readonly environmentId: string;
   readonly environmentName: string;
@@ -155,6 +170,7 @@ export type InfraEnvironmentView = {
   readonly state: InfraEnvironmentPowerState;
   readonly services: readonly InfraServiceView[];
   readonly schedule?: InfraScheduleRecord;
+  readonly nextScheduledAction?: InfraNextScheduledActionView;
   readonly runningOperationId?: string;
 };
 
@@ -180,6 +196,7 @@ export type PowerEnvironmentParams = {
   readonly actor: { readonly type: ActorType; readonly agentId?: string };
   readonly trigger: InfraOperationTrigger;
   readonly ipAddress?: string;
+  readonly keepOnUntil?: Date;
 };
 export type PowerEnvironmentResult = { readonly operationId: string };
 
@@ -290,4 +307,42 @@ export type ResolveScheduleActionResult = {
   readonly action: InfraScheduleAction;
   readonly shouldClearKeepOn: boolean;
   readonly nextScheduledAction: InfraScheduledTransition | undefined;
+};
+
+export type IsInsideScheduleWindowParams = {
+  readonly schedule: Pick<InfraScheduleWindowInput, 'activeWeekdays' | 'powerOnTime' | 'powerOffTime' | 'timezone'>;
+  readonly at: Date;
+};
+
+export type ResolveNextScheduledActionViewParams = {
+  readonly schedule: InfraScheduleWindowInput;
+  readonly now: Date;
+};
+
+export type ValidateScheduleWindowParams = {
+  readonly activeWeekdays: readonly number[];
+  readonly powerOnTime: string;
+  readonly powerOffTime: string;
+};
+
+export type SaveEnvironmentScheduleParams = ValidateScheduleWindowParams & {
+  readonly environmentId: string;
+  readonly isEnabled: boolean;
+  readonly actor: PowerEnvironmentParams['actor'];
+  readonly ipAddress?: string;
+};
+export type SaveEnvironmentScheduleResult = {
+  readonly schedule: InfraScheduleRecord;
+  readonly nextScheduledAction: InfraNextScheduledActionView | undefined;
+};
+
+export type LocateManagedEnvironmentParams = {
+  readonly railwayGateway: RailwayGatewayInterface;
+  readonly environmentId: string;
+  readonly managedPattern: string;
+  readonly selfEnvironmentId: string;
+};
+export type LocatedEnvironment = {
+  readonly project: RailwayProject;
+  readonly environment: RailwayEnvironment;
 };

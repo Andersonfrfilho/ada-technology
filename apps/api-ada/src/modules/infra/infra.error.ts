@@ -91,20 +91,20 @@ export class RailwayRateLimitedError extends DomainError {
 
 /** Ligar fora da janela de uma agenda ativa exige dizer ate quando o ambiente deve ficar ligado. */
 export class InfraKeepOnUntilRequiredError extends DomainError {
-  constructor() {
+  constructor(message = 'Informe ate quando o ambiente deve ficar ligado') {
     super({
       code: ERROR_CODES.infra.INFRA_KEEP_ON_UNTIL_REQUIRED,
-      message: 'Informe ate quando o ambiente deve ficar ligado',
+      message,
       statusCode: BAD_REQUEST,
     });
   }
 }
 
 export class InfraInvalidScheduleError extends DomainError {
-  constructor() {
+  constructor(message = 'Agenda invalida: confira os dias, os horarios e se o ligar e anterior ao desligar') {
     super({
       code: ERROR_CODES.infra.INFRA_INVALID_SCHEDULE,
-      message: 'Agenda invalida: confira os dias, os horarios e se o ligar e anterior ao desligar',
+      message,
       statusCode: BAD_REQUEST,
     });
   }
