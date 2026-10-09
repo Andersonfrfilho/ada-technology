@@ -131,7 +131,7 @@ com trabalho de outra sessão.
   - `PANEL_GROUP.INFRA`, seções `ambientes` e `custos` com `requiresAdmin`, `case` no `PanelSectionView`, `PANEL_PATH`.
   - `infra.api.ts`, `infra.hook.ts`.
   - Aceite: `typecheck` e teste do `infra.api.ts`.
-- [ ] **T5.2 `InfraEnvironments.page.tsx`.**
+- [x] **T5.2 `InfraEnvironments.page.tsx`.**
   - Cards por ambiente; confirmação que exige digitar o nome para desligar.
   - Polling enquanto há operação rodando.
   - `ScheduleEditor`: chips de dia, horários, preset "horário comercial", interruptor de pausa.
@@ -139,11 +139,11 @@ com trabalho de outra sessão.
   - Seletor "manter ligado até" ao ligar fora da janela.
   - Ambiente protegido sem botões; estado "módulo não configurado" para o 503.
   - Aceite: `typecheck`; verificação no browser por `read_page` (sem screenshot intermediário).
-- [ ] **T5.3 `InfraCosts.page.tsx`.**
+- [x] **T5.3 `InfraCosts.page.tsx`.**
   - Total, projeção, tabela por projeto (staging × produção), quebra por recurso e data dos preços.
   - Seguir a skill `dataviz` no gráfico.
   - Aceite: `typecheck`; verificação no browser.
-- [ ] **T5.4 Locale.**
+- [x] **T5.4 Locale.**
   - `infra.locale.json` e rótulos no `shared.locale.json`, sem texto solto no TSX.
   - Aceite: grep sem string pt-BR literal nos `.tsx` do módulo.
 
