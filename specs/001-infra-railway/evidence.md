@@ -102,3 +102,7 @@ Incidente: durante a execução o token apareceu na tela do terminal (eco da col
 1. **Deployment parado deixa de cobrar?** Não confirmado: as métricas de memória ainda mostravam o valor antigo ~3 min depois do stop (atraso de ingestão), e a documentação só diz que o Railway cobra "enquanto o serviço roda". Verificar na T6.3: comparar `usage` (`MEMORY_USAGE_GB`) de um ambiente durante uma janela desligada.
 2. **Postgres não foi testado.** Segue o caminho do Redis; confirmar no roteiro da T6.3, com checagem de backup do volume antes.
 3. **Webhook do WhatsApp:** a Meta reenvia por até 7 dias (documentação oficial), mas o dedup do nosso webhook só vale 300 s e depende de `x-request-id`, que não foi confirmado. Ver plan §5.
+
+## Revisão independente (2026-10-09)
+
+`code-reviewer` e `security-reviewer` (sonnet, somente leitura, passada separada da escrita) leram `git diff origin/main...HEAD`. Veredito dos dois: **aprovar com ressalvas, 0 bloqueantes**. Segurança: 0 críticos, 0 altos, 3 médios (auditoria de recusas e de operação interrompida; rate limit só por IP; trava sem dono). Código: 2 altos (operação `running` presa quando a API reinicia antes de 12 min; `Retry-After` ignorado), 8 médios, 5 baixos. O que foi corrigido, aceito e por quê está na Fase 7 do `tasks.md`.

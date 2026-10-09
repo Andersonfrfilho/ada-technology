@@ -167,6 +167,33 @@ com trabalho de outra sessão.
 
 ---
 
+## Fase 7 — Correções da revisão independente (2026-10-09)
+> 🤖 Modelo: `sonnet` (revisores: `code-reviewer` e `security-reviewer`, ambos `sonnet`, em passada separada da escrita; veredito dos dois: aprovar com ressalvas, 0 bloqueantes)
+
+Cada achado foi conferido no código antes de entrar aqui. **Corrigir (R1–R3):**
+
+- [ ] **R1 Lote A — operações e trava.**
+  - Trava Redis com **dono** (valor aleatório por operação) e liberar/renovar só se for o dono (script Lua compare-and-delete / compare-and-expire), com teste contra Redis real (achados de segurança 3 e de código 8).
+  - Operação `running` presa: `findRunningByEnvironmentId` ignora operações mais velhas que o TTL da trava e a recuperação roda **a cada tick do scheduler**, não só no boot (código 1, alto).
+  - Auditoria: gravar `infra.environment_power_requested` ao aceitar (antes do 202), `infra.environment_power_denied` quando a ação é recusada (ambiente protegido/inexistente/ocupado/keepOnUntil) e `infra.operation_interrupted` na recuperação (segurança 1; código 14).
+  - `listRunning()` no repositório para tirar o N+1 da listagem (código 7).
+- [ ] **R2 Lote B — gateway, custos e configuração.**
+  - Gateway lê `Retry-After`/`X-RateLimit-*` e não chama o Railway até o fim da espera (código 2, alto).
+  - Custos: não repetir em 429 (código 3); resultado `calendar_month` por falha transitória não vai para o cache longo nem para o `last-good` (código 4).
+  - `verifyAccess`: falha transitória não fica 5 min como `token_invalid` (segurança 9).
+  - `JSON.parse` de cache com `safeParse`/zod e erro tratado como miss (segurança 7; código 13); `activeWeekdays` com `.max(7)` (segurança 8).
+  - Desligar/religar mira o deployment **ativo**, não o último (código 10); banco por igualdade de nome de imagem, não `startsWith` (código 11).
+  - `RAILWAY_API_TOKEN` só aceito com `ENV=production` (segurança 5).
+- [ ] **R3 Lote C — agenda, rotas e painel.**
+  - `findNextTransition` com `keepOnUntil` quando a janela abre antes do vencimento (código 5), com teste que a simulação de uma semana não cobria.
+  - O servidor passa a informar `requiresKeepOnUntil` na listagem e o painel deixa de deduzir isso do tipo da próxima ação (código 6).
+  - O scheduler só lê o inventário quando alguma agenda tem ação a executar (código 9).
+  - Rate limit de power também **por agente**, dentro do handler (segurança 2).
+
+**Aceitos sem mudança (registrados no ADR):** classificação por nome sem revalidar durante a operação (segurança 4); retry de agenda sem teto (segurança 6, mitigado em parte por R3); `GET operations` aceita qualquer UUID de qualquer admin, sistema de um workspace só (segurança 10); `X-Forwarded-For` é comportamento anterior do roteador (segurança 2, parte do IP); falha de auditoria só logada, a operação grava o resultado (código 14); falha ao parar app não impede parar o banco (código 15, RF7); janela alterada não gera transição retroativa (código 12, RF8a).
+
+---
+
 ## Prompt de execução
 
 ```text
