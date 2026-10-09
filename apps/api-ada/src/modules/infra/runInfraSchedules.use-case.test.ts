@@ -366,6 +366,35 @@ describe('RunInfraSchedulesUseCase', () => {
     expect(scenario.harness.repository.operations).toHaveLength(0);
   });
 
+  it('reads the inventory zero times when every active schedule resolves to none, but still records the evaluation', async () => {
+    const scenario = buildScenario({ now: brt(5, '10:00') });
+    seed(scenario, { lastEvaluatedAt: brt(5, '09:59') });
+
+    await tickAt({ scenario, at: brt(5, '10:00') });
+
+    expect(scenario.harness.gateway.inventoryReads).toBe(0);
+    expect(recordOf(scenario).lastEvaluatedAt).toEqual(brt(5, '10:00'));
+  });
+
+  it('reads the inventory once when at least one schedule has an action', async () => {
+    const scenario = buildScenario({
+      now: brt(5, '08:00'),
+      environments: [
+        { id: 'env-a', shape: 'stopped' },
+        { id: 'env-b', shape: 'stopped' },
+      ],
+    });
+    seed(scenario, { lastEvaluatedAt: brt(5, '07:59') }, 'env-a');
+    seed(scenario, { lastEvaluatedAt: brt(5, '07:59'), id: 'schedule-2', powerOnTime: '09:00' }, 'env-b');
+    const useCase = scenario.buildUseCase({
+      powerOnEnvironment: { execute: async () => ({ operationId: 'fake' }) },
+    });
+
+    await useCase.execute();
+
+    expect(scenario.harness.gateway.inventoryReads).toBe(1);
+  });
+
   it('does not call the gateway at all when there are no schedules', async () => {
     const scenario = buildScenario({ now: brt(5, '08:00') });
 

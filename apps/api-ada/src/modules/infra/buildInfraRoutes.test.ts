@@ -51,7 +51,20 @@ const SCHEDULE: InfraScheduleRecord = {
 };
 const BASE = 'https://api.ada.test/v1/panel/infra';
 
-type Identity = typeof ADMIN | typeof AGENT | undefined;
+type ConsumeRateLimit = NonNullable<Parameters<typeof buildInfraRoutes>[0]['consumeRateLimit']>;
+
+// Mesma janela fixa do Redis, em memória: conta por bucket + identidade.
+function buildInMemoryRateLimit(): ConsumeRateLimit {
+  const hits = new Map<string, number>();
+  return async ({ bucket, identity, rule }) => {
+    const key = `${bucket}:${identity}`;
+    const count = (hits.get(key) ?? 0) + 1;
+    hits.set(key, count);
+    return count <= rule.limit ? { isAllowed: true } : { isAllowed: false, retryAfterSeconds: rule.windowSeconds };
+  };
+}
+
+type Identity = { readonly agentId: string; readonly role: typeof AGENT_ROLE.ADMIN | typeof AGENT_ROLE.AGENT } | undefined;
 
 type Setup = {
   readonly handle: (request: Request) => Promise<Response>;
@@ -63,6 +76,7 @@ function buildSetup(params: {
   readonly identity: Identity;
   readonly isConfigured?: boolean;
   readonly now?: Date;
+  readonly consumeRateLimit?: ConsumeRateLimit;
 }): Setup {
   const now = params.now ?? new Date('2026-10-09T12:00:00Z');
   const harness = buildPowerHarness({
@@ -90,6 +104,7 @@ function buildSetup(params: {
   };
 
   const routes = buildInfraRoutes({
+    consumeRateLimit: params.consumeRateLimit ?? (async () => ({ isAllowed: true })),
     listInfraEnvironments: new ListInfraEnvironmentsUseCase({
       ...(params.isConfigured === false ? {} : { railwayGateway: harness.gateway }),
       cache: harness.cache,
@@ -187,6 +202,7 @@ describe('rotas de infra: erros de dominio', () => {
       },
     });
     const routes = buildInfraRoutes({
+      consumeRateLimit: async () => ({ isAllowed: true }),
       listInfraEnvironments: { execute: async () => ({ access: 'ok', projects: [] }) },
       powerOffEnvironment: new PowerOffEnvironmentUseCase(harness.dependencies),
       powerOnEnvironment: new PowerOnEnvironmentUseCase(harness.dependencies),
@@ -438,5 +454,75 @@ describe('rotas de infra: keepOnUntil no power-on', () => {
 
     expect(response.status).toBe(400);
     expect((await response.json()).error.code).toBe('VALIDATION_FAILED');
+  });
+});
+
+describe('rotas de infra: rate limit por agente nas rotas de power', () => {
+  const OTHER_ADMIN = { agentId: '77777777-7777-4777-8777-777777777777', role: AGENT_ROLE.ADMIN } as const;
+
+  function powerRequest(params: { readonly path: string; readonly ip: string }): Request {
+    return new Request(`${BASE}/environments/${ENVIRONMENT_ID}/${params.path}`, {
+      method: 'POST',
+      headers: { 'x-forwarded-for': params.ip },
+    });
+  }
+
+  async function buildSwitchableSetup(): Promise<{ readonly handle: Setup['handle']; readonly use: (who: Identity) => void }> {
+    let identity: Identity = ADMIN;
+    const consumeRateLimit = buildInMemoryRateLimit();
+    const noop = { execute: async () => ({ operationId: 'op' }) };
+    const routes = buildInfraRoutes({
+      consumeRateLimit,
+      listInfraEnvironments: { execute: async () => ({ access: 'ok', projects: [] }) },
+      powerOffEnvironment: noop,
+      powerOnEnvironment: noop,
+      getInfraOperation: { execute: async () => { throw new Error('nao chamado'); } },
+      getInfraCosts: { execute: async () => { throw new Error('nao chamado'); } },
+      saveEnvironmentSchedule: { execute: async () => { throw new Error('nao chamado'); } },
+    }).map(({ rateLimit: _rateLimit, ...route }) => route);
+    return { handle: createRouter({ routes, authenticate: async () => identity }), use: (who) => { identity = who; } };
+  }
+
+  it('o 7o pedido do mesmo agente em 1 min leva 429 RATE_LIMITED mesmo com IPs diferentes', async () => {
+    const setup = await buildSwitchableSetup();
+
+    for (let attempt = 1; attempt <= 6; attempt += 1) {
+      const response = await setup.handle(powerRequest({ path: 'power-off', ip: `203.0.113.${attempt}` }));
+      expect(response.status).toBe(202);
+    }
+    const blocked = await setup.handle(powerRequest({ path: 'power-off', ip: '203.0.113.99' }));
+    const body = (await blocked.json()) as { error: { code: string } };
+
+    expect(blocked.status).toBe(429);
+    expect(body.error.code).toBe('RATE_LIMITED');
+    expect(blocked.headers.get('Retry-After')).toBe(String(RATE_LIMIT.PANEL_INFRA_POWER_PER_AGENT.windowSeconds));
+  });
+
+  it('outro agente não é afetado pelo balde esgotado', async () => {
+    const setup = await buildSwitchableSetup();
+    for (let attempt = 0; attempt < 7; attempt += 1) {
+      await setup.handle(powerRequest({ path: 'power-on', ip: '203.0.113.1' }));
+    }
+
+    setup.use(OTHER_ADMIN);
+    const response = await setup.handle(powerRequest({ path: 'power-on', ip: '203.0.113.1' }));
+
+    expect(response.status).toBe(202);
+  });
+
+  it('o pedido sem autenticação nunca consome o balde por agente', async () => {
+    const setup = await buildSwitchableSetup();
+    setup.use(undefined);
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      expect((await setup.handle(powerRequest({ path: 'power-off', ip: '203.0.113.1' }))).status).toBe(401);
+    }
+
+    setup.use(ADMIN);
+    expect((await setup.handle(powerRequest({ path: 'power-off', ip: '203.0.113.1' }))).status).toBe(202);
+  });
+
+  it('o preset por agente é da mesma ordem de grandeza e as rotas de power seguem com o limite por IP', () => {
+    expect(RATE_LIMIT.PANEL_INFRA_POWER_PER_AGENT.limit).toBe(6);
+    expect(RATE_LIMIT.PANEL_INFRA_POWER_PER_AGENT.limit).toBeLessThan(RATE_LIMIT.PANEL_WRITE.limit);
   });
 });

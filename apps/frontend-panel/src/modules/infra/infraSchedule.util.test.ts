@@ -17,7 +17,7 @@ import {
   validateScheduleDraft,
   type ScheduleDraft,
 } from '@/modules/infra/scheduleDraft.util';
-import type { InfraSchedule } from '@/modules/infra/types/infra.types';
+import type { InfraEnvironment, InfraSchedule } from '@/modules/infra/types/infra.types';
 import { getEndOfZonedDay } from '@/modules/infra/zonedTime.util';
 
 // 2026-10-09 e sexta-feira; Brasilia fica em UTC-3.
@@ -84,26 +84,34 @@ describe('buildKeepOnUntilOptions', () => {
 });
 
 describe('isKeepOnUntilRequired', () => {
-  const nextPowerOn = { kind: 'power_on', at: '2026-10-12T11:00:00Z' } as const;
-  const nextPowerOff = { kind: 'power_off', at: '2026-10-09T23:00:00Z' } as const;
+  const environment: InfraEnvironment = {
+    environmentId: 'e',
+    environmentName: 'staging',
+    classification: 'managed',
+    state: 'stopped',
+    services: [],
+    requiresKeepOnUntil: false,
+  };
 
-  it('requires it when the schedule is active and the next action is power on (outside the window)', () => {
-    expect(isKeepOnUntilRequired({ schedule: SCHEDULE, nextScheduledAction: nextPowerOn })).toBe(true);
+  it('follows the server flag when it is true, even with keepOnUntil making the next action power off', () => {
+    const withKeepOn = {
+      ...environment,
+      requiresKeepOnUntil: true,
+      schedule: { ...SCHEDULE, keepOnUntil: '2026-10-09T23:00:00Z' },
+      nextScheduledAction: { kind: 'power_off', at: '2026-10-09T23:00:00Z' },
+    } as const;
+
+    expect(isKeepOnUntilRequired({ environment: withKeepOn })).toBe(true);
   });
 
-  it('does not require it inside the window', () => {
-    expect(isKeepOnUntilRequired({ schedule: SCHEDULE, nextScheduledAction: nextPowerOff })).toBe(false);
-  });
+  it('follows the server flag when it is false, even if the next action is power on', () => {
+    const paused = {
+      ...environment,
+      schedule: { ...SCHEDULE, isEnabled: false },
+      nextScheduledAction: { kind: 'power_on', at: '2026-10-12T11:00:00Z' },
+    } as const;
 
-  it('does not require it without a schedule or with a paused schedule', () => {
-    expect(isKeepOnUntilRequired({ schedule: undefined, nextScheduledAction: nextPowerOn })).toBe(false);
-    expect(isKeepOnUntilRequired({ schedule: { ...SCHEDULE, isEnabled: false }, nextScheduledAction: nextPowerOn })).toBe(
-      false,
-    );
-  });
-
-  it('does not require it when there is no next action', () => {
-    expect(isKeepOnUntilRequired({ schedule: SCHEDULE, nextScheduledAction: undefined })).toBe(false);
+    expect(isKeepOnUntilRequired({ environment: paused })).toBe(false);
   });
 });
 

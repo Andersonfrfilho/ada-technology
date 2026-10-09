@@ -205,3 +205,26 @@ liga com `keepOnUntil`; desligar no meio de uma conversa de teste produz reenvio
    advisory lock que o `scheduler.ts` já prevê em comentário, ou `apps/cron-ada`).
 4. **Webhook:** confirmar se a Meta envia `x-request-id`, se a resposta do bot depende do dedup por
    `waMessageId`, e se algum dos outros apps da conta aponta para o mesmo domínio de staging.
+
+## Revisão independente e ajustes (2026-10-09)
+
+Antes de ligar o token em produção, um revisor de código e um de segurança (passada separada da escrita) leram o diff inteiro. Veredito dos dois: aprovar com ressalvas, sem bloqueantes. O que mudou por causa deles:
+
+- **Trava com dono.** A trava Redis guarda um identificador por operação e só o dono renova ou libera (script Lua). Antes, uma operação que estourasse o TTL podia apagar a trava de outra.
+- **Operação presa.** Operações `running` mais velhas que o TTL da trava deixam de bloquear o painel, e a recuperação roda a cada tick do scheduler, não só no boot.
+- **Auditoria de recusas.** Ligar/desligar aceito grava `infra.environment_power_requested` antes do 202; recusado (protegido, inexistente, ocupado, `keepOnUntil` ausente) grava `infra.environment_power_denied` com o motivo; operação interrompida grava `infra.operation_interrupted`.
+- **Deployment ativo.** Parar e religar miram o deployment **ativo**. Os dados reais mostraram um serviço de produção com o último deployment `FAILED` e `deploymentStopped=true` enquanto outro, ativo, rodava: tratá-lo como parado seria um erro.
+- **Limites do Railway.** `Retry-After` é respeitado (sem chamar o Railway enquanto bloqueado, teto de 5 min); falha transitória não vira "token inválido" (novo estado `unavailable`, não cacheado).
+- **Token só em produção.** `RAILWAY_API_TOKEN` é recusado no boot fora de `ENV=production`, o que transforma a convenção da D1 em regra de código.
+- **Limite por agente.** Ligar/desligar também tem limite por agente (6 por minuto), além do limite por IP.
+- **Previsão da agenda.** `nextScheduledAction` considera `keepOnUntil` dentro e fora da janela, validado por simulação minuto a minuto contra os disparos reais.
+
+**Aceitos sem mudança:**
+
+- A classificação usa o nome do ambiente e não é revalidada durante a operação (exigiria direito de renomear no Railway).
+- O retry da agenda não tem teto (mitigado: a agenda só age na transição e o inventário só é lido quando há ação).
+- `GET /operations/:id` aceita qualquer UUID de qualquer admin, num sistema de um workspace só.
+- `X-Forwarded-For` é comportamento anterior do roteador, fora do escopo desta feature.
+- Falha ao gravar a auditoria do resultado é só logada; a operação já guarda o resultado por serviço.
+- Falha ao parar uma aplicação não impede parar o banco (RF7); a operação `partially_failed` não é reenviada pela agenda.
+- Janela alterada não gera transição retroativa (RF8a).

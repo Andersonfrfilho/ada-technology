@@ -186,6 +186,7 @@ export type InfraEnvironmentView = {
   readonly classification: InfraEnvironmentClassification;
   readonly state: InfraEnvironmentPowerState;
   readonly services: readonly InfraServiceView[];
+  readonly requiresKeepOnUntil: boolean;
   readonly schedule?: InfraScheduleRecord;
   readonly nextScheduledAction?: InfraNextScheduledActionView;
   readonly runningOperationId?: string;

@@ -6,8 +6,9 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import { consumeRateLimit, type ConsumeRateLimitParams, type RateLimitVerdict } from '@/infra/http/rateLimit';
 import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
-import { jsonData } from '@/infra/http/responses';
+import { jsonData, jsonError } from '@/infra/http/responses';
 import { AUTH_REQUIREMENT, HTTP_METHOD, requireAgent, type RequestContext, type Route } from '@/infra/http/router';
 import { ACTOR_TYPE } from '@/modules/audit/audit.constant';
 import { INFRA_OPERATION_TRIGGER } from '@/modules/infra/infra.constant';
@@ -28,11 +29,16 @@ import type {
   SaveEnvironmentScheduleParams,
   SaveEnvironmentScheduleResult,
 } from '@/modules/infra/types/infra.types';
+import { ERROR_CODES } from '@/shared/errors/codes';
 
 const ENVIRONMENTS_PATH = '/v1/panel/infra/environments';
 const ENVIRONMENT_PATH = `${ENVIRONMENTS_PATH}/:environmentId`;
 const OPERATION_PATH = '/v1/panel/infra/operations/:operationId';
 const COSTS_PATH = '/v1/panel/infra/costs';
+const POWER_OFF_AGENT_BUCKET = 'POST:infra-power-off:agent';
+const POWER_ON_AGENT_BUCKET = 'POST:infra-power-on:agent';
+
+type ConsumeRateLimit = (params: ConsumeRateLimitParams) => Promise<RateLimitVerdict>;
 
 export type InfraRoutesDependencies = {
   readonly listInfraEnvironments: { execute(): Promise<ListInfraEnvironmentsResult> };
@@ -43,6 +49,8 @@ export type InfraRoutesDependencies = {
   readonly saveEnvironmentSchedule: {
     execute(params: SaveEnvironmentScheduleParams): Promise<SaveEnvironmentScheduleResult>;
   };
+  /** Padrão = Redis real; o teste injeta um contador em memória. */
+  readonly consumeRateLimit?: ConsumeRateLimit;
 };
 
 type PowerUseCase = InfraRoutesDependencies['powerOffEnvironment'];
@@ -58,12 +66,31 @@ function toEnvironmentResponse(environment: InfraEnvironmentView): Omit<InfraEnv
   return { ...rest, schedule: publicSchedule };
 }
 
-function buildPowerHandler(params: { readonly useCase: PowerUseCase; readonly isKeepOnUntilAccepted?: boolean }) {
-  const { useCase, isKeepOnUntilAccepted } = params;
+function buildPowerHandler(params: {
+  readonly useCase: PowerUseCase;
+  readonly agentBucket: string;
+  readonly consumeRateLimit: ConsumeRateLimit;
+  readonly isKeepOnUntilAccepted?: boolean;
+}) {
+  const { useCase, agentBucket, consumeRateLimit: consume, isKeepOnUntilAccepted } = params;
 
   return async (context: RequestContext): Promise<Response> => {
     const { environmentId } = infraEnvironmentParamsSchema.parse(context.params);
     const { agentId } = requireAgent(context);
+    // O limite por IP roda antes da autenticação e o IP é forjável; este só conta quem já se autenticou.
+    const verdict = await consume({
+      bucket: agentBucket,
+      identity: agentId,
+      rule: RATE_LIMIT.PANEL_INFRA_POWER_PER_AGENT,
+    });
+    if (!verdict.isAllowed) {
+      return jsonError({
+        code: ERROR_CODES.shared.RATE_LIMITED,
+        message: 'Muitas requisicoes',
+        statusCode: 429,
+        extraHeaders: { 'Retry-After': String(verdict.retryAfterSeconds) },
+      });
+    }
     const { keepOnUntil } = isKeepOnUntilAccepted
       ? infraPowerOnBodySchema.parse(await context.request.json().catch(() => ({})))
       : { keepOnUntil: undefined };
@@ -82,6 +109,7 @@ function buildPowerHandler(params: { readonly useCase: PowerUseCase; readonly is
 
 /** Fabrica sem o container: o teste injeta use cases falsos e nunca encosta no Railway, Redis ou banco. */
 export function buildInfraRoutes(dependencies: InfraRoutesDependencies): readonly Route[] {
+  const consume = dependencies.consumeRateLimit ?? consumeRateLimit;
   const listEnvironmentsRoute: Route = {
     method: HTTP_METHOD.GET,
     path: ENVIRONMENTS_PATH,
@@ -105,7 +133,11 @@ export function buildInfraRoutes(dependencies: InfraRoutesDependencies): readonl
     path: `${ENVIRONMENT_PATH}/power-off`,
     auth: AUTH_REQUIREMENT.ADMIN,
     rateLimit: RATE_LIMIT.PANEL_INFRA_POWER,
-    handler: buildPowerHandler({ useCase: dependencies.powerOffEnvironment }),
+    handler: buildPowerHandler({
+      useCase: dependencies.powerOffEnvironment,
+      agentBucket: POWER_OFF_AGENT_BUCKET,
+      consumeRateLimit: consume,
+    }),
   };
 
   const powerOnRoute: Route = {
@@ -113,7 +145,12 @@ export function buildInfraRoutes(dependencies: InfraRoutesDependencies): readonl
     path: `${ENVIRONMENT_PATH}/power-on`,
     auth: AUTH_REQUIREMENT.ADMIN,
     rateLimit: RATE_LIMIT.PANEL_INFRA_POWER,
-    handler: buildPowerHandler({ useCase: dependencies.powerOnEnvironment, isKeepOnUntilAccepted: true }),
+    handler: buildPowerHandler({
+      useCase: dependencies.powerOnEnvironment,
+      agentBucket: POWER_ON_AGENT_BUCKET,
+      consumeRateLimit: consume,
+      isKeepOnUntilAccepted: true,
+    }),
   };
 
   const getOperationRoute: Route = {

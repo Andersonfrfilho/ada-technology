@@ -96,19 +96,14 @@ function zonedTimeToInstant(params: {
   return new Date(wallClockAsUtc - offsetAt(firstGuess));
 }
 
-function findNextTransition(params: {
+function findNextBoundary(params: {
   readonly schedule: InfraScheduleWindowInput;
   readonly window: MinuteWindow;
   readonly now: Date;
-  readonly isInside: boolean;
+  readonly kind: typeof INFRA_SCHEDULE_ACTION.POWER_ON | typeof INFRA_SCHEDULE_ACTION.POWER_OFF;
 }): InfraScheduledTransition | undefined {
-  const { schedule, window, now, isInside } = params;
-  const { timezone, keepOnUntil } = schedule;
-  if (!isInside && keepOnUntil !== null && keepOnUntil > now) {
-    return { kind: INFRA_SCHEDULE_ACTION.POWER_OFF, at: keepOnUntil };
-  }
-  const today = getZonedParts({ date: now, timezone });
-  const kind = isInside ? INFRA_SCHEDULE_ACTION.POWER_OFF : INFRA_SCHEDULE_ACTION.POWER_ON;
+  const { schedule, window, now, kind } = params;
+  const today = getZonedParts({ date: now, timezone: schedule.timezone });
   for (let offset = 0; offset < NEXT_ACTION_SCAN_DAYS; offset += 1) {
     if (!schedule.activeWeekdays.includes((today.weekday + offset) % 7)) continue;
     const calendarDay = new Date(Date.UTC(today.year, today.month - 1, today.day + offset));
@@ -116,12 +111,53 @@ function findNextTransition(params: {
       year: calendarDay.getUTCFullYear(),
       month: calendarDay.getUTCMonth() + 1,
       day: calendarDay.getUTCDate(),
-      minuteOfDay: isInside ? window.off : window.on,
-      timezone,
+      minuteOfDay: kind === INFRA_SCHEDULE_ACTION.POWER_OFF ? window.off : window.on,
+      timezone: schedule.timezone,
     });
     if (at > now) return { kind, at };
   }
   return undefined;
+}
+
+// Um keepOnUntil que passa do fim da janela adia o desligamento real: a agenda só desliga fora da janela e depois do vencimento.
+function applyKeepOnExtension(params: {
+  readonly schedule: InfraScheduleWindowInput;
+  readonly window: MinuteWindow;
+  readonly windowEnd: InfraScheduledTransition | undefined;
+}): InfraScheduledTransition | undefined {
+  const { schedule, window, windowEnd } = params;
+  const { keepOnUntil, activeWeekdays, timezone } = schedule;
+  if (keepOnUntil === null || !windowEnd || keepOnUntil <= windowEnd.at) return windowEnd;
+
+  const isExpiryInsideWindow = isInsideWindow({ parts: getZonedParts({ date: keepOnUntil, timezone }), activeWeekdays, window });
+  if (!isExpiryInsideWindow) return { kind: INFRA_SCHEDULE_ACTION.POWER_OFF, at: keepOnUntil };
+  return findNextBoundary({ schedule, window, now: keepOnUntil, kind: INFRA_SCHEDULE_ACTION.POWER_OFF });
+}
+
+function findNextTransition(params: {
+  readonly schedule: InfraScheduleWindowInput;
+  readonly window: MinuteWindow;
+  readonly now: Date;
+  readonly isInside: boolean;
+}): InfraScheduledTransition | undefined {
+  const { schedule, window, now, isInside } = params;
+  const { keepOnUntil } = schedule;
+  const isKeepOnActive = keepOnUntil !== null && keepOnUntil > now;
+  const powerOff = INFRA_SCHEDULE_ACTION.POWER_OFF;
+
+  if (isInside) {
+    const windowEnd = findNextBoundary({ schedule, window, now, kind: powerOff });
+    return isKeepOnActive ? applyKeepOnExtension({ schedule, window, windowEnd }) : windowEnd;
+  }
+
+  const nextEntry = findNextBoundary({ schedule, window, now, kind: INFRA_SCHEDULE_ACTION.POWER_ON });
+  if (!isKeepOnActive) return nextEntry;
+  // Janela que abre até o vencimento assume o controle: o desligamento real é o fim dela, ou o vencimento se passar dele.
+  if (nextEntry && nextEntry.at <= keepOnUntil) {
+    const windowEnd = findNextBoundary({ schedule, window, now: nextEntry.at, kind: powerOff });
+    return applyKeepOnExtension({ schedule, window, windowEnd });
+  }
+  return { kind: powerOff, at: keepOnUntil };
 }
 
 function decideAction(params: {

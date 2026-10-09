@@ -23,6 +23,7 @@ import { isDatabaseService } from '@/modules/infra/isDatabaseService';
 import { resolveEnvironmentPowerState } from '@/modules/infra/resolveEnvironmentPowerState';
 import { resolveRunningOperationCutoff } from '@/modules/infra/resolveRunningOperationCutoff';
 import { resolveNextScheduledActionView } from '@/modules/infra/resolveNextScheduledActionView';
+import { isInsideScheduleWindow } from '@/modules/infra/resolveScheduleAction';
 import { resolveServicePowerState } from '@/modules/infra/resolveServicePowerState';
 import type { InfraCacheInterface } from '@/modules/infra/types/infraCache.interface';
 import type {
@@ -158,9 +159,10 @@ export class ListInfraEnvironmentsUseCase {
   }): InfraEnvironmentView {
     const { environment, schedule, runningOperation } = params;
     const { managedPattern, selfEnvironmentId } = this.dependencies;
-    const nextScheduledAction = schedule
-      ? resolveNextScheduledActionView({ schedule, now: (this.dependencies.now ?? (() => new Date()))() })
-      : undefined;
+    const now = (this.dependencies.now ?? (() => new Date()))();
+    const nextScheduledAction = schedule ? resolveNextScheduledActionView({ schedule, now }) : undefined;
+    // Mesma regra que o desligar/ligar usa para exigir o keepOnUntil; o painel não pode deduzir isso.
+    const requiresKeepOnUntil = schedule?.isEnabled === true && !isInsideScheduleWindow({ schedule, at: now });
 
     const services = environment.services.map((service) => ({
       serviceName: service.serviceName,
@@ -179,6 +181,7 @@ export class ListInfraEnvironmentsUseCase {
       }),
       state: resolveEnvironmentPowerState(services.map((service) => service.powerState)),
       services,
+      requiresKeepOnUntil,
       ...(schedule ? { schedule } : {}),
       ...(nextScheduledAction ? { nextScheduledAction } : {}),
       ...(runningOperation ? { runningOperationId: runningOperation.id } : {}),

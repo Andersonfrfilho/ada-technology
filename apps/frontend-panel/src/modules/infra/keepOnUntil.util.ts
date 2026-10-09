@@ -6,14 +6,13 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import { INFRA_SCHEDULED_ACTION_KIND } from '@/modules/infra/infra.constant';
 import {
   KEEP_ON_MAX_HOURS,
   KEEP_ON_OPTION_ID,
   MILLISECONDS_PER_HOUR,
   type KeepOnOptionId,
 } from '@/modules/infra/infraUi.constant';
-import type { InfraNextScheduledAction, InfraSchedule } from '@/modules/infra/types/infra.types';
+import type { InfraEnvironment } from '@/modules/infra/types/infra.types';
 import { getEndOfZonedDay } from '@/modules/infra/zonedTime.util';
 
 export type KeepOnUntilOption = {
@@ -41,15 +40,7 @@ export function buildKeepOnUntilOptions({ now }: { readonly now: Date }): readon
   return [...relativeOptions, { id: KEEP_ON_OPTION_ID.END_OF_DAY, until: new Date(endOfDay).toISOString() }];
 }
 
-/** Ligar fora da janela de uma agenda ativa exige "manter ate": a proxima acao da agenda e ligar. */
-export function isKeepOnUntilRequired({
-  schedule,
-  nextScheduledAction,
-}: {
-  readonly schedule: InfraSchedule | undefined;
-  readonly nextScheduledAction: InfraNextScheduledAction | undefined;
-}): boolean {
-  if (!schedule?.isEnabled) return false;
-
-  return nextScheduledAction?.kind === INFRA_SCHEDULED_ACTION_KIND.POWER_ON;
+/** O servidor informa `requiresKeepOnUntil`; a tela só o repassa e nunca o infere da próxima ação. */
+export function isKeepOnUntilRequired({ environment }: { readonly environment: InfraEnvironment }): boolean {
+  return environment.requiresKeepOnUntil;
 }

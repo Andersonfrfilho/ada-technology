@@ -422,3 +422,34 @@ describe('ListInfraEnvironmentsUseCase - nextScheduledAction', () => {
     expect(result.projects[0]?.environments[0]).not.toHaveProperty('nextScheduledAction');
   });
 });
+
+describe('ListInfraEnvironmentsUseCase - requiresKeepOnUntil', () => {
+  // Sexta 09:00 BRT: dentro da janela só quando sexta (5) está nos dias ativos.
+  async function requiresFor(schedule: Partial<InfraScheduleRecord> | undefined): Promise<boolean | undefined> {
+    const harness = buildHarness({ projects: singleEnvironment([buildService()]) });
+    if (schedule) harness.schedules.push({ ...buildSchedule('env-1'), ...schedule });
+    const result = await harness.useCase.execute();
+    return result.projects[0]?.environments[0]?.requiresKeepOnUntil;
+  }
+
+  it('agenda ativa dentro da janela -> false', async () => {
+    expect(await requiresFor({ activeWeekdays: [1, 2, 3, 4, 5] })).toBe(false);
+  });
+
+  it('agenda ativa fora da janela -> true', async () => {
+    expect(await requiresFor({ activeWeekdays: [1, 2, 3] })).toBe(true);
+  });
+
+  it('agenda ativa fora da janela com keepOnUntil vigente (próxima ação power_off) -> true', async () => {
+    const keepOnUntil = new Date('2026-10-09T14:00:00Z');
+    expect(await requiresFor({ activeWeekdays: [1, 2, 3], keepOnUntil })).toBe(true);
+  });
+
+  it('agenda pausada -> false', async () => {
+    expect(await requiresFor({ activeWeekdays: [1, 2, 3], isEnabled: false })).toBe(false);
+  });
+
+  it('sem agenda -> false', async () => {
+    expect(await requiresFor(undefined)).toBe(false);
+  });
+});

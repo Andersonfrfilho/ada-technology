@@ -184,7 +184,7 @@ Cada achado foi conferido no código antes de entrar aqui. **Corrigir (R1–R3):
   - `JSON.parse` de cache com `safeParse`/zod e erro tratado como miss (segurança 7; código 13); `activeWeekdays` com `.max(7)` (segurança 8).
   - Desligar/religar mira o deployment **ativo**, não o último (código 10); banco por igualdade de nome de imagem, não `startsWith` (código 11).
   - `RAILWAY_API_TOKEN` só aceito com `ENV=production` (segurança 5).
-- [ ] **R3 Lote C — agenda, rotas e painel.**
+- [x] **R3 Lote C — agenda, rotas e painel.**
   - `findNextTransition` com `keepOnUntil` quando a janela abre antes do vencimento (código 5), com teste que a simulação de uma semana não cobria.
   - O servidor passa a informar `requiresKeepOnUntil` na listagem e o painel deixa de deduzir isso do tipo da próxima ação (código 6).
   - O scheduler só lê o inventário quando alguma agenda tem ação a executar (código 9).

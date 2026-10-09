@@ -32,10 +32,7 @@ export function PowerActions({ environment }: PowerActionsProps) {
   const isPending = powerOff.isPending || powerOn.isPending;
   const activeMutation = openKind === INFRA_OPERATION_KIND.POWER_OFF ? powerOff : powerOn;
   const errorMessage = activeMutation.isError ? resolveInfraErrorMessage(activeMutation.error) : undefined;
-  const requiresKeepOnUntil = isKeepOnUntilRequired({
-    schedule: environment.schedule,
-    nextScheduledAction: environment.nextScheduledAction,
-  });
+  const requiresKeepOnUntil = isKeepOnUntilRequired({ environment });
 
   function handleClose() {
     setOpenKind(undefined);

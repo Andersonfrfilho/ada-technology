@@ -126,6 +126,7 @@ function buildEnvironment(overrides: Partial<InfraEnvironment>): InfraEnvironmen
     classification: 'managed',
     state: 'running',
     services: [],
+    requiresKeepOnUntil: false,
     ...overrides,
   };
 }

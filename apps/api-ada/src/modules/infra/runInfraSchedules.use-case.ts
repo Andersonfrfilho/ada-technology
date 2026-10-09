@@ -26,6 +26,7 @@ import type {
   InfraScheduleRecord,
   RailwayEnvironment,
   RailwayProject,
+  ResolveScheduleActionResult,
 } from '@/modules/infra/types/infra.types';
 import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
@@ -44,6 +45,7 @@ type Dependencies = {
 
 type ProcessScheduleParams = {
   readonly schedule: InfraScheduleRecord;
+  readonly decision: ResolveScheduleActionResult;
   readonly inventory: readonly RailwayProject[];
   readonly now: Date;
 };
@@ -90,9 +92,14 @@ export class RunInfraSchedulesUseCase {
     if (schedules.length === 0) return;
 
     const now = this.dependencies.now();
-    const inventory = await railwayGateway.listInventory();
+    const decisions = schedules.map((schedule) => resolveScheduleAction({ schedule, now }));
+    // Quase todo minuto não há nada a executar: ler o inventário só quando uma agenda precisa dele.
+    const hasAction = decisions.some((decision) => decision.action !== INFRA_SCHEDULE_ACTION.NONE);
+    const inventory = hasAction ? await railwayGateway.listInventory() : [];
     const outcomes = await Promise.allSettled(
-      schedules.map((schedule) => this.processSchedule({ schedule, inventory, now })),
+      schedules.map((schedule, index) =>
+        this.processSchedule({ schedule, decision: decisions[index] as ResolveScheduleActionResult, inventory, now }),
+      ),
     );
 
     outcomes.forEach((outcome, index) => {
@@ -117,9 +124,9 @@ export class RunInfraSchedulesUseCase {
   }
 
   private async processSchedule(params: ProcessScheduleParams): Promise<void> {
-    const { schedule, inventory, now } = params;
+    const { schedule, decision, inventory, now } = params;
     const environmentId = schedule.railwayEnvironmentId;
-    const { action, shouldClearKeepOn } = resolveScheduleAction({ schedule, now });
+    const { action, shouldClearKeepOn } = decision;
 
     if (action === INFRA_SCHEDULE_ACTION.NONE) {
       await this.advance({ environmentId, now, shouldClearKeepOn });

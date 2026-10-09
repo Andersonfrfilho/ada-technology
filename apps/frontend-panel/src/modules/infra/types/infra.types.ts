@@ -52,6 +52,8 @@ export type InfraEnvironment = {
   readonly classification: InfraEnvironmentClassification;
   readonly state: InfraEnvironmentPowerState;
   readonly services: readonly InfraService[];
+  /** O servidor decide: agenda ativa e agora fora da janela; o painel não deduz isso da próxima ação. */
+  readonly requiresKeepOnUntil: boolean;
   readonly schedule?: InfraSchedule;
   readonly nextScheduledAction?: InfraNextScheduledAction;
   readonly runningOperationId?: string;
