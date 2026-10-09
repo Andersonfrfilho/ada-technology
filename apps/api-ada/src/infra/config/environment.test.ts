@@ -42,6 +42,7 @@ describe('environmentSchema (Railway)', () => {
 
   test('token sem workspace falha', () => {
     const result = parseEnvironment({
+      ENV: 'production',
       RAILWAY_API_TOKEN: 'token-de-teste',
       RAILWAY_ENVIRONMENT_ID: 'env-de-teste',
     });
@@ -52,6 +53,7 @@ describe('environmentSchema (Railway)', () => {
 
   test('token sem RAILWAY_ENVIRONMENT_ID falha', () => {
     const result = parseEnvironment({
+      ENV: 'production',
       RAILWAY_API_TOKEN: 'token-de-teste',
       RAILWAY_WORKSPACE_ID: 'workspace-de-teste',
     });
@@ -60,14 +62,35 @@ describe('environmentSchema (Railway)', () => {
     expect(issuePaths(result)).toContain('RAILWAY_ENVIRONMENT_ID');
   });
 
-  test('token com workspace e ambiente passa', () => {
+  test('production com token, workspace e ambiente passa', () => {
     const result = parseEnvironment({
+      ENV: 'production',
       RAILWAY_API_TOKEN: 'token-de-teste',
       RAILWAY_WORKSPACE_ID: 'workspace-de-teste',
       RAILWAY_ENVIRONMENT_ID: 'env-de-teste',
     });
 
     expect(result.success).toBe(true);
+  });
+
+  test('token fora de ENV=production falha em staging, dev e test', () => {
+    for (const environment of ['staging', 'dev', 'test']) {
+      const result = parseEnvironment({
+        ENV: environment,
+        RAILWAY_API_TOKEN: 'token-de-teste',
+        RAILWAY_WORKSPACE_ID: 'workspace-de-teste',
+        RAILWAY_ENVIRONMENT_ID: 'env-de-teste',
+      });
+
+      expect(result.success).toBe(false);
+      expect(issuePaths(result)).toContain('RAILWAY_API_TOKEN');
+    }
+  });
+
+  test('sem token passa em qualquer ENV', () => {
+    for (const environment of ['staging', 'dev', 'test', 'production']) {
+      expect(parseEnvironment({ ENV: environment }).success).toBe(true);
+    }
   });
 
   test('regex invalida falha', () => {

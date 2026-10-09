@@ -8,6 +8,10 @@
 
 import { describe, expect, it } from 'bun:test';
 
+import {
+  INFRA_ACCESS_CACHE_KEY,
+  INFRA_INVENTORY_CACHE_KEY,
+} from '@/modules/infra/infra.constant';
 import { InfraNotConfiguredError } from '@/modules/infra/infra.error';
 import { ListInfraEnvironmentsUseCase } from '@/modules/infra/listInfraEnvironments.use-case';
 import type { InfraAccessStatus } from '@/modules/infra/infra.constant';
@@ -81,6 +85,8 @@ type Harness = {
   readonly counters: { inventory: number; access: number; schedules: number; operations: number };
   readonly schedules: InfraScheduleRecord[];
   readonly operations: InfraOperationRecord[];
+  readonly store: Map<string, string>;
+  readonly ttls: Map<string, number | undefined>;
 };
 
 function buildHarness(params: {
@@ -93,6 +99,7 @@ function buildHarness(params: {
   const schedules: InfraScheduleRecord[] = [];
   const operations: InfraOperationRecord[] = [];
   const store = new Map<string, string>();
+  const ttls = new Map<string, number | undefined>();
 
   const gateway: RailwayGatewayInterface = {
     async listInventory() {
@@ -124,8 +131,9 @@ function buildHarness(params: {
     async get(key) {
       return store.get(key) ?? null;
     },
-    async set(key, value) {
+    async set(key, value, ttlSeconds) {
       store.set(key, value);
+      ttls.set(key, ttlSeconds);
     },
     async setIfAbsent(setParams) {
       if (store.has(setParams.key)) return false;
@@ -190,7 +198,7 @@ function buildHarness(params: {
     now: () => new Date('2026-10-09T12:00:00Z'),
   });
 
-  return { useCase, counters, schedules, operations };
+  return { useCase, counters, schedules, operations, store, ttls };
 }
 
 function singleEnvironment(services: RailwayServiceInstance[], name = 'staging'): RailwayProject[] {
@@ -267,6 +275,44 @@ describe('ListInfraEnvironmentsUseCase', () => {
     const result = await useCase.execute();
     expect(result).toEqual({ access: 'token_invalid', projects: [] });
     expect(counters.inventory).toBe(0);
+  });
+
+  it('caches access for 300 s when ok or billing_unavailable and 60 s when the token is invalid', async () => {
+    const expectedTtls: readonly (readonly [InfraAccessStatus, number])[] = [
+      ['ok', 300],
+      ['billing_unavailable', 300],
+      ['token_invalid', 60],
+    ];
+
+    for (const [access, ttl] of expectedTtls) {
+      const harness = buildHarness({ projects: singleEnvironment([buildService()]), access });
+      await harness.useCase.execute();
+      expect(harness.ttls.get(INFRA_ACCESS_CACHE_KEY)).toBe(ttl);
+    }
+  });
+
+  it('does not cache an unavailable verdict and returns no projects', async () => {
+    const harness = buildHarness({ projects: singleEnvironment([buildService()]), access: 'unavailable' });
+
+    const result = await harness.useCase.execute();
+    await harness.useCase.execute();
+
+    expect(result).toEqual({ access: 'unavailable', projects: [] });
+    expect(harness.store.has(INFRA_ACCESS_CACHE_KEY)).toBe(false);
+    expect(harness.counters.access).toBe(2);
+    expect(harness.counters.inventory).toBe(0);
+  });
+
+  it('treats an invalid inventory cache as a miss instead of throwing', async () => {
+    for (const stored of ['{not json', '{"wrong":true}']) {
+      const harness = buildHarness({ projects: singleEnvironment([buildService()]) });
+      harness.store.set(INFRA_INVENTORY_CACHE_KEY, stored);
+
+      const result = await harness.useCase.execute();
+
+      expect(harness.counters.inventory).toBe(1);
+      expect(result.projects).toHaveLength(1);
+    }
   });
 
   it('serves the inventory and access from cache but rereads schedules and operations', async () => {

@@ -29,6 +29,7 @@ export type RailwayServiceInstance = {
   readonly serviceName: string;
   readonly sourceImage?: string;
   readonly latestDeploymentId?: string;
+  readonly activeDeploymentId?: string;
   readonly hasDeployment: boolean;
   readonly isStopped: boolean;
   readonly instanceStatus?: string;
@@ -75,12 +76,26 @@ export type RailwayGatewayDependencies = {
   readonly token: string;
   readonly workspaceId: string;
   readonly fetchImplementation?: typeof fetch;
+  readonly now?: () => number;
+};
+
+export type ResolveRateLimitWaitSecondsParams = {
+  readonly headers: Headers;
+  readonly nowMilliseconds: number;
+};
+export type ResolveRateLimitWaitSecondsResult = {
+  readonly seconds: number;
 };
 
 export type ExecuteRailwayParams<TData> = {
   readonly operationName: string;
   readonly query: string;
   readonly variables: Readonly<Record<string, unknown>>;
+  readonly schema: z.ZodType<TData>;
+};
+
+export type ParseCachedJsonParams<TData> = {
+  readonly raw: string;
   readonly schema: z.ZodType<TData>;
 };
 

@@ -269,6 +269,16 @@ export const environmentSchema = z
       });
     }
   })
+  // Staging e dev nao devem poder desligar nada no Railway: o token so existe na api de producao.
+  .superRefine((value, context) => {
+    if (value.RAILWAY_API_TOKEN.length === 0 || value.ENV === 'production') return;
+
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['RAILWAY_API_TOKEN'],
+      message: 'RAILWAY_API_TOKEN so e aceito com ENV=production',
+    });
+  })
   // Token sem workspace ou sem ambiente faria o modulo subir e errar so na primeira chamada.
   .superRefine((value, context) => {
     if (value.RAILWAY_API_TOKEN.length === 0) return;

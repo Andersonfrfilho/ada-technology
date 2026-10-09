@@ -49,7 +49,7 @@ function serviceNode(overrides: Record<string, unknown>): Record<string, unknown
       deploymentStopped: false,
       instances: [{ status: 'RUNNING' }],
     },
-    activeDeployments: [{ id: DEPLOYMENT_ID }],
+    activeDeployments: [{ id: DEPLOYMENT_ID, deploymentStopped: false }],
     ...overrides,
   };
 }
@@ -114,6 +114,7 @@ describe('RailwayGateway', () => {
                   serviceName: 'web',
                   sourceImage: 'postgres:16',
                   latestDeploymentId: DEPLOYMENT_ID,
+                  activeDeploymentId: DEPLOYMENT_ID,
                   hasDeployment: true,
                   isStopped: false,
                   instanceStatus: 'RUNNING',
@@ -128,6 +129,7 @@ describe('RailwayGateway', () => {
     it('marca isStopped quando deploymentStopped e verdadeiro', async () => {
       const stopped = serviceNode({
         latestDeployment: { id: DEPLOYMENT_ID, status: 'SUCCESS', deploymentStopped: true, instances: [{ status: 'RUNNING' }] },
+        activeDeployments: [{ id: DEPLOYMENT_ID, deploymentStopped: true }],
       });
       const { gateway } = buildGateway(() => ok(inventoryBody([stopped])));
 
@@ -145,6 +147,47 @@ describe('RailwayGateway', () => {
       const [project] = await gateway.listInventory();
 
       expect(project?.environments[0]?.services[0]?.isStopped).toBe(true);
+    });
+
+    it('o deployment ATIVO diferente do ultimo vira activeDeploymentId e define isStopped', async () => {
+      const building = serviceNode({
+        latestDeployment: { id: 'deployment-new', status: 'BUILDING', deploymentStopped: false, instances: [] },
+        activeDeployments: [{ id: 'deployment-old', deploymentStopped: true }],
+      });
+      const { gateway } = buildGateway(() => ok(inventoryBody([building])));
+
+      const [project] = await gateway.listInventory();
+      const service = project?.environments[0]?.services[0];
+
+      expect(service?.latestDeploymentId).toBe('deployment-new');
+      expect(service?.activeDeploymentId).toBe('deployment-old');
+      expect(service?.isStopped).toBe(true);
+    });
+
+    it('sem deployment ativo, isStopped vem do ultimo e activeDeploymentId some', async () => {
+      const onlyLatest = serviceNode({
+        latestDeployment: { id: DEPLOYMENT_ID, status: 'SUCCESS', deploymentStopped: true, instances: [] },
+        activeDeployments: [],
+      });
+      const { gateway } = buildGateway(() => ok(inventoryBody([onlyLatest])));
+
+      const [project] = await gateway.listInventory();
+      const service = project?.environments[0]?.services[0];
+
+      expect(service?.activeDeploymentId).toBeUndefined();
+      expect(service?.isStopped).toBe(true);
+    });
+
+    it('pede deploymentStopped nos deployments ativos nas duas consultas', async () => {
+      const first = buildGateway(() => ok(inventoryBody([serviceNode({})])));
+      await first.gateway.listInventory();
+      const second = buildGateway(() => ok({ environment: { serviceInstances: { edges: [{ node: serviceNode({}) }] } } }));
+      await second.gateway.getEnvironmentServices({ environmentId: 'environment-1' });
+
+      for (const { calls } of [first, second]) {
+        const { query } = JSON.parse(String(calls[0]?.init.body)) as { query: string };
+        expect(query).toContain('activeDeployments { id deploymentStopped }');
+      }
     });
 
     it('hasDeployment e falso quando latestDeployment e nulo', async () => {
@@ -179,6 +222,7 @@ describe('RailwayGateway', () => {
           serviceName: 'web',
           sourceImage: 'redis:8',
           latestDeploymentId: DEPLOYMENT_ID,
+          activeDeploymentId: DEPLOYMENT_ID,
           hasDeployment: true,
           isStopped: false,
           instanceStatus: 'RUNNING',
@@ -193,6 +237,7 @@ describe('RailwayGateway', () => {
     it('marca isStopped para deployment parado que continua SUCCESS', async () => {
       const stopped = serviceNode({
         latestDeployment: { id: DEPLOYMENT_ID, status: 'SUCCESS', deploymentStopped: true, instances: [{ status: 'EXITED' }] },
+        activeDeployments: [{ id: DEPLOYMENT_ID, deploymentStopped: true }],
       });
       const { gateway } = buildGateway(() => ok(environmentBody([stopped])));
 
@@ -403,12 +448,39 @@ describe('RailwayGateway', () => {
       expect(await gateway.verifyAccess()).toBe(INFRA_ACCESS_STATUS.TOKEN_INVALID);
     });
 
-    it('retorna token_invalid em falha de rede', async () => {
+    it('retorna token_invalid em HTTP 401 e 403', async () => {
+      for (const status of [401, 403]) {
+        const { gateway } = buildGateway(() => jsonResponse({}, status));
+
+        expect(await gateway.verifyAccess()).toBe(INFRA_ACCESS_STATUS.TOKEN_INVALID);
+      }
+    });
+
+    it('retorna unavailable em falha de rede', async () => {
       const { gateway } = buildGateway(() => {
         throw new Error('offline');
       });
 
-      expect(await gateway.verifyAccess()).toBe(INFRA_ACCESS_STATUS.TOKEN_INVALID);
+      expect(await gateway.verifyAccess()).toBe(INFRA_ACCESS_STATUS.UNAVAILABLE);
+    });
+
+    it('retorna unavailable em 502, 429 e resposta fora do schema', async () => {
+      const responders: Responder[] = [() => jsonResponse({}, 502), () => jsonResponse({}, 429), () => ok({ workspace: null })];
+
+      for (const responder of responders) {
+        const { gateway } = buildGateway(responder);
+
+        expect(await gateway.verifyAccess()).toBe(INFRA_ACCESS_STATUS.UNAVAILABLE);
+      }
+    });
+
+    it('retorna unavailable quando so a cobranca cai por falha transitoria', async () => {
+      const { gateway } = buildGateway(({ init }) => {
+        const { query } = JSON.parse(String(init.body)) as { query: string };
+        return query.includes('customer') ? jsonResponse({}, 502) : ok({ workspace: { id: WORKSPACE_ID } });
+      });
+
+      expect(await gateway.verifyAccess()).toBe(INFRA_ACCESS_STATUS.UNAVAILABLE);
     });
 
     it('retorna billing_unavailable quando so o bloco customer falha', async () => {

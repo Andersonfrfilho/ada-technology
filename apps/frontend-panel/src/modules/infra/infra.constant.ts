@@ -10,6 +10,7 @@ export const INFRA_ACCESS_STATUS = {
   OK: 'ok',
   TOKEN_INVALID: 'token_invalid',
   BILLING_UNAVAILABLE: 'billing_unavailable',
+  UNAVAILABLE: 'unavailable',
 } as const;
 export type InfraAccessStatus = (typeof INFRA_ACCESS_STATUS)[keyof typeof INFRA_ACCESS_STATUS];
 

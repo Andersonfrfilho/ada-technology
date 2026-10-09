@@ -10,12 +10,15 @@ import {
   INFRA_COSTS_CACHE_KEY,
   INFRA_COSTS_CACHE_TTL_SECONDS,
   INFRA_COSTS_DIVERGENCE_THRESHOLD_PERCENT,
+  INFRA_COSTS_FALLBACK_CACHE_TTL_SECONDS,
   INFRA_COSTS_LAST_GOOD_CACHE_KEY,
   INFRA_COSTS_LAST_GOOD_TTL_SECONDS,
   INFRA_COSTS_RETRY_DELAY_MILLISECONDS,
   INFRA_COSTS_WINDOW_SOURCE,
 } from '@/modules/infra/infra.constant';
-import { InfraNotConfiguredError } from '@/modules/infra/infra.error';
+import { InfraNotConfiguredError, RailwayRateLimitedError } from '@/modules/infra/infra.error';
+import { infraCostsResultSchema } from '@/modules/infra/infraCosts.schema';
+import { parseCachedJson } from '@/modules/infra/parseCachedJson';
 import { calculateUsageCost } from '@/modules/infra/calculateUsageCost';
 import { RAILWAY_PRICING_CHECKED_AT, RAILWAY_PRICING_SOURCE } from '@/modules/infra/railwayPricing.constant';
 import type { InfraCacheInterface } from '@/modules/infra/types/infraCache.interface';
@@ -64,8 +67,8 @@ export class GetInfraCostsUseCase {
     const { railwayGateway, cache } = this.dependencies;
     if (!railwayGateway) throw new InfraNotConfiguredError();
 
-    const cached = await cache.get(INFRA_COSTS_CACHE_KEY);
-    if (cached !== null) return JSON.parse(cached) as CostsResult;
+    const cached = await this.readCostsCache(INFRA_COSTS_CACHE_KEY);
+    if (cached) return cached;
 
     const window = await this.resolveWindow(railwayGateway);
     const rows = await this.fetchUsageOrStale({ railwayGateway, window });
@@ -73,10 +76,26 @@ export class GetInfraCostsUseCase {
 
     const inventory = await railwayGateway.listInventory();
     const result = this.buildResult({ window, rows, inventory });
+    await this.storeResult(result);
+    return result;
+  }
+
+  private async readCostsCache(key: string): Promise<CostsResult | undefined> {
+    const raw = await this.dependencies.cache.get(key);
+    if (raw === null) return undefined;
+    return parseCachedJson({ raw, schema: infraCostsResultSchema }) as CostsResult | undefined;
+  }
+
+  // Janela de mes-calendario nasce de falha transitoria do billing: nao vira "ultima copia boa" e expira logo.
+  private async storeResult(result: CostsResult): Promise<void> {
+    const { cache } = this.dependencies;
     const serialized = JSON.stringify(result);
+    if (result.windowSource === INFRA_COSTS_WINDOW_SOURCE.CALENDAR_MONTH) {
+      await cache.set(INFRA_COSTS_CACHE_KEY, serialized, INFRA_COSTS_FALLBACK_CACHE_TTL_SECONDS);
+      return;
+    }
     await cache.set(INFRA_COSTS_CACHE_KEY, serialized, INFRA_COSTS_CACHE_TTL_SECONDS);
     await cache.set(INFRA_COSTS_LAST_GOOD_CACHE_KEY, serialized, INFRA_COSTS_LAST_GOOD_TTL_SECONDS);
-    return result;
   }
 
   // Sem permissao de cobranca a tela continua: mes-calendario e sem total oficial.
@@ -103,17 +122,23 @@ export class GetInfraCostsUseCase {
     const usageParams = { startDate: window.start, endDate: window.end };
     try {
       return await railwayGateway.getUsage(usageParams);
-    } catch {
+    } catch (error) {
+      // Repetir contra um 429 so prolonga o bloqueio, mas a ultima copia boa ainda serve a tela.
+      if (error instanceof RailwayRateLimitedError) return this.staleOrThrow(error);
       await this.dependencies.sleep(INFRA_COSTS_RETRY_DELAY_MILLISECONDS);
     }
 
     try {
       return await railwayGateway.getUsage(usageParams);
     } catch (error) {
-      const lastGood = await this.dependencies.cache.get(INFRA_COSTS_LAST_GOOD_CACHE_KEY);
-      if (lastGood === null) throw error;
-      return { ...(JSON.parse(lastGood) as CostsResult), isStale: true };
+      return this.staleOrThrow(error);
     }
+  }
+
+  private async staleOrThrow(error: unknown): Promise<CostsResult> {
+    const lastGood = await this.readCostsCache(INFRA_COSTS_LAST_GOOD_CACHE_KEY);
+    if (lastGood === undefined) throw error;
+    return { ...lastGood, isStale: true };
   }
 
   private buildResult(params: {

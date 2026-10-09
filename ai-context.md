@@ -377,7 +377,7 @@ Postgres e Redis. Passo a passo, tabela de variáveis e verificação pós-deplo
 
 | Variável | Obrigatória quando | Default | Nota |
 |---|---|---|---|
-| `RAILWAY_API_TOKEN` | opcional | vazio | token de workspace; vazio desliga o módulo Infra (`503 INFRA_NOT_CONFIGURED`) |
+| `RAILWAY_API_TOKEN` | opcional | vazio | token de workspace; vazio desliga o módulo Infra (`503 INFRA_NOT_CONFIGURED`); recusado fora de ENV=production |
 | `RAILWAY_WORKSPACE_ID` | `RAILWAY_API_TOKEN` definido | vazio | id do workspace do Railway |
 | `RAILWAY_ENVIRONMENT_ID` | `RAILWAY_API_TOKEN` definido | vazio | injetada pelo próprio Railway; sem ela a proteção do ambiente de produção não funciona |
 | `RAILWAY_MANAGED_ENVIRONMENT_PATTERN` | nunca (opcional) | `staging` | expressão regular dos ambientes que o painel pode ligar e desligar; inválida falha no boot |

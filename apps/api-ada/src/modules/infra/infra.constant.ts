@@ -42,8 +42,18 @@ export const INFRA_SERVICE_POWER_STATE = {
 } as const;
 export type InfraServicePowerState = (typeof INFRA_SERVICE_POWER_STATE)[keyof typeof INFRA_SERVICE_POWER_STATE];
 
-/** Imagem de banco em `source.image`; o nome do serviço só reforça quando a imagem vem nula. */
-export const INFRA_DATABASE_IMAGE_PATTERNS = ['postgres', 'postgres-ssl', 'redis', 'mysql', 'mongo'] as const;
+/** Imagem de banco em `source.image`, por igualdade de nome; o nome do serviço só reforça quando a imagem vem nula. */
+export const INFRA_DATABASE_IMAGE_NAMES = [
+  'postgres',
+  'postgres-ssl',
+  'postgis',
+  'redis',
+  'redis-stack',
+  'mysql',
+  'mariadb',
+  'mongo',
+  'mongodb',
+] as const;
 export const INFRA_DATABASE_NAME_PATTERN = /^(Postgres|Redis|MySQL|MongoDB)/;
 
 export const INFRA_POWER_DIRECTION = {
@@ -55,6 +65,11 @@ export type InfraPowerDirection = (typeof INFRA_POWER_DIRECTION)[keyof typeof IN
 export const INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS = 30;
 export const INFRA_COSTS_CACHE_TTL_SECONDS = 900;
 export const INFRA_ACCESS_CACHE_TTL_SECONDS = 300;
+export const INFRA_ACCESS_TOKEN_INVALID_CACHE_TTL_SECONDS = 60;
+export const INFRA_COSTS_FALLBACK_CACHE_TTL_SECONDS = 60;
+
+export const RAILWAY_RATE_LIMIT_DEFAULT_WAIT_SECONDS = 30;
+export const RAILWAY_RATE_LIMIT_MAX_WAIT_SECONDS = 300;
 
 // Versionada: o cache guarda JSON sem validação, e mudar o formato do resultado num deploy futuro não pode ler a forma antiga.
 export const INFRA_COSTS_CACHE_KEY = 'infra:costs:v1';
@@ -102,6 +117,7 @@ export const INFRA_ACCESS_STATUS = {
   OK: 'ok',
   TOKEN_INVALID: 'token_invalid',
   BILLING_UNAVAILABLE: 'billing_unavailable',
+  UNAVAILABLE: 'unavailable',
 } as const;
 export type InfraAccessStatus = (typeof INFRA_ACCESS_STATUS)[keyof typeof INFRA_ACCESS_STATUS];
 

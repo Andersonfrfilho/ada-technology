@@ -58,6 +58,11 @@ type WaitForDatabasesParams = {
 
 const MILLISECONDS_PER_SECOND = 1000;
 
+// O ativo e o que roda; o ultimo pode estar em build ou ter falhado, e parar/religar nele erra o alvo.
+function resolveTargetDeploymentId(service: RailwayServiceInstance): string | undefined {
+  return service.activeDeploymentId ?? service.latestDeploymentId;
+}
+
 function buildResult(service: RailwayServiceInstance, outcome: InfraServiceResult['outcome']): InfraServiceResult {
   return { serviceName: service.serviceName, outcome };
 }
@@ -149,11 +154,12 @@ export class RunPowerOperation {
     const state = resolveServicePowerState(service);
     const isAlreadyOff =
       state === INFRA_SERVICE_POWER_STATE.STOPPED || state === INFRA_SERVICE_POWER_STATE.NO_DEPLOYMENT;
-    if (isAlreadyOff || service.latestDeploymentId === undefined) {
+    const deploymentId = resolveTargetDeploymentId(service);
+    if (isAlreadyOff || deploymentId === undefined) {
       return buildResult(service, INFRA_SERVICE_OUTCOME.SKIPPED);
     }
 
-    await this.dependencies.railwayGateway.stopDeployment({ deploymentId: service.latestDeploymentId });
+    await this.dependencies.railwayGateway.stopDeployment({ deploymentId });
     return buildResult(service, INFRA_SERVICE_OUTCOME.OK);
   }
 
@@ -166,8 +172,9 @@ export class RunPowerOperation {
     if (state === INFRA_SERVICE_POWER_STATE.RUNNING || state === INFRA_SERVICE_POWER_STATE.TRANSITIONING) {
       return buildResult(service, INFRA_SERVICE_OUTCOME.SKIPPED);
     }
-    if (state === INFRA_SERVICE_POWER_STATE.STOPPED && service.latestDeploymentId !== undefined) {
-      await railwayGateway.restartDeployment({ deploymentId: service.latestDeploymentId });
+    const deploymentId = resolveTargetDeploymentId(service);
+    if (state === INFRA_SERVICE_POWER_STATE.STOPPED && deploymentId !== undefined) {
+      await railwayGateway.restartDeployment({ deploymentId });
       return buildResult(service, INFRA_SERVICE_OUTCOME.OK);
     }
 

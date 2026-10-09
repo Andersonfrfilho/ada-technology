@@ -13,6 +13,7 @@ const serviceSchema = z.object({
   serviceName: z.string(),
   sourceImage: z.string().optional(),
   latestDeploymentId: z.string().optional(),
+  activeDeploymentId: z.string().optional(),
   hasDeployment: z.boolean(),
   isStopped: z.boolean(),
   instanceStatus: z.string().optional(),

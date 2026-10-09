@@ -390,7 +390,7 @@ rotacao e de vazamento estao em `docs/SECURITY.md`, achado de 2026-10-09.
 
 | Variavel | Obrigatoria quando | Default | Nota |
 |---|---|---|---|
-| `RAILWAY_API_TOKEN` | opcional | vazio | o token; vazio desliga o modulo |
+| `RAILWAY_API_TOKEN` | opcional | vazio | o token; vazio desliga o modulo; recusado fora de `ENV=production` (a api sobe com erro de configuracao) |
 | `RAILWAY_WORKSPACE_ID` | com `RAILWAY_API_TOKEN` | vazio | id do workspace, copiado das configuracoes do workspace |
 | `RAILWAY_ENVIRONMENT_ID` | com `RAILWAY_API_TOKEN` | vazio | **nao configurar a mao**: o Railway injeta o id do proprio ambiente |
 | `RAILWAY_MANAGED_ENVIRONMENT_PATTERN` | nunca | `staging` | regex dos ambientes que o painel pode ligar e desligar; producao fica protegida mesmo que case |

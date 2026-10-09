@@ -79,12 +79,23 @@ export class RailwayRequestFailedError extends DomainError {
   }
 }
 
+/** O Railway respondeu, mas recusou: `isAuthFailure` separa token invalido de qualquer outra recusa. */
+export class RailwayRejectedError extends RailwayRequestFailedError {
+  constructor(params: { readonly operation: string; readonly isAuthFailure: boolean }) {
+    super(params.operation);
+    this.isAuthFailure = params.isAuthFailure;
+  }
+
+  readonly isAuthFailure: boolean;
+}
+
 export class RailwayRateLimitedError extends DomainError {
-  constructor() {
+  constructor(retryAfterSeconds?: number) {
     super({
       code: ERROR_CODES.infra.RAILWAY_RATE_LIMITED,
       message: 'Limite de requisicoes do Railway atingido; tente novamente em instantes',
       statusCode: SERVICE_UNAVAILABLE,
+      ...(retryAfterSeconds !== undefined ? { context: { retryAfterSeconds } } : {}),
     });
   }
 }

@@ -16,7 +16,8 @@
   "access": {
     "ok": "Conexão com o Railway ativa.",
     "token_invalid": "Sem acesso ao Railway: o token é inválido ou foi revogado. Atualize-o na configuração do servidor.",
-    "billing_unavailable": "Cobrança ilegível: o token não consegue ler a cobrança. Ambientes e agendas funcionam; os custos podem aparecer sem o total oficial."
+    "billing_unavailable": "Cobrança ilegível: o token não consegue ler a cobrança. Ambientes e agendas funcionam; os custos podem aparecer sem o total oficial.",
+    "unavailable": "Não foi possível falar com o Railway agora. Tente de novo em instantes."
   },
   "state": {
     "running": "Ligado",

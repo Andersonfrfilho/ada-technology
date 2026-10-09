@@ -177,7 +177,7 @@ Cada achado foi conferido no código antes de entrar aqui. **Corrigir (R1–R3):
   - Operação `running` presa: `findRunningByEnvironmentId` ignora operações mais velhas que o TTL da trava e a recuperação roda **a cada tick do scheduler**, não só no boot (código 1, alto).
   - Auditoria: gravar `infra.environment_power_requested` ao aceitar (antes do 202), `infra.environment_power_denied` quando a ação é recusada (ambiente protegido/inexistente/ocupado/keepOnUntil) e `infra.operation_interrupted` na recuperação (segurança 1; código 14).
   - `listRunning()` no repositório para tirar o N+1 da listagem (código 7).
-- [ ] **R2 Lote B — gateway, custos e configuração.**
+- [x] **R2 Lote B — gateway, custos e configuração.**
   - Gateway lê `Retry-After`/`X-RateLimit-*` e não chama o Railway até o fim da espera (código 2, alto).
   - Custos: não repetir em 429 (código 3); resultado `calendar_month` por falha transitória não vai para o cache longo nem para o `last-good` (código 4).
   - `verifyAccess`: falha transitória não fica 5 min como `token_invalid` (segurança 9).

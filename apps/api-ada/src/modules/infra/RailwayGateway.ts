@@ -7,7 +7,12 @@
  */
 
 import { RAILWAY_GRAPHQL_URL, INFRA_ACCESS_STATUS, type InfraAccessStatus } from '@/modules/infra/infra.constant';
-import { RailwayRateLimitedError, RailwayRequestFailedError } from '@/modules/infra/infra.error';
+import {
+  RailwayRateLimitedError,
+  RailwayRejectedError,
+  RailwayRequestFailedError,
+} from '@/modules/infra/infra.error';
+import { resolveRateLimitWaitSeconds } from '@/modules/infra/resolveRateLimitWaitSeconds';
 import {
   billingCycleResponseSchema,
   deploymentRestartResponseSchema,
@@ -40,6 +45,9 @@ import type {
 
 const REQUEST_TIMEOUT_MILLISECONDS = 20_000;
 const HTTP_TOO_MANY_REQUESTS = 429;
+const AUTH_FAILURE_STATUSES: readonly number[] = [401, 403];
+const AUTH_FAILURE_MESSAGE_PATTERN = /not authorized|unauthorized|unauthenticated/i;
+const MILLISECONDS_PER_SECOND = 1000;
 const EXITED_INSTANCE_STATUS = 'EXITED';
 
 const OPERATION = {
@@ -64,7 +72,7 @@ const INVENTORY_QUERY = `query ListInventory($workspaceId: String!) {
           serviceId serviceName
           source { image repo }
           latestDeployment { id status deploymentStopped instances { status } }
-          activeDeployments { id }
+          activeDeployments { id deploymentStopped }
         } } }
       } } }
     } }
@@ -77,7 +85,7 @@ const ENVIRONMENT_SERVICES_QUERY = `query EnvironmentServices($id: String!) {
       serviceId serviceName
       source { image repo }
       latestDeployment { id status deploymentStopped instances { status } }
-      activeDeployments { id }
+      activeDeployments { id deploymentStopped }
     } } }
   }
 }`;
@@ -116,9 +124,12 @@ const ESTIMATED_USAGE_QUERY = `query EstimatedUsage($workspaceId: String!) {
  */
 export class RailwayGateway implements RailwayGatewayInterface {
   private readonly fetchImplementation: typeof fetch;
+  private readonly now: () => number;
+  private blockedUntilMilliseconds = 0;
 
   constructor(private readonly dependencies: RailwayGatewayDependencies) {
     this.fetchImplementation = dependencies.fetchImplementation ?? fetch;
+    this.now = dependencies.now ?? Date.now;
   }
 
   async listInventory(): Promise<readonly RailwayProject[]> {
@@ -220,33 +231,31 @@ export class RailwayGateway implements RailwayGatewayInterface {
   }
 
   async verifyAccess(): Promise<InfraAccessStatus> {
-    const isWorkspaceReadable = await this.succeeds(() =>
-      this.execute({
+    try {
+      await this.execute({
         operationName: OPERATION.VERIFY_WORKSPACE,
         query: WORKSPACE_QUERY,
         variables: { workspaceId: this.dependencies.workspaceId },
         schema: workspaceResponseSchema,
-      }),
-    );
-    if (!isWorkspaceReadable) return INFRA_ACCESS_STATUS.TOKEN_INVALID;
+      });
+    } catch (error) {
+      return isAuthFailure(error) ? INFRA_ACCESS_STATUS.TOKEN_INVALID : INFRA_ACCESS_STATUS.UNAVAILABLE;
+    }
 
-    const isBillingReadable = await this.succeeds(() => this.getBillingCycle());
-
-    return isBillingReadable ? INFRA_ACCESS_STATUS.OK : INFRA_ACCESS_STATUS.BILLING_UNAVAILABLE;
-  }
-
-  /** verifyAccess nao lanca: o erro de dominio e descartado de proposito e so o veredito sai. */
-  private async succeeds(action: () => Promise<unknown>): Promise<boolean> {
     try {
-      await action();
-      return true;
-    } catch {
-      return false;
+      await this.getBillingCycle();
+      return INFRA_ACCESS_STATUS.OK;
+    } catch (error) {
+      // So uma recusa do Railway indica falta de permissao de cobranca; o resto e instabilidade.
+      return error instanceof RailwayRejectedError
+        ? INFRA_ACCESS_STATUS.BILLING_UNAVAILABLE
+        : INFRA_ACCESS_STATUS.UNAVAILABLE;
     }
   }
 
   private async execute<TData>(params: ExecuteRailwayParams<TData>): Promise<TData> {
     const { operationName, query, variables, schema } = params;
+    this.assertNotBlocked();
 
     try {
       const response = await this.fetchImplementation(RAILWAY_GRAPHQL_URL, {
@@ -259,12 +268,20 @@ export class RailwayGateway implements RailwayGatewayInterface {
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MILLISECONDS),
       });
 
-      if (response.status === HTTP_TOO_MANY_REQUESTS) throw new RailwayRateLimitedError();
+      if (response.status === HTTP_TOO_MANY_REQUESTS) throw this.blockAfterRateLimit(response.headers);
+      if (AUTH_FAILURE_STATUSES.includes(response.status)) {
+        throw new RailwayRejectedError({ operation: operationName, isAuthFailure: true });
+      }
       if (!response.ok) throw new RailwayRequestFailedError(operationName);
 
       const envelope = railwayEnvelopeSchema.safeParse(await response.json());
       if (!envelope.success) throw new RailwayRequestFailedError(operationName);
-      if (envelope.data.errors && envelope.data.errors.length > 0) throw new RailwayRequestFailedError(operationName);
+      if (envelope.data.errors && envelope.data.errors.length > 0) {
+        throw new RailwayRejectedError({
+          operation: operationName,
+          isAuthFailure: envelope.data.errors.some(isAuthErrorEntry),
+        });
+      }
 
       const parsed = schema.safeParse(envelope.data.data);
       if (!parsed.success) throw new RailwayRequestFailedError(operationName);
@@ -276,6 +293,31 @@ export class RailwayGateway implements RailwayGatewayInterface {
       throw new RailwayRequestFailedError(operationName);
     }
   }
+
+  // Enquanto o Railway pede espera, nao ha motivo para gastar uma chamada que ele vai recusar.
+  private assertNotBlocked(): void {
+    const remainingMilliseconds = this.blockedUntilMilliseconds - this.now();
+    if (remainingMilliseconds <= 0) return;
+
+    throw new RailwayRateLimitedError(Math.ceil(remainingMilliseconds / MILLISECONDS_PER_SECOND));
+  }
+
+  private blockAfterRateLimit(headers: Headers): RailwayRateLimitedError {
+    const nowMilliseconds = this.now();
+    const { seconds } = resolveRateLimitWaitSeconds({ headers, nowMilliseconds });
+    this.blockedUntilMilliseconds = nowMilliseconds + seconds * MILLISECONDS_PER_SECOND;
+
+    return new RailwayRateLimitedError(seconds);
+  }
+}
+
+function isAuthFailure(error: unknown): boolean {
+  return error instanceof RailwayRejectedError && error.isAuthFailure;
+}
+
+function isAuthErrorEntry(entry: unknown): boolean {
+  if (typeof entry !== 'object' || entry === null || !('message' in entry)) return false;
+  return typeof entry.message === 'string' && AUTH_FAILURE_MESSAGE_PATTERN.test(entry.message);
 }
 
 function assertAccepted(isAccepted: boolean, operationName: string): void {
@@ -296,16 +338,20 @@ function normalizeInventory(data: InventoryResponse): RailwayProject[] {
 
 function normalizeServiceInstance(node: ServiceInstanceNode): RailwayServiceInstance {
   const deployment = node.latestDeployment;
+  const activeDeployment = node.activeDeployments?.[0];
   const instanceStatus = deployment?.instances[0]?.status;
   const sourceImage = node.source?.image;
+  // O deployment ativo e o que de fato roda: o ultimo pode estar em build ou ter falhado.
+  const isDeploymentStopped = (activeDeployment ?? deployment)?.deploymentStopped === true;
 
   return {
     serviceId: node.serviceId,
     serviceName: node.serviceName,
     ...(sourceImage ? { sourceImage } : {}),
     ...(deployment ? { latestDeploymentId: deployment.id } : {}),
+    ...(activeDeployment ? { activeDeploymentId: activeDeployment.id } : {}),
     hasDeployment: Boolean(deployment),
-    isStopped: deployment?.deploymentStopped === true || instanceStatus === EXITED_INSTANCE_STATUS,
+    isStopped: isDeploymentStopped || instanceStatus === EXITED_INSTANCE_STATUS,
     ...(instanceStatus ? { instanceStatus } : {}),
   };
 }

@@ -23,11 +23,14 @@ const latestDeploymentSchema = z.object({
   instances: z.array(z.object({ status: z.string() })),
 });
 
+const activeDeploymentSchema = z.object({ id: z.string(), deploymentStopped: z.boolean().nullish() });
+
 const serviceInstanceSchema = z.object({
   serviceId: z.string(),
   serviceName: z.string(),
   source: z.object({ image: z.string().nullish(), repo: z.string().nullish() }).nullish(),
   latestDeployment: latestDeploymentSchema.nullish(),
+  activeDeployments: z.array(activeDeploymentSchema).nullish(),
 });
 
 const environmentSchema = z.object({

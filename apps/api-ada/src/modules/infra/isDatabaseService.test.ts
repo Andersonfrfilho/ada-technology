@@ -41,6 +41,18 @@ describe('isDatabaseService', () => {
     );
   });
 
+  it('does not flag tools whose image name only starts with a database name', () => {
+    for (const sourceImage of ['rediscommander/redis-commander:latest', 'redis-commander', 'mongo-express:1', 'postgrest/postgrest:v12']) {
+      expect(isDatabaseService(buildService({ serviceName: 'tool', sourceImage }))).toBe(false);
+    }
+  });
+
+  it('matches the known database image names exactly, case-insensitively', () => {
+    for (const sourceImage of ['postgis/postgis:16', 'mariadb:11', 'MongoDB:7', 'redis/redis-stack:latest', 'mysql:8', 'postgres@sha256:abc']) {
+      expect(isDatabaseService(buildService({ serviceName: 'db', sourceImage }))).toBe(true);
+    }
+  });
+
   it('falls back to the name when there is no image', () => {
     expect(isDatabaseService(buildService({ serviceName: 'Redis' }))).toBe(true);
     expect(isDatabaseService(buildService({ serviceName: 'Redis', sourceImage: '' }))).toBe(true);

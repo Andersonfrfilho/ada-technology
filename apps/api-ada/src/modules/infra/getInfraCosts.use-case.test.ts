@@ -8,8 +8,13 @@
 
 import { describe, expect, it } from 'bun:test';
 
-import { INFRA_COSTS_CACHE_KEY, INFRA_COSTS_CACHE_TTL_SECONDS, INFRA_COSTS_LAST_GOOD_CACHE_KEY } from '@/modules/infra/infra.constant';
-import { InfraNotConfiguredError, RailwayRequestFailedError } from '@/modules/infra/infra.error';
+import {
+  INFRA_COSTS_CACHE_KEY,
+  INFRA_COSTS_CACHE_TTL_SECONDS,
+  INFRA_COSTS_FALLBACK_CACHE_TTL_SECONDS,
+  INFRA_COSTS_LAST_GOOD_CACHE_KEY,
+} from '@/modules/infra/infra.constant';
+import { InfraNotConfiguredError, RailwayRateLimitedError, RailwayRequestFailedError } from '@/modules/infra/infra.error';
 import { GetInfraCostsUseCase } from '@/modules/infra/getInfraCosts.use-case';
 import { FakeInfraCache, buildFakeGateway } from '@/modules/infra/infraFakes';
 import type { GetUsageParams, RailwayBillingCycle, RailwayProject, RailwayUsageRow } from '@/modules/infra/types/infra.types';
@@ -37,6 +42,7 @@ const NOW = new Date('2026-10-04T14:00:00.000Z');
 function buildUseCase(params: {
   readonly cycle?: RailwayBillingCycle | 'unavailable';
   readonly usageFailures?: number;
+  readonly usageError?: Error;
   readonly cache?: FakeInfraCache;
   readonly isConfigured?: boolean;
 }) {
@@ -57,7 +63,7 @@ function buildUseCase(params: {
       usageCalls.push(usageParams);
       if (remainingFailures > 0) {
         remainingFailures -= 1;
-        throw new RailwayRequestFailedError('getUsage');
+        throw params.usageError ?? new RailwayRequestFailedError('getUsage');
       }
       return ROWS;
     },
@@ -158,6 +164,60 @@ describe('GetInfraCostsUseCase', () => {
 
   it('falha dupla sem copia propaga RailwayRequestFailedError', async () => {
     const { useCase } = buildUseCase({ usageFailures: 2 });
+    await expect(useCase.execute()).rejects.toBeInstanceOf(RailwayRequestFailedError);
+  });
+
+  it('429 no usage propaga na hora, sem segunda tentativa nem espera', async () => {
+    const { useCase, usageCalls, sleeps } = buildUseCase({ usageFailures: 2, usageError: new RailwayRateLimitedError(30) });
+
+    await expect(useCase.execute()).rejects.toBeInstanceOf(RailwayRateLimitedError);
+    expect(usageCalls).toHaveLength(1);
+    expect(sleeps).toEqual([]);
+  });
+
+  it('429 no usage com copia anterior devolve a copia como antiga, sem repetir a chamada', async () => {
+    const cache = new FakeInfraCache();
+    await buildUseCase({ cache }).useCase.execute();
+    cache.store.delete(INFRA_COSTS_CACHE_KEY);
+
+    const { useCase, usageCalls, sleeps } = buildUseCase({ cache, usageFailures: 2, usageError: new RailwayRateLimitedError(30) });
+    const result = await useCase.execute();
+
+    expect(result.isStale).toBe(true);
+    expect(usageCalls).toHaveLength(1);
+    expect(sleeps).toEqual([]);
+  });
+
+  it('mes-calendario por falha do billing: TTL curto e fora do last-good', async () => {
+    const { useCase, cache } = buildUseCase({ cycle: 'unavailable' });
+
+    const result = await useCase.execute();
+
+    expect(result.windowSource).toBe('calendar_month');
+    expect(cache.setCalls.find((call) => call.key === INFRA_COSTS_CACHE_KEY)?.ttlSeconds).toBe(
+      INFRA_COSTS_FALLBACK_CACHE_TTL_SECONDS,
+    );
+    expect(cache.store.has(INFRA_COSTS_LAST_GOOD_CACHE_KEY)).toBe(false);
+  });
+
+  it('JSON invalido ou de forma antiga no cache e miss', async () => {
+    for (const stored of ['{nao e json', '{"totalCost":1}', 'null']) {
+      const cache = new FakeInfraCache();
+      cache.store.set(INFRA_COSTS_CACHE_KEY, stored);
+      const { useCase, usageCalls } = buildUseCase({ cache });
+
+      const result = await useCase.execute();
+
+      expect(usageCalls).toHaveLength(1);
+      expect(result.totalCost).toBeCloseTo(11, 4);
+    }
+  });
+
+  it('last-good invalido nao vira copia antiga: propaga o erro do usage', async () => {
+    const cache = new FakeInfraCache();
+    cache.store.set(INFRA_COSTS_LAST_GOOD_CACHE_KEY, '{"totalCost":1}');
+    const { useCase } = buildUseCase({ cache, usageFailures: 2 });
+
     await expect(useCase.execute()).rejects.toBeInstanceOf(RailwayRequestFailedError);
   });
 });

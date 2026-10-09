@@ -10,12 +10,14 @@ import {
   INFRA_ACCESS_CACHE_KEY,
   INFRA_ACCESS_CACHE_TTL_SECONDS,
   INFRA_ACCESS_STATUS,
+  INFRA_ACCESS_TOKEN_INVALID_CACHE_TTL_SECONDS,
   INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS,
   INFRA_INVENTORY_CACHE_KEY,
   type InfraAccessStatus,
 } from '@/modules/infra/infra.constant';
 import { InfraNotConfiguredError } from '@/modules/infra/infra.error';
 import { infraInventoryCacheSchema } from '@/modules/infra/infraInventory.schema';
+import { parseCachedJson } from '@/modules/infra/parseCachedJson';
 import { classifyEnvironment } from '@/modules/infra/classifyEnvironment';
 import { isDatabaseService } from '@/modules/infra/isDatabaseService';
 import { resolveEnvironmentPowerState } from '@/modules/infra/resolveEnvironmentPowerState';
@@ -69,7 +71,9 @@ export class ListInfraEnvironmentsUseCase {
     if (!railwayGateway) throw new InfraNotConfiguredError();
 
     const access = await this.resolveAccess(railwayGateway);
-    if (access === INFRA_ACCESS_STATUS.TOKEN_INVALID) return { access, projects: [] };
+    if (access === INFRA_ACCESS_STATUS.TOKEN_INVALID || access === INFRA_ACCESS_STATUS.UNAVAILABLE) {
+      return { access, projects: [] };
+    }
 
     const inventory = await this.resolveInventory(railwayGateway);
     const schedulesByEnvironmentId = await this.indexSchedules();
@@ -88,7 +92,15 @@ export class ListInfraEnvironmentsUseCase {
     if (isAccessStatus(cached)) return cached;
 
     const access = await railwayGateway.verifyAccess();
-    await cache.set(INFRA_ACCESS_CACHE_KEY, access, INFRA_ACCESS_CACHE_TTL_SECONDS);
+    // Falha transitoria nao pode ficar gravada como veredito: o proximo pedido tenta de novo.
+    if (access === INFRA_ACCESS_STATUS.UNAVAILABLE) return access;
+
+    // Token invalido expira antes: quem corrige o token precisa ver o efeito logo.
+    const ttlSeconds =
+      access === INFRA_ACCESS_STATUS.TOKEN_INVALID
+        ? INFRA_ACCESS_TOKEN_INVALID_CACHE_TTL_SECONDS
+        : INFRA_ACCESS_CACHE_TTL_SECONDS;
+    await cache.set(INFRA_ACCESS_CACHE_KEY, access, ttlSeconds);
     return access;
   }
 
@@ -96,8 +108,8 @@ export class ListInfraEnvironmentsUseCase {
     const { cache } = this.dependencies;
     const cached = await cache.get(INFRA_INVENTORY_CACHE_KEY);
     if (cached !== null) {
-      const parsed = infraInventoryCacheSchema.safeParse(JSON.parse(cached));
-      if (parsed.success) return parsed.data as readonly RailwayProject[];
+      const parsed = parseCachedJson({ raw: cached, schema: infraInventoryCacheSchema });
+      if (parsed) return parsed as readonly RailwayProject[];
     }
 
     const inventory = await railwayGateway.listInventory();
