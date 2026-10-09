@@ -26,7 +26,7 @@ Infra → Custos     ──GET──────▶     ├─ listInfraEnvironm
 | `infra.constant.ts` | `INFRA_ENVIRONMENT_STATE`, `INFRA_OPERATION_KIND`, `INFRA_OPERATION_STATUS`, padrões de banco, TTLs de cache, chaves Redis |
 | `infra.error.ts` | `InfraNotConfiguredError` 503, `InfraEnvironmentProtectedError` 403, `InfraEnvironmentNotFoundError` 404, `InfraOperationInProgressError` 409, `RailwayRequestFailedError` 502, `RailwayRateLimitedError` 503, `InfraKeepOnUntilRequiredError` 400, `InfraInvalidScheduleError` 400 |
 | `railwayPricing.constant.ts` | preço por medida, unidade, fonte (URL) e data de conferência |
-| `RailwayGateway.ts` | adaptador: `fetch` + documentos GraphQL fixos + `safeParse` zod; converte falha em erro de domínio |
+| `RailwayGateway.ts` | adaptador: `fetch` (HTTP, sem CLI) para `https://backboard.railway.com/graphql/v2` com `Authorization: Bearer`, timeout de 20 s, documentos GraphQL fixos e `safeParse` zod; converte falha em erro de domínio. Trata `errors` mesmo com HTTP 200. Expõe `verifyAccess()` (D7), que o boot e a tela Infra usam e que devolve `ok \| token_invalid \| billing_unavailable` |
 | `railwayGateway.schema.ts` | zod das respostas do Railway (são entrada não confiável) |
 | `classifyEnvironment.ts` | função pura: `{ environmentName, environmentId, managedPattern, selfEnvironmentId }` → `managed \| protected \| unmanaged` |
 | `orderServicesForPower.ts` | função pura: separa bancos × aplicações e devolve a ordem para `off`/`on` |
@@ -89,7 +89,7 @@ A trava "uma operação por ambiente" usa `SET NX` no Redis, com TTL de 15 min e
 
 | Método | Caminho | Resposta |
 |---|---|---|
-| GET | `/v1/panel/infra/environments` | `{ data: [{ projectId, projectName, environments: [{ environmentId, environmentName, classification, state, services: [{ serviceName, isDatabase, status }], schedule? , runningOperationId? }] }] }` |
+| GET | `/v1/panel/infra/environments` | `{ data: { access: 'ok' \| 'token_invalid' \| 'billing_unavailable', projects: [{ projectId, projectName, environments: [{ environmentId, environmentName, classification, state, services: [{ serviceName, isDatabase, status }], schedule? , runningOperationId? }] }] }` |
 | POST | `/v1/panel/infra/environments/:environmentId/power-off` | 202 `{ data: { operationId } }` |
 | POST | `/v1/panel/infra/environments/:environmentId/power-on` | body `{ keepOnUntil? }` (obrigatório fora da janela de uma agenda ativa; ≤ 24 h) → 202 `{ data: { operationId } }` |
 | GET | `/v1/panel/infra/operations/:operationId` | `{ data: { status, serviceResults, startedAt, finishedAt } }` |
@@ -178,4 +178,5 @@ Gráfico de custos: segue a skill `dataviz` (barras empilhadas staging × produ�
 | Dedup do webhook falha após religar | o `ReceiveWhatsAppWebhook` guarda o nonce (`x-request-id`, ou `Date.now()` se o header faltar) no Redis por 300 s; reentrega fora desses 5 min, ou com o Redis zerado, não é barrada. O fallback `Date.now()` gera um nonce novo a cada requisição e **não deduplica nada**. Verificar se a Meta envia `x-request-id`; se não, o dedup só vale por `waMessageId` (o `LogMessage` já evita registro duplicado, mas não está confirmado se a resposta do bot depende disso) — correção no repo do financiamento, fora desta spec |
 | API com 2+ réplicas dispara a agenda N vezes | `last_evaluated_at` + trava Redis; nota no `ai-context.md` |
 | Agenda derruba staging no meio de um teste | modelo por transição (não reaplica no meio da janela) + `keepOnUntil` obrigatório fora da janela |
+| Token sem permissão para ler cobrança (`customer`) ou revogado | `verifyAccess()` distingue os dois; custo sem o total oficial quando só a cobrança falha; `scripts/railway-token-check.ts` valida o token antes de configurá-lo (T0.4) |
 | Unidade de `usage` errada → custo errado | T0.2 conferiu: +1,2% contra `customer.currentUsage`. A tela mostra os dois totais; divergência > 5% vira aviso |

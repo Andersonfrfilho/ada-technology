@@ -8,7 +8,7 @@ com trabalho de outra sessão.
 
 | Fase | Modelo | Tasks 🧠 |
 |---|---|---|
-| 0 — Spike e decisão | `opus` | T0.1, T0.3 |
+| 0 — Spike e decisão | `opus` (T0.2, T0.4 → `sonnet`) | T0.1, T0.3 |
 | 1 — Fundação da API | `sonnet` (T1.1, T1.2 → `haiku`) | — |
 | 2 — Ligar/desligar | `sonnet` | — |
 | 3 — Custos | `sonnet` (T3.1 → `haiku`) | — |
@@ -41,6 +41,11 @@ com trabalho de outra sessão.
   - Registrar D1–D6 da spec, com o resultado do T0.1 fechando a D2, e o risco do token de workspace.
   - Aceite: ADR no formato dos ADRs 0001–0003; plan §2.2 atualizado com a mutação escolhida.
 
+- [ ] **T0.4 Verificar o token de workspace por HTTP.** _(bloqueada: precisa de um token criado por você)_
+  - Criar um token de **workspace** no Railway (Workspace settings → Tokens) e rodar `scripts/railway-token-check.ts` com ele, num terminal seu: o script só lê, nunca imprime o token e cobre workspace, projetos/ambientes, ciclo de cobrança + `currentUsage`, `usage` e estado de um ambiente.
+  - Se `billing` falhar, o token de workspace não lê cobrança: registrar e decidir entre token de conta ou custo sem total oficial (D7).
+  - Aceite: saída do script (sem token) colada no `evidence.md`; a permissão de parar/religar deployment fica para a T6.3.
+
 ## Fase 1 — Fundação da API
 > 🤖 Modelo: `sonnet` (T1.1 e T1.2 → `haiku`)
 
@@ -59,7 +64,8 @@ com trabalho de outra sessão.
   - Documentos fixos do plan §2.2.
   - Sem log do token.
   - 429 vira `RailwayRateLimitedError`; `errors` do GraphQL e resposta inválida viram `RailwayRequestFailedError`.
-  - Aceite: testes com `fetch` falso cobrindo os quatro caminhos.
+  - `fetch` direto para `https://backboard.railway.com/graphql/v2` (nunca CLI); `errors` no corpo conta como falha mesmo com HTTP 200; `verifyAccess()` conforme D7.
+  - Aceite: testes com `fetch` falso cobrindo os quatro caminhos, o erro com HTTP 200 e os três resultados de `verifyAccess()`.
 - [ ] **T1.4 Funções puras.**
   - `classifyEnvironment`, `orderServicesForPower` (banco por `source.image`, nome só como reforço; testar serviço renomeado com imagem de banco), com TDD.
   - Aceite: testes de produção, autoproteção, padrão, não gerenciado e ordem off/on.

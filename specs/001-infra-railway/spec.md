@@ -101,6 +101,10 @@ Um workspace: `AdA Technology` (id `42450f5c-a76c-40d9-b77f-cc627906ead1`).
   - Ausência do token desliga o módulo: as rotas respondem 503 `INFRA_NOT_CONFIGURED` e o menu mostra o estado.
   - O cliente GraphQL só executa documentos fixos declarados em código, nunca uma query montada a partir de entrada.
   - O token nunca aparece em log.
+- **Verificação de acesso (recorrente)**
+  - O `RailwayGateway` expõe `verifyAccess()`: lê workspace, projetos, ciclo de cobrança (`customer`), `usage` e o estado de um ambiente. Roda no boot (só avisa no log, nunca derruba a API) e a cada abertura da tela Infra, com resultado em cache de 5 min.
+  - A tela mostra um aviso quando o token está inválido/revogado ou quando só o `customer` (cobrança) não é legível; neste caso os custos aparecem sem o total oficial, em vez de a tela inteira falhar.
+  - O Railway responde falha de autenticação com **HTTP 200 e o erro no corpo**: o gateway trata `errors` mesmo em 200.
 - **Custo de API**
   - O estado dos ambientes fica em cache no Redis por 30 s.
   - Os custos ficam em cache por 15 min.
@@ -128,6 +132,7 @@ Um workspace: `AdA Technology` (id `42450f5c-a76c-40d9-b77f-cc627906ead1`).
 | D1 | Token de **workspace** (`Authorization: Bearer`), só em produção da `api-ada` | Token de projeto: é por ambiente, não enxerga os outros projetos |
 | D2 | **Fechada no T0.1:** `deploymentStop` para desligar e `deploymentRestart` para religar (~7 s, sem build, mesmo deployment) | `numReplicas: 0` (o Railway recusa; os `stg-toggle.yml` não funcionam) e `deploymentRemove` (religar cria deployment novo e pode exigir build) |
 | D3 | Agenda no scheduler em processo da `api-ada` (réplica única hoje) | `apps/cron-ada` novo: só se a API ganhar réplicas |
+| D7 | A `api-ada` fala com o Railway **só por HTTP** (`fetch` na API GraphQL, `Authorization: Bearer <token de workspace>`, endpoint `https://backboard.railway.com/graphql/v2`), nunca pela CLI. A verificação do token e do acesso é rotina da própria API (RNF abaixo) | CLI `railway`: a imagem da `api-ada` não a tem, exige login interativo e por baixo chama a mesma API GraphQL; além disso não devolve erro estruturado para o código tratar |
 | D6 | Agenda como janela (dias + hora liga/desliga), convergente por transição | Dois crons independentes: deixam estados impossíveis (ligar depois de desligar no mesmo dia) e não suportam "manter até" |
 | D4 | Preços em constante, com fonte e data | Buscar preço por API: o Railway não expõe |
 | D5 | Rotas em `/v1/panel/infra/...` | Rota fora do painel |
