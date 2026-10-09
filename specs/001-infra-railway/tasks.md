@@ -49,7 +49,7 @@ com trabalho de outra sessão.
 ## Fase 1 — Fundação da API
 > 🤖 Modelo: `sonnet` (T1.1 e T1.2 → `haiku`)
 
-- [ ] **T1.1 Variáveis de ambiente.**
+- [x] **T1.1 Variáveis de ambiente.**
   - Adicionar as cinco variáveis do plan §2.4 em `infra/config/environment.ts`.
   - Regras de `superRefine`: workspace e `RAILWAY_ENVIRONMENT_ID` obrigatórios quando há token; o padrão precisa compilar como regex.
   - Valores vazios em `envs/env.dev` e `envs/env.test`.
