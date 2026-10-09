@@ -56,6 +56,19 @@ export const INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS = 30;
 export const INFRA_COSTS_CACHE_TTL_SECONDS = 900;
 export const INFRA_ACCESS_CACHE_TTL_SECONDS = 300;
 
+// Versionada: o cache guarda JSON sem validação, e mudar o formato do resultado num deploy futuro não pode ler a forma antiga.
+export const INFRA_COSTS_CACHE_KEY = 'infra:costs:v1';
+export const INFRA_COSTS_LAST_GOOD_CACHE_KEY = 'infra:costs:v1:last-good';
+export const INFRA_COSTS_LAST_GOOD_TTL_SECONDS = 604_800;
+export const INFRA_COSTS_RETRY_DELAY_MILLISECONDS = 2000;
+export const INFRA_COSTS_DIVERGENCE_THRESHOLD_PERCENT = 5;
+
+export const INFRA_COSTS_WINDOW_SOURCE = {
+  BILLING_CYCLE: 'billing_cycle',
+  CALENDAR_MONTH: 'calendar_month',
+} as const;
+export type InfraCostsWindowSource = (typeof INFRA_COSTS_WINDOW_SOURCE)[keyof typeof INFRA_COSTS_WINDOW_SOURCE];
+
 export const INFRA_INVENTORY_CACHE_KEY = 'infra:inventory';
 export const INFRA_ACCESS_CACHE_KEY = 'infra:access';
 

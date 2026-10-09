@@ -20,6 +20,7 @@ import { INFRA_OPERATION_TRIGGER } from '@/modules/infra/infra.constant';
 import { GetInfraOperationUseCase } from '@/modules/infra/getInfraOperation.use-case';
 import { PowerOffEnvironmentUseCase } from '@/modules/infra/powerOffEnvironment.use-case';
 import { PowerOnEnvironmentUseCase } from '@/modules/infra/powerOnEnvironment.use-case';
+import { GetInfraCostsUseCase } from '@/modules/infra/getInfraCosts.use-case';
 import { ListInfraEnvironmentsUseCase } from '@/modules/infra/listInfraEnvironments.use-case';
 import { buildPowerHarness, buildProject, buildService } from '@/modules/infra/infraFakes';
 import { InfraOperationInProgressError } from '@/modules/infra/infra.error';
@@ -96,6 +97,12 @@ function buildSetup(params: { readonly identity: Identity; readonly isConfigured
     powerOffEnvironment: recordingPowerOff,
     powerOnEnvironment: new PowerOnEnvironmentUseCase(harness.dependencies),
     getInfraOperation: new GetInfraOperationUseCase({ operationRepository: harness.repository }),
+    getInfraCosts: new GetInfraCostsUseCase({
+      ...(params.isConfigured === false ? {} : { railwayGateway: harness.gateway }),
+      cache: harness.cache,
+      sleep: async () => {},
+      now: () => new Date('2026-10-09T12:00:00Z'),
+    }),
   });
 
   // Sem Redis nos testes: o preset de rate limit e conferido a parte, sobre a rota declarada.
@@ -114,6 +121,7 @@ const ALL_ROUTES: readonly (readonly [string, string])[] = [
   ['POST', `/environments/${ENVIRONMENT_ID}/power-off`],
   ['POST', `/environments/${ENVIRONMENT_ID}/power-on`],
   ['GET', `/operations/${ENVIRONMENT_ID}`],
+  ['GET', '/costs'],
 ];
 
 describe('rotas de infra: autenticacao e papel', () => {
@@ -132,7 +140,7 @@ describe('rotas de infra: erros de dominio', () => {
   it('sem token do Railway responde 503 INFRA_NOT_CONFIGURED', async () => {
     const setup = buildSetup({ identity: ADMIN, isConfigured: false });
 
-    for (const [method, path] of ALL_ROUTES.slice(0, 3)) {
+    for (const [method, path] of [...ALL_ROUTES.slice(0, 3), ALL_ROUTES[4] as readonly [string, string]]) {
       const response = await setup.handle(request(method, path));
       expect(response.status).toBe(503);
       expect((await response.json()).error.code).toBe('INFRA_NOT_CONFIGURED');
@@ -153,6 +161,7 @@ describe('rotas de infra: erros de dominio', () => {
       powerOffEnvironment: new PowerOffEnvironmentUseCase(harness.dependencies),
       powerOnEnvironment: new PowerOnEnvironmentUseCase(harness.dependencies),
       getInfraOperation: new GetInfraOperationUseCase({ operationRepository: harness.repository }),
+      getInfraCosts: { execute: async () => { throw new Error('nao chamado'); } },
     }).map(({ rateLimit: _rateLimit, ...route }) => route);
     const handle = createRouter({ routes, authenticate: async () => ADMIN });
 
@@ -252,6 +261,18 @@ describe('rotas de infra: sucesso', () => {
   });
 });
 
+describe('rotas de infra: custos', () => {
+  it('GET costs como admin responde 200 com o formato do envelope', async () => {
+    const response = await buildSetup({ identity: ADMIN }).handle(request('GET', '/costs'));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.currency).toBe('USD');
+    expect(body.data.projectionMethod).toBe('linear');
+    expect(body.data.projects).toEqual([]);
+  });
+});
+
 describe('rotas de infra: rate limit', () => {
   it('power usa o preset duro e leitura usa o preset de leitura', () => {
     const noop = { execute: async () => ({ operationId: 'x' }) };
@@ -260,12 +281,14 @@ describe('rotas de infra: rate limit', () => {
       powerOffEnvironment: noop,
       powerOnEnvironment: noop,
       getInfraOperation: { execute: async () => { throw new Error('nao chamado'); } },
+      getInfraCosts: { execute: async () => { throw new Error('nao chamado'); } },
     });
 
     expect(routes.map((route) => route.rateLimit)).toEqual([
       RATE_LIMIT.PANEL_READ,
       RATE_LIMIT.PANEL_INFRA_POWER,
       RATE_LIMIT.PANEL_INFRA_POWER,
+      RATE_LIMIT.PANEL_READ,
       RATE_LIMIT.PANEL_READ,
     ]);
     expect(RATE_LIMIT.PANEL_INFRA_POWER.limit).toBeLessThan(RATE_LIMIT.PANEL_WRITE.limit);

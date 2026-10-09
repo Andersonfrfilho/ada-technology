@@ -101,6 +101,7 @@ import { SendAgentPasswordResetUseCase } from '@/modules/agent/sendAgentPassword
 import { createRailwayGateway } from '@/modules/infra/createRailwayGateway';
 import { DrizzleInfraOperationRepository } from '@/modules/infra/DrizzleInfraOperationRepository';
 import { DrizzleInfraScheduleRepository } from '@/modules/infra/DrizzleInfraScheduleRepository';
+import { GetInfraCostsUseCase } from '@/modules/infra/getInfraCosts.use-case';
 import { GetInfraOperationUseCase } from '@/modules/infra/getInfraOperation.use-case';
 import { ListInfraEnvironmentsUseCase } from '@/modules/infra/listInfraEnvironments.use-case';
 import { PowerOffEnvironmentUseCase } from '@/modules/infra/powerOffEnvironment.use-case';
@@ -394,6 +395,13 @@ const infraPowerDependencies: PowerEnvironmentDependencies = {
   selfEnvironmentId: environment.RAILWAY_ENVIRONMENT_ID,
   databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
 };
+
+export const getInfraCosts = new GetInfraCostsUseCase({
+  ...(railwayGateway ? { railwayGateway } : {}),
+  cache: infraCache,
+  sleep: (milliseconds) => Bun.sleep(milliseconds),
+  now: () => new Date(),
+});
 
 export const getInfraOperation = new GetInfraOperationUseCase({ operationRepository: infraOperationRepository });
 

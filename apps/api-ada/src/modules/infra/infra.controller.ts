@@ -7,6 +7,7 @@
  */
 
 import {
+  getInfraCosts,
   getInfraOperation,
   listInfraEnvironments,
   powerOffEnvironment,
@@ -20,4 +21,5 @@ export const infraRoutes: readonly Route[] = buildInfraRoutes({
   powerOffEnvironment,
   powerOnEnvironment,
   getInfraOperation,
+  getInfraCosts,
 });

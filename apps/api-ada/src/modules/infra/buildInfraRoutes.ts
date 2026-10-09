@@ -13,6 +13,7 @@ import { ACTOR_TYPE } from '@/modules/audit/audit.constant';
 import { INFRA_OPERATION_TRIGGER } from '@/modules/infra/infra.constant';
 import { infraEnvironmentParamsSchema, infraOperationParamsSchema } from '@/modules/infra/infra.schema';
 import type {
+  CostsResult,
   GetInfraOperationParams,
   GetInfraOperationResult,
   InfraEnvironmentView,
@@ -24,12 +25,14 @@ import type {
 const ENVIRONMENTS_PATH = '/v1/panel/infra/environments';
 const ENVIRONMENT_PATH = `${ENVIRONMENTS_PATH}/:environmentId`;
 const OPERATION_PATH = '/v1/panel/infra/operations/:operationId';
+const COSTS_PATH = '/v1/panel/infra/costs';
 
 export type InfraRoutesDependencies = {
   readonly listInfraEnvironments: { execute(): Promise<ListInfraEnvironmentsResult> };
   readonly powerOffEnvironment: { execute(params: PowerEnvironmentParams): Promise<PowerEnvironmentResult> };
   readonly powerOnEnvironment: { execute(params: PowerEnvironmentParams): Promise<PowerEnvironmentResult> };
   readonly getInfraOperation: { execute(params: GetInfraOperationParams): Promise<GetInfraOperationResult> };
+  readonly getInfraCosts: { execute(): Promise<CostsResult> };
 };
 
 type PowerUseCase = InfraRoutesDependencies['powerOffEnvironment'];
@@ -109,5 +112,13 @@ export function buildInfraRoutes(dependencies: InfraRoutesDependencies): readonl
     },
   };
 
-  return [listEnvironmentsRoute, powerOffRoute, powerOnRoute, getOperationRoute];
+  const getCostsRoute: Route = {
+    method: HTTP_METHOD.GET,
+    path: COSTS_PATH,
+    auth: AUTH_REQUIREMENT.ADMIN,
+    rateLimit: RATE_LIMIT.PANEL_READ,
+    handler: async () => jsonData(await dependencies.getInfraCosts.execute()),
+  };
+
+  return [listEnvironmentsRoute, powerOffRoute, powerOnRoute, getOperationRoute, getCostsRoute];
 }

@@ -97,10 +97,10 @@ com trabalho de outra sessão.
 ## Fase 3 — Custos
 > 🤖 Modelo: `sonnet` (T3.1 → `haiku`)
 
-- [ ] **T3.1 `railwayPricing.constant.ts` + `calculateUsageCost`.**
+- [x] **T3.1 `railwayPricing.constant.ts` + `calculateUsageCost`.**
   - Preços e unidades confirmados no T0.2, com fonte e data.
   - Aceite: teste com números do T0.2.
-- [ ] **T3.2 `getInfraCosts.use-case.ts` + `GET /costs`.**
+- [x] **T3.2 `getInfraCosts.use-case.ts` + `GET /costs`.**
   - `billingPeriod` do workspace define a janela; `usage` agrupado por projeto e ambiente com `endDate` = fim do ciclo; `estimatedUsage` para a projeção; total oficial `customer.currentUsage` para reconciliar; cache de 15 min; `isProduction` por ambiente.
   - Aceite: testes com gateway falso e de rota.
 
