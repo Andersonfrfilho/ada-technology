@@ -19,6 +19,9 @@ export const PANEL_PATH = {
   TEMPLATES: '/v1/panel/templates',
   FLOWS: '/v1/panel/flows',
   SIMULATION: '/v1/panel/simulation',
+  INFRA_ENVIRONMENTS: '/v1/panel/infra/environments',
+  INFRA_OPERATIONS: '/v1/panel/infra/operations',
+  INFRA_COSTS: '/v1/panel/infra/costs',
 } as const;
 
 export const HTTP_METHOD = {

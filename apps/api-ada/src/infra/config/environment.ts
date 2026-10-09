@@ -16,7 +16,7 @@ const booleanFromString = z
   .string()
   .transform((value) => value.toLowerCase() === 'true');
 
-const environmentSchema = z
+export const environmentSchema = z
   .object({
     PROJECT_NAME: z.string().min(1),
     ENV: z.enum(['dev', 'test', 'staging', 'production']),
@@ -140,6 +140,14 @@ const environmentSchema = z
     GROQ_API_KEY: z.string().default(''),
     GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
     GROQ_TRANSCRIPTION_MODEL: z.string().default('whisper-large-v3-turbo'),
+
+    // Token vazio desliga o modulo Infra. Sem ele a API nao chama o Railway.
+    RAILWAY_API_TOKEN: z.string().default(''),
+    RAILWAY_WORKSPACE_ID: z.string().default(''),
+    // Injetada pelo proprio Railway; sem ela a autoprotecao do ambiente de producao nao funciona.
+    RAILWAY_ENVIRONMENT_ID: z.string().default(''),
+    RAILWAY_MANAGED_ENVIRONMENT_PATTERN: z.string().default('staging'),
+    RAILWAY_DATABASE_WAIT_SECONDS: z.coerce.number().int().min(10).max(600).default(120),
   })
   // Fail-closed: canal habilitado sem segredo nao sobe, em vez de aceitar
   // webhook sem assinatura verificavel.
@@ -258,6 +266,41 @@ const environmentSchema = z
         code: z.ZodIssueCode.custom,
         path: ['GROQ_API_KEY'],
         message: 'GROQ_API_KEY e obrigatorio quando INTENT_CLASSIFIER_ENABLED=true',
+      });
+    }
+  })
+  // Staging e dev nao devem poder desligar nada no Railway: o token so existe na api de producao.
+  .superRefine((value, context) => {
+    if (value.RAILWAY_API_TOKEN.length === 0 || value.ENV === 'production') return;
+
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['RAILWAY_API_TOKEN'],
+      message: 'RAILWAY_API_TOKEN so e aceito com ENV=production',
+    });
+  })
+  // Token sem workspace ou sem ambiente faria o modulo subir e errar so na primeira chamada.
+  .superRefine((value, context) => {
+    if (value.RAILWAY_API_TOKEN.length === 0) return;
+
+    for (const key of ['RAILWAY_WORKSPACE_ID', 'RAILWAY_ENVIRONMENT_ID'] as const) {
+      if (value[key].length === 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `${key} e obrigatorio quando RAILWAY_API_TOKEN esta definido`,
+        });
+      }
+    }
+  })
+  .superRefine((value, context) => {
+    try {
+      new RegExp(value.RAILWAY_MANAGED_ENVIRONMENT_PATTERN);
+    } catch {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['RAILWAY_MANAGED_ENVIRONMENT_PATTERN'],
+        message: 'RAILWAY_MANAGED_ENVIRONMENT_PATTERN precisa ser uma expressao regular valida',
       });
     }
   });

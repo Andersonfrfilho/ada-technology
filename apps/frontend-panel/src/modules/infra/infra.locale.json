@@ -1,0 +1,167 @@
+{
+  "environments": {
+    "title": "Ambientes",
+    "subtitle": "Ligue e desligue os ambientes de homologação para economizar. Produção nunca aparece como desligável.",
+    "loading": "Carregando ambientes...",
+    "empty": "Nenhum ambiente encontrado.",
+    "loadFailed": "Não foi possível carregar os ambientes.",
+    "retry": "Tentar de novo",
+    "environmentsCount": "ambientes",
+    "protectedHint": "Protegido: não pode ser ligado nem desligado pelo painel."
+  },
+  "notConfigured": {
+    "title": "Módulo de infraestrutura não configurado",
+    "description": "O servidor não tem o token do Railway configurado, então não há como listar ambientes nem custos. Peça a quem administra o servidor para configurar a integração."
+  },
+  "access": {
+    "ok": "Conexão com o Railway ativa.",
+    "token_invalid": "Sem acesso ao Railway: o token é inválido ou foi revogado. Atualize-o na configuração do servidor.",
+    "billing_unavailable": "Cobrança ilegível: o token não consegue ler a cobrança. Ambientes e agendas funcionam; os custos podem aparecer sem o total oficial.",
+    "unavailable": "Não foi possível falar com o Railway agora. Tente de novo em instantes."
+  },
+  "state": {
+    "running": "Ligado",
+    "stopped": "Desligado",
+    "partial": "Parcial",
+    "transitioning": "Em transição"
+  },
+  "classification": {
+    "managed": "Gerenciável",
+    "protected": "Protegido",
+    "unmanaged": "Não gerenciado"
+  },
+  "services": {
+    "title": "Serviços",
+    "summary": "{running} de {total} rodando",
+    "database": "Banco de dados",
+    "running": "Rodando",
+    "stopped": "Parado",
+    "no_deployment": "Sem deploy",
+    "transitioning": "Mudando"
+  },
+  "power": {
+    "on": "Ligar",
+    "off": "Desligar",
+    "running": "Operação em andamento...",
+    "operationRunning": "Operação em andamento neste ambiente.",
+    "started": "Operação iniciada.",
+    "confirmTitleOff": "Desligar {environment}",
+    "confirmTitleOn": "Ligar {environment}",
+    "confirmDescriptionOff": "Os serviços abaixo serão parados. Aplicações primeiro e bancos por último. Volumes, variáveis e backups continuam intactos.",
+    "confirmDescriptionOn": "Os bancos sobem primeiro e as aplicações depois que eles respondem.",
+    "willStop": "Serviços que serão parados",
+    "databasesLast": "Bancos de dados por último.",
+    "typeToConfirm": "Digite {environment} para confirmar",
+    "confirmPlaceholder": "Nome do ambiente",
+    "confirmOff": "Desligar ambiente",
+    "confirmOn": "Ligar ambiente",
+    "pending": "Enviando...",
+    "cancel": "Cancelar"
+  },
+  "keepOn": {
+    "label": "Manter ligado até",
+    "hint": "Fora do horário da agenda, o ambiente desliga sozinho depois deste horário (máximo 24 h).",
+    "plusOneHour": "+1 h",
+    "plusTwoHours": "+2 h",
+    "plusFourHours": "+4 h",
+    "endOfDay": "Fim do dia",
+    "until": "Até {moment}",
+    "activeUntil": "Mantido ligado até {moment}"
+  },
+  "moment": {
+    "today": "hoje às {time}",
+    "tomorrow": "amanhã às {time}",
+    "weekday": "{weekday} {time}"
+  },
+  "schedule": {
+    "title": "Agenda",
+    "none": "Sem agenda",
+    "enabled": "Ativa",
+    "paused": "Pausada",
+    "weekdays": "Dias da semana",
+    "powerOnTime": "Hora de ligar",
+    "powerOffTime": "Hora de desligar",
+    "businessHours": "Usar horário comercial",
+    "businessHoursHint": "Segunda a sexta, 08:00 às 20:00",
+    "isEnabled": "Agenda ativa",
+    "isEnabledHint": "Pausar mantém a agenda salva, mas ela deixa de ligar e desligar.",
+    "timezoneNote": "Horários no fuso de Brasília (America/Sao_Paulo).",
+    "save": "Salvar agenda",
+    "saving": "Salvando...",
+    "saved": "Agenda salva.",
+    "next": "Próxima ação",
+    "nextPowerOn": "Liga",
+    "nextPowerOff": "Desliga",
+    "weekdayNames": ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"],
+    "weekdayLetters": ["D", "S", "T", "Q", "Q", "S", "S"],
+    "weekdayFullNames": ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"],
+    "validation": {
+      "no_weekdays": "Escolha ao menos um dia da semana.",
+      "invalid_time": "Informe os dois horários.",
+      "crosses_midnight": "A janela não pode cruzar a meia-noite: a hora de ligar precisa ser antes da hora de desligar.",
+      "empty_window": "A hora de ligar e a de desligar não podem ser iguais."
+    }
+  },
+  "operation": {
+    "running": "Em andamento",
+    "succeeded": "Concluída",
+    "partially_failed": "Concluída com falhas",
+    "failed": "Falhou"
+  },
+  "costs": {
+    "title": "Custos",
+    "subtitle": "Consumo do Railway no ciclo de cobrança atual, em dólar.",
+    "loading": "Carregando custos...",
+    "loadFailed": "Não foi possível carregar os custos.",
+    "retry": "Tentar de novo",
+    "empty": "Sem consumo no período.",
+    "period": "Ciclo de cobrança",
+    "total": "Acumulado no ciclo",
+    "projection": "Projeção até o fim do ciclo",
+    "projectionMethod": "Estimativa linear",
+    "projectionExplanation": "Mantém o ritmo de consumo até agora pelos dias restantes do ciclo. Não prevê mudanças.",
+    "officialTotal": "Total oficial do Railway",
+    "officialTotalMissing": "Indisponível",
+    "divergence": "Divergência em relação ao total oficial",
+    "divergenceWarning": "Nosso cálculo difere do total oficial em {percent}. Confira a tabela de preços.",
+    "stagingShare": "Homologação (staging) representa {percent} do custo do ciclo.",
+    "stagingShareUnavailable": "Ainda não há custo no ciclo para calcular a parcela de homologação.",
+    "stale": "Dados de uma consulta anterior: não foi possível atualizar agora.",
+    "calendarMonth": "Cobrança ilegível: mostrando o mês-calendário, que pode não coincidir com o ciclo do Railway.",
+    "pricingCheckedAt": "Preços conferidos em",
+    "pricingSource": "Fonte dos preços",
+    "chartTitle": "Custo por projeto",
+    "chartAriaLabel": "Gráfico de barras empilhadas: custo por projeto, homologação e produção. {summary}",
+    "chartAriaItem": "{project}: {total}, sendo {staging} em homologação e {production} em produção",
+    "chartTableHint": "Os mesmos valores estão na tabela abaixo.",
+    "legend": "Legenda",
+    "tableTitle": "Detalhe por projeto e ambiente",
+    "tableCaption": "Custo do ciclo por projeto e ambiente, do maior para o menor",
+    "columnProject": "Projeto / ambiente",
+    "columnStaging": "Homologação",
+    "columnProduction": "Produção",
+    "columnCost": "Custo",
+    "columnShare": "% do total",
+    "columnTotal": "Total",
+    "columnProjected": "Projeção",
+    "kindStaging": "Homologação",
+    "kindProduction": "Produção",
+    "measurement": {
+      "CPU_USAGE": "CPU",
+      "MEMORY_USAGE_GB": "Memória",
+      "NETWORK_TX_GB": "Rede",
+      "DISK_USAGE_GB": "Disco"
+    }
+  },
+  "errors": {
+    "INFRA_NOT_CONFIGURED": "A integração com o Railway não está configurada neste servidor.",
+    "INFRA_ENVIRONMENT_PROTECTED": "Este ambiente é protegido e não pode ser ligado ou desligado pelo painel.",
+    "INFRA_OPERATION_IN_PROGRESS": "Já existe uma operação em andamento neste ambiente. Aguarde terminar.",
+    "INFRA_KEEP_ON_UNTIL_REQUIRED": "Fora do horário da agenda, informe até quando manter o ambiente ligado (máximo 24 h).",
+    "INFRA_INVALID_SCHEDULE": "Agenda inválida. Confira os dias e os horários (a janela não pode cruzar a meia-noite).",
+    "RAILWAY_REQUEST_FAILED": "O Railway não respondeu como esperado. Tente de novo em instantes.",
+    "RAILWAY_RATE_LIMITED": "O Railway limitou as chamadas. Aguarde um pouco e tente de novo.",
+    "RATE_LIMITED": "Muitas tentativas seguidas. Aguarde um pouco e tente de novo.",
+    "UNKNOWN": "Algo deu errado. Tente de novo."
+  }
+}

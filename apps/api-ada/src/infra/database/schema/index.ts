@@ -8,6 +8,7 @@
 
 export { agents } from '@/infra/database/schema/agent.schema';
 export { auditLogs } from '@/infra/database/schema/audit.schema';
+export { infraEnvironmentSchedules, infraPowerOperations } from '@/infra/database/schema/infra.schema';
 export {
   knowledgeCategories,
   knowledgeFaqs,

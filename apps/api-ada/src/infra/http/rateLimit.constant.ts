@@ -41,6 +41,11 @@ export const RATE_LIMIT = {
   PANEL_READ: { limit: 240, windowSeconds: ONE_MINUTE },
   PANEL_WRITE: { limit: 60, windowSeconds: ONE_MINUTE },
 
+  // Ligar/desligar ambiente mexe em infra paga e derruba servico: tres por minuto cobrem corrigir um
+  // clique errado, e a trava por ambiente ja segura o resto.
+  PANEL_INFRA_POWER: { limit: 3, windowSeconds: ONE_MINUTE },
+  PANEL_INFRA_POWER_PER_AGENT: { limit: 6, windowSeconds: ONE_MINUTE },
+
   // Anexo sobe ate 25MB por chamada: mais apertado que o `PANEL_WRITE` porque o custo aqui e banda
   // e disco, nao uma linha no banco. Vinte por minuto cobrem um lote de notas sem virar dreno.
   NOTIFICATION_ATTACHMENT_UPLOAD: { limit: 20, windowSeconds: ONE_MINUTE },

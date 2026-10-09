@@ -365,3 +365,63 @@ numero um e `CORS_ALLOWED_ORIGINS`/`WIDGET_ALLOWED_ORIGINS` sem o dominio novo.
 
 Confira tambem que o CSP do painel de `staging` cita a API de `staging`, e nao a de producao — e
 o sintoma classico de um `API_ORIGIN` copiado junto com o ambiente duplicado.
+
+## 11. Modulo Infra (token de workspace)
+
+A area Infra do painel liga e desliga ambientes de staging e mostra o custo do workspace Railway.
+Ela fala com o Railway pela API GraphQL, com um **token de workspace**. As decisoes e a agenda
+estao em `docs/adr/0004-infra-railway-no-painel.md`; o que o token permite e o procedimento de
+rotacao e de vazamento estao em `docs/SECURITY.md`, achado de 2026-10-09.
+
+### Criar o token
+
+1. No Railway, abrir as configuracoes do workspace e a aba de tokens.
+2. Criar um token de **workspace**. Token de projeto nao serve: ele enxerga um ambiente so
+   (ADR 0004, D1).
+
+### Onde ele pode existir
+
+- **Somente** na `api` do ambiente `production` do projeto `ada-technology`.
+- Vazio em `staging`, `dev`, `test` e no CI. Por isso a Infra do painel de staging responde
+  `503 INFRA_NOT_CONFIGURED`, o que e o esperado.
+- Nunca em arquivo `.env`, em arquivo versionado, em comando, no historico do shell ou num chat.
+
+### Variaveis da `api`
+
+| Variavel | Obrigatoria quando | Default | Nota |
+|---|---|---|---|
+| `RAILWAY_API_TOKEN` | opcional | vazio | o token; vazio desliga o modulo; recusado fora de `ENV=production` (a api sobe com erro de configuracao) |
+| `RAILWAY_WORKSPACE_ID` | com `RAILWAY_API_TOKEN` | vazio | id do workspace, copiado das configuracoes do workspace |
+| `RAILWAY_ENVIRONMENT_ID` | com `RAILWAY_API_TOKEN` | vazio | **nao configurar a mao**: o Railway injeta o id do proprio ambiente |
+| `RAILWAY_MANAGED_ENVIRONMENT_PATTERN` | nunca | `staging` | regex dos ambientes que o painel pode ligar e desligar; producao fica protegida mesmo que case |
+| `RAILWAY_DATABASE_WAIT_SECONDS` | nunca | `120` | espera pelo banco ao ligar, de 10 a 600 s |
+
+### Validar o token antes de configurar
+
+O `scripts/railway-token-check.ts` prova, por HTTP, que o token le o que o modulo precisa. Ele e
+so de leitura. Rodar no terminal, digitando o token sem eco:
+
+```bash
+read -rs RAILWAY_API_TOKEN && export RAILWAY_API_TOKEN
+export RAILWAY_WORKSPACE_ID=<id do workspace>
+bun scripts/railway-token-check.ts
+unset RAILWAY_API_TOKEN RAILWAY_WORKSPACE_ID
+```
+
+O `read -rs` le do teclado sem mostrar nada na tela e sem gravar o valor no historico. Cole o token
+e tecle Enter. Se o token aparecer em qualquer tela, log ou conversa, ele esta **queimado**: revogar
+no Railway e criar outro. O script nao testa a permissao de parar e religar deployment, que e
+escrita; isso so se confirma no teste manual do roteiro de validacao da spec 001 (T6.3).
+
+### Ordem do rollout
+
+1. Subir a versao com a migration `apps/api-ada/drizzle/0004_dark_mercury.sql`. Ela e aditiva e
+   roda no `preDeployCommand`, como as demais. Sem token, a Infra responde `503` e o `GET
+   /health/ready` continua `200`.
+2. So depois configurar `RAILWAY_API_TOKEN` e `RAILWAY_WORKSPACE_ID` na `api` de producao, e
+   esperar o deploy da `api` terminar. A migration vem antes para que a agenda e o registro de
+   operacoes ja existam quando o modulo comecar a usa-los.
+3. Conferir no painel, na area Infra: a lista de projetos carrega, e o custo do ciclo aparece.
+
+A `api` de producao precisa continuar com **uma unica replica**: o scheduler da agenda roda dentro
+dela (ADR 0004, D3).

@@ -13,8 +13,11 @@ import { createRouter, type Route } from '@/infra/http/router';
 import { startScheduler } from '@/infra/scheduler/scheduler';
 import {
   catalogModule,
+  infraSchedules,
   notificationBullQueue,
   notificationWorker,
+  railwayGateway,
+  recoverInterruptedInfraOperations,
   seedNotificationTemplates,
 } from '@/infra/container';
 import { BULL_BOARD_BASE_PATH } from '@/infra/queue/bullBoard.constant';
@@ -28,6 +31,7 @@ import { whatsappRoutes } from '@/modules/channel/whatsapp/whatsapp.controller';
 import { widgetRoutes } from '@/modules/channel/widget/widget.controller';
 import { panelFlowRoutes } from '@/modules/flow/flow.controller';
 import { healthRoutes } from '@/modules/health/health.controller';
+import { infraRoutes } from '@/modules/infra/infra.controller';
 import { notificationAttachmentRoutes } from '@/modules/notification/notificationAttachment.controller';
 import { notificationTestRoutes } from '@/modules/notification/notificationTest.controller';
 import { notificationRoutes } from '@/modules/notification/notification.controller';
@@ -68,6 +72,7 @@ const routes: readonly Route[] = [
   ...notificationRoutes,
   ...notificationAttachmentRoutes,
   ...notificationTestRoutes,
+  ...infraRoutes,
 ];
 
 const handleRequest = createRouter({ routes, authenticate: authenticateRequest });
@@ -102,7 +107,7 @@ const server = Bun.serve({
  * usa o catalogo interno nao paga por um timer que nao tem o que sincronizar.
  */
 const scheduler = startScheduler({
-  tasks: catalogModule.schedules,
+  tasks: [...catalogModule.schedules, ...(railwayGateway ? [infraSchedules] : [])],
   companyId: environment.ADA_COMPANY_ID,
 });
 
@@ -124,6 +129,21 @@ try {
   }
 } catch (error) {
   logger.error({ message: 'Falha ao semear templates de notificacao', source: SOURCE, meta: { error: String(error) } });
+}
+
+/**
+ * Operacao de infra `running` de um processo que morreu (deploy no meio) travaria o painel. Falha aqui
+ * so e logada: recuperar historico nunca pode impedir a API de subir.
+ */
+if (railwayGateway) {
+  try {
+    const recovered = await recoverInterruptedInfraOperations.execute();
+    if (recovered > 0) {
+      logger.info({ message: 'Operacoes de infra interrompidas recuperadas', source: SOURCE, meta: { count: recovered } });
+    }
+  } catch (error) {
+    logger.error({ message: 'Falha ao recuperar operacoes de infra interrompidas', source: SOURCE, meta: { error: String(error) } });
+  }
 }
 
 logger.info({

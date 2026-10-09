@@ -1,0 +1,124 @@
+# Evidência — Spec 001 Infra Railway
+
+Uma linha por task: comando, resultado, commit. Escaladas de modelo também entram aqui.
+
+| Task | Comando | Resultado | Commit |
+|---|---|---|---|
+| Preparação | `git worktree add -b feat/infra-railway ../ada-technology-wt/infra-railway origin/main` + `make validate` | base verde: 225 testes da API e 13 do painel passam | a0b4930 |
+| T0.1 | spike em `cbni-staging` (abaixo) | mecanismo decidido: D2 = `deploymentStop` / `deploymentRestart` | — |
+| T1.1 | `bun run typecheck` (api-ada); `bun test --env-file=../../envs/env.test src/infra/config/environment.test.ts`; `make validate` | typecheck limpo; 7 testes novos passam; `make validate` verde (api-ada 232 testes, 0 falhas) | T1.1 |
+| T1.2 | `bun run typecheck` (api-ada); `bun test --env-file=../../envs/env.test src/modules/infra`; `make validate` | typecheck limpo; 18 testes novos (9 classes: code, status, `instanceof DomainError`, mensagem sem token); `make validate` verde (api-ada 250 testes, 0 falhas) | T1.2 |
+| T1.3 | `bun run typecheck` (api-ada); `bun test --env-file=../../envs/env.test src/modules/infra`; `make validate`; leituras reais via `railway api` (5 projetos/9 ambientes, ciclo 19/set–19/out, 96 linhas de `usage`, 10 de `estimatedUsage`, `verifyAccess`=ok); introspecção das mutations (`id: String!`, `environmentId/serviceId: String!`) | typecheck limpo; 41 testes passam (22 novos do gateway); `make validate` verde (api-ada 273); **nenhuma mutation executada** e `cbni-staging` com os 6 serviços no ar; `usage` falhou 1 vez de forma intermitente (tratada no plan) | T1.3 |
+| T1.4 | TDD (vermelho: 4 módulos ausentes → verde); `bun run typecheck`; `bun test ... src/modules/infra`; `make validate`; teste adversarial próprio de `classifyEnvironment` (9 casos) | 71 testes do módulo passam; `make validate` verde; o adversarial achou que `prod` (só) não era protegido com padrão `.*` → proteção passou a casar `prod` (fail-closed) com teste novo | T1.4 |
+| T1.5 | `bun run typecheck`; `bun test ... src/modules/infra`; `make validate` | `createRailwayGateway` devolve `undefined` com token vazio (módulo desligado) e o gateway com token; container exporta `railwayGateway`; 73 testes do módulo; `make validate` verde (api-ada 305) | T1.5 |
+| T2.1 | `bun run db:generate` → `0004_dark_mercury.sql`; migrations aplicadas do zero num Postgres 17 descartável (removido depois); `make validate` | SQL só aditivo (2 `CREATE TABLE`, 3 `CREATE INDEX`, zero `DROP`/`ALTER`); tabelas criadas, defaults (`timezone`, `is_enabled`) e `UNIQUE(railway_environment_id)` conferidos; `make validate` verde | T2.1 |
+| T2.2 | `bun run typecheck`; `bun test ... src/modules/infra` (86 passam, 13 novos do use case com fakes); `make validate` (api-ada 318); **teste de integração temporário dos 2 repositórios Drizzle num Postgres 17 descartável** (3 testes, 20 verificações, removido depois) | ciclo da operação (criar → em andamento → finalizar com `serviceResults` em jsonb), `markStaleRunningAsInterrupted` só marca as antigas, `upsert` mantém 1 linha por ambiente; adaptador Redis sem teste (o `RedisCache` existente já satisfaz a interface) | T2.2 |
+| T2.3 | `bun run typecheck`; `bun test ... src/modules/infra` (129 passam); `make validate` (api-ada 361); leitura real do novo documento `getEnvironmentServices` em cbni-staging (6 serviços RUNNING); **revisão manual de `powerEnvironment.use-case.ts` e `runPowerOperation.ts`**; **`RedisCache.setIfAbsent` contra Redis 7 descartável** (2 testes, 8 verificações, 20 chamadas simultâneas → 1 vencedor, renovação e expiração por TTL) | S1–S7 cobertas por testes com fake que registra toda mutation: protegido/unmanaged/inexistente → **zero mutations, zero operação, zero trava**; ordem apps→bancos (off) e bancos→espera→apps (on); falha parcial não derruba os demais; banco que não fica pronto → apps puladas (`INFRA_DATABASE_NOT_READY`); runner que explode marca `failed` e libera a trava; auditoria com ator agent/system sem token. **Nenhuma mutation executada no Railway real.** Não testado: runner contra Railway real e Postgres parando de verdade (T6.3) | T2.3 |
+| T2.4 | `bun run typecheck`; `bun test ... src/modules/infra src/infra/http` (158); `make validate` (api-ada 378); **ponta a ponta com a API real** (`bun run src/index.ts`) sobre Postgres 17 e Redis 7 descartáveis, admin descartável semeado pelo `db:seed` | sem autenticação → 401; admin **sem token Railway** → 503 `INFRA_NOT_CONFIGURED` (GET e POST); admin com **token inválido** → 200 `{access:"token_invalid", projects:[]}` (gateway real falou com o Railway); operação inexistente → 404 `INFRA_OPERATION_NOT_FOUND`; **rate limit real**: 3ª chamada de power no minuto → 429; logs sem erro. Contêineres, senha e JWT de teste removidos. Não exercitado: 403 de não-admin e 400 de UUID inválido pela rede (cobertos nos 17 testes de rota com fakes); mutations no Railway real | T2.4 |
+| T3.1 | `bun test ... calculateUsageCost.test.ts` (6) + **teste de mutação próprio**: memória 10→11 US$/GB-mês → 2 testes falham; `isProduction` sempre falso → 1 teste falha; código restaurado → 6 passam | o subagente escreveu o cálculo antes do teste (sem vermelho prévio); a mutação prova que os testes pegam preço e flag de produção errados. Preços em `railwayPricing.constant.ts` com fonte e data (2026-10-09) | T3.1 |
+| T3.2 | `bun run typecheck`; `bun test ... src/modules/infra` (163); `make validate` (api-ada 395); **cálculo real, só leitura**, ciclo 19/set–19/out: calculado **US$ 114,88** vs oficial **113,47** (+1,24%, `isDivergent` falso), projeção linear US$ 169,95; transportada 89,18 (production 44,94 / staging 44,24), cbni 12,68, transportada-ops 5,91, quickcart 3,04, ada-technology 4,07 | janela = ciclo de cobrança (`endDate` = fim do ciclo); billing ilegível → mês-calendário sem total oficial; cache 15 min + cópia `last-good` de 7 dias; 1 nova tentativa após 2 s; chaves de cache versionadas (`:v1`). `usage` falhou 1 vez de forma intermitente (tratada pelo retry). Não testado: `GET /costs` e `last-good` por rede com Redis real | T3.2 |
+| T4.1 | TDD com vermelho comprovado (módulo ausente) → 27 testes verdes; `bun run typecheck`; `make validate` (api-ada 422); **simulação própria de uma semana minuto a minuto** (10 080 avaliações) | exatamente 10 disparos (5 `power_on` às 11:00Z e 5 `power_off` às 23:00Z, seg–sex) e **0 divergências** entre `nextScheduledAction` e o próximo disparo real em todos os minutos; lacuna de 3 h age uma vez só; fusos `UTC`/`America/New_York` (UTC−4 e −5) provam que não há −3 fixo; janela inválida não lança | T4.1 |
+| T4.2 / T4.3 | `bun run typecheck`; `bun test ... src/modules/infra` (238); `make validate` (api-ada 470); **repositório Drizzle novo contra Postgres 17 descartável** (10 verificações: `upsert` preserva `keepOnUntil`/`lastEvaluatedAt`; `recordEvaluation` só altera o que recebe; `null` limpa; ambiente sem linha não lança) | agenda validada (dias 0–6 sem repetição, `HH:mm`, `on < off`), ambiente protegido/unmanaged/inexistente não grava nada, auditoria `INFRA_SCHEDULE_CHANGED`, `nextScheduledAction` na listagem e no `PUT`; `keepOnUntil` obrigatório ao ligar fora da janela (≤ 24 h, > agora; validado **antes** de trava/mutation/operação), ignorado dentro da janela/agenda pausada/trigger schedule, limpo ao desligar manualmente. Decisão do executor: falha de auditoria no salvar propaga (500) com a agenda já gravada. Não testado por rede: rotas com rate limit real | T4.2, T4.3 |
+| T4.4 | `bun run typecheck`; `bun test ... src/modules/infra src/infra/scheduler` (267); `make validate` (api-ada 486); **scheduler real** (API de verdade, Postgres 17 + Redis 7 descartáveis, agenda com janela aberta o dia todo e `lastEvaluatedAt` 3 h atrás, token Railway inválido, ~130 s) | tarefa `infra-schedules` registrada ("Agendador no ar"), 2 ticks falharam limpo ("Nao foi possivel falar com o Railway"), `lastEvaluatedAt` **não avançou** (retenta), 0 operações, token ausente do log. Testes: semana de 10 080 ticks → exatamente 10 operações (5 on às 08:00 e 5 off às 20:00), trigger `schedule`, ator system, auditorias; manual no meio da janela não é desfeito; `keepOnUntil` adia o desligamento; ambiente renomeado para `production` ou apagado → zero mutations; trava ocupada e Railway fora → retenta sem avançar; sem agendas ativas → zero chamadas ao Railway. **Em aberto:** a agenda avança `lastEvaluatedAt` ao disparar a operação; se a operação terminar `partially_failed`/`failed` em segundo plano, a agenda não reenvia até a próxima transição (o painel mostra o estado real e o admin pode refazer). Não testado: Railway real (T6.3), réplicas múltiplas | T4.4 |
+| T5.1 | `cd apps/frontend-panel && bun run typecheck && bun run test` (27); `make validate` | navegação (grupo Infra com `Ambientes` e `Custos`, só admin, `canSeeSection` testado), `infra.api.ts` com os 6 chamados (caminho/método/corpo testados), hooks com polling de 15 s só enquanto há operação rodando/transição, `infra.locale.json` completo, helper de erro por código. Divergências plano×código real anotadas (`powerState`; campos extras de `CostsResult`). Não testado: renderização (o painel não tem testing-library) e hooks em React | T5.1 |
+| T5.2 / T5.3 / T5.4 | `cd apps/frontend-panel && bun run typecheck && bun run test` (70); `make validate` (api-ada 486); **verificação no navegador com API simulada** (fixtures com nomes e valores reais: 5 projetos, ciclo de custos de US$ 114,88) por árvore de acessibilidade e medição, 1 captura final | **Ambientes:** produção sem botões e com selo de proteção; desligar exige digitar o nome exato (`Staging` ≠ `staging` mantém o botão desabilitado) e lista os serviços na ordem apps→bancos; durante a operação os dois botões travam e o polling de 15 s leva o estado a "Desligado"; ligar fora da janela exige "manter ligado até" (+2 h padrão) e o painel enviou `keepOnUntil` = agora + 2 h exatos; editor de agenda: preset comercial, janela inválida bloqueia o botão e mostra a mensagem (ligada por `aria-describedby`), corpo salvo correto; estados `token_invalid` e `INFRA_NOT_CONFIGURED` com mensagens claras. **Custos:** números e % corretos (staging 47,9%), gráfico empilhado com padrão hachurado + legenda + valor na barra, tabela equivalente. **Acessibilidade medida:** sem rolagem horizontal da página em 375 px (só a tabela, em região focável); nenhum controle < 24 px (achado: `<summary>` com 20 px → corrigido para 40 px); contraste WCAG: 213 textos (Ambientes) e 157 (Custos) em tema claro e escuro, 0 falhas (4 falhas em uma passada logo após trocar de tema foram transição de cor e não se repetiram em 4 execuções). Console sem erros. Não testado: leitor de tela real, foco preso no `<dialog>` além do comportamento do navegador, API real com Railway real | T5.2, T5.3, T5.4 |
+| T6.1 / T6.2 | executor `haiku`; conferência própria das afirmações contra o código (`/health/ready`, `preDeployCommand`, rotas e variáveis); `make validate` verde; grep sem UUID/token nos 3 arquivos | `ai-context.md` (6 rotas, 9 regras não óbvias, 2 telas, variáveis RAILWAY_*), `docs/deploy-railway.md` seção 11 (token de workspace, ordem de rollout, validação com `read -rs`), `docs/SECURITY.md` achado datado de 2026-10-09 (poder do token, o que a auditoria não cobre, rotação e vazamento, risco do webhook). O achado registra que um token de verificação apareceu na tela do terminal na T0.4 e foi tratado como queimado | T6.1, T6.2 |
+
+## T0.1 — Spike do mecanismo de desligar (2026-10-09, `cbni-staging`)
+
+Alvos: `worker-uploads` (app, build do repositório) e `Redis` (banco, imagem `redis:8.2.9`).
+`financing-backend` e Postgres não foram tocados; nenhuma mensagem de WhatsApp foi enviada.
+Antes de cada mutação foi conferido que o deployment pertence ao ambiente `cbni-staging`.
+
+| Mecanismo | Desligar | Religar | Tempo para voltar a `RUNNING` | Observações |
+|---|---|---|---|---|
+| **A** `deploymentStop(id)` + `deploymentRestart(id)` | OK nos dois alvos; instância vai a `EXITED` em < 7 s | OK; **mesmo deployment**, sem build | ≤ 7 s (app e Redis) | O status do deployment **continua `SUCCESS`** e ele continua em `activeDeployments`; o único sinal é `deploymentStopped=true` + instância `EXITED` |
+| **B** `serviceInstanceUpdate(numReplicas: 0)` | **recusado**: `BAD_USER_INPUT — Error in numReplicas - Invalid input`; nada mudou | — | — | `numReplicas` é `null` em todos os serviços. Os `stg-toggle.yml` dos repos `fin-bot-*` usam exatamente esta mutação e **não funcionam**; eles só imprimem aviso e terminam com "desligado com sucesso" |
+| **C** `deploymentRemove(id)` (= `railway down`) + `serviceInstanceRedeploy` | OK no Redis; `latestDeployment` e `activeDeployments` ficam vazios | OK; **novo deployment** (id muda) | ~19 s no Redis (imagem). App com build do repositório não foi religado por este caminho: exige build | É o que `railway-environment-power.sh` usa |
+
+Conferências após religar tudo:
+- os 6 serviços de `cbni-staging` em `SUCCESS` / `RUNNING`;
+- domínio do backend inalterado (`financing-backend-cbni-staging.up.railway.app`), `GET /health` → 200;
+- `numReplicas` continua `null` (nenhuma configuração foi alterada).
+
+Formato da consulta de estado (campos confirmados): `serviceInstances { serviceId serviceName source { image repo } latestDeployment { id status deploymentStopped instances { status } } activeDeployments { id status } }`.
+Banco × aplicação: dá para distinguir por `source.image` (`postgres-ssl`, `redis`), sem depender só do nome.
+
+## T0.2 — Unidade e preço do `usage` (2026-10-09) — ✅ conferido: diferença de 1,2%
+
+`usage(workspaceId, 2026-10-01 → 2026-10-31, [CPU_USAGE, MEMORY_USAGE_GB, NETWORK_TX_GB, DISK_USAGE_GB], groupBy [PROJECT_ID, ENVIRONMENT_ID])`.
+Unidades: `CPU_USAGE` em vCPU-minuto, `MEMORY_USAGE_GB` e `DISK_USAGE_GB` em GB-minuto, `NETWORK_TX_GB` em GB.
+Preços aplicados: CPU US$ 20/vCPU-mês, memória US$ 10/GB-mês, disco US$ 0,15/GB-mês (mês = 43 200 min), rede US$ 0,05/GB.
+
+| Projeto / ambiente | US$ (1–9/out) | CPU | Memória | Rede | Disco |
+|---|---|---|---|---|---|
+| transportada / production | 20,01 | 0,31 | 19,54 | 0,13 | 0,04 |
+| transportada / staging | 19,58 | 0,40 | 19,06 | 0,08 | 0,04 |
+| financiamento-imobiliario-bot / cbni-production | 2,93 | 0,03 | 2,80 | 0,07 | 0,03 |
+| transportada-ops / production | 2,60 | 0,05 | 2,48 | 0,00 | 0,07 |
+| financiamento-imobiliario-bot / cbni-staging | 2,45 | 0,03 | 2,39 | 0,00 | 0,04 |
+| quickcart / staging | 1,31 | 0,08 | 1,20 | 0,00 | 0,03 |
+| ada-technology / production | 0,85 | 0,07 | 0,74 | 0,00 | 0,04 |
+| ada-technology / staging | 0,84 | 0,05 | 0,75 | 0,00 | 0,03 |
+| **Total** | **50,57** | | | | |
+
+Leituras:
+- **Staging é 48% do total** (US$ 24,18 de 50,57); só `transportada / staging` custa quase o mesmo que a produção dela.
+- **Memória é ~95% do custo**; CPU é desprezível. Desligar staging corta praticamente toda a fatura do ambiente.
+- `quickcart / production` não aparece (sem uso registrado no período).
+- **Conferência (aceite ≤ 5%): passou.** Pelo ciclo de cobrança completo (2026-09-19 14:00 → agora) o cálculo deu **US$ 114,69**; o Railway informa `workspace.customer.currentUsage = 113,28`. Diferença **+1,2%**. Quebra do cálculo: memória 111,32 · CPU 2,22 · disco 0,66 · rede 0,49. No ciclo: transportada/production 44,87 · transportada/staging 44,17 · cbni-production 6,82 · transportada-ops 5,90 · cbni-staging 5,84 · quickcart/staging 3,03 · ada-technology production 2,18 / staging 1,89.
+- **O ciclo de cobrança não é o mês-calendário:** `workspace.customer.billingPeriod` = 2026-09-19T14:00:56Z → 2026-10-19T14:00:56Z. O plano do workspace é `HOBBY`. A tela de custos deve usar o ciclo, não o dia 1.
+- `workspace(workspaceId) { customer { currentUsage billingPeriod { start end } } }` é o total oficial para reconciliar; a tabela por ambiente vem do `usage`.
+
+Achados para o `RailwayGateway`:
+- `usage` com `endDate` igual a "agora" falha com `Problem processing request`; com data futura (ex.: fim do mês) funciona. Usar sempre o último instante do mês.
+- `BACKUP_USAGE_GB` só funciona agrupando por `PROJECT_ID`, sem `ENVIRONMENT_ID`; ficar fora da consulta principal (o custo de backup é por projeto).
+
+## T0.4 — Token de workspace por HTTP (2026-10-09) — ✅
+
+`bun scripts/railway-token-check.ts` com um token de **workspace**, rodado pelo usuário no terminal:
+
+| Item | Resultado |
+|---|---|
+| workspace | PASS — visível |
+| projetos e ambientes | PASS — 5 projetos, 4 ambientes de staging |
+| ciclo de cobrança e `currentUsage` | PASS — ciclo 2026-09-19 → 2026-10-19, `currentUsage` US$ 113,35 (**o token de workspace lê cobrança**) |
+| `usage` por projeto e ambiente | PASS — 96 linhas |
+| estado dos serviços de um ambiente | PASS — 5 serviços legíveis (`deploymentStopped`, status da instância, `source.image`) |
+
+Conclusões: D1 confirmada (token de workspace basta para leitura, inclusive `customer`), e a degradação `billing_unavailable` do D7 fica como proteção, não como caminho esperado.
+Não verificado: permissão de parar/religar deployment (escrita). Fica para a T6.3.
+Incidente: durante a execução o token apareceu na tela do terminal (eco da colagem). Tratado como queimado: revogar o token usado nesta verificação e criar outro só quando for configurar a `api-ada` de produção.
+
+### Decisão D2
+
+- **Desligar:** `deploymentStop(id do deployment ativo)`. **Religar:** `deploymentRestart(id)`. Sem build, ~7 s, mesmo deployment.
+- **Estado "desligado" = qualquer um de:** `latestDeployment.deploymentStopped == true`, instância `EXITED`, ou ausência de deployment (ambiente desligado pelo script antigo com `railway down`).
+- **Religar por estado:** parado → `deploymentRestart`; sem deployment → `serviceInstanceRedeploy` (pode exigir build para serviço de repositório; o RF5 espera `SUCCESS` com teto).
+- **Descartado:** `numReplicas: 0` (o Railway recusa).
+
+### Em aberto (vão para o ADR 0004 e para a Fase 6)
+
+1. **Deployment parado deixa de cobrar?** Não confirmado: as métricas de memória ainda mostravam o valor antigo ~3 min depois do stop (atraso de ingestão), e a documentação só diz que o Railway cobra "enquanto o serviço roda". Verificar na T6.3: comparar `usage` (`MEMORY_USAGE_GB`) de um ambiente durante uma janela desligada.
+2. **Postgres não foi testado.** Segue o caminho do Redis; confirmar no roteiro da T6.3, com checagem de backup do volume antes.
+3. **Webhook do WhatsApp:** a Meta reenvia por até 7 dias (documentação oficial), mas o dedup do nosso webhook só vale 300 s e depende de `x-request-id`, que não foi confirmado. Ver plan §5.
+
+## Revisão independente (2026-10-09)
+
+`code-reviewer` e `security-reviewer` (sonnet, somente leitura, passada separada da escrita) leram `git diff origin/main...HEAD`. Veredito dos dois: **aprovar com ressalvas, 0 bloqueantes**. Segurança: 0 críticos, 0 altos, 3 médios (auditoria de recusas e de operação interrompida; rate limit só por IP; trava sem dono). Código: 2 altos (operação `running` presa quando a API reinicia antes de 12 min; `Retry-After` ignorado), 8 médios, 5 baixos. O que foi corrigido, aceito e por quê está na Fase 7 do `tasks.md`.
+
+### Fase 7 — R1 (operações, trava e auditoria)
+
+`make validate` verde (api-ada 509). **Vermelho comprovado** rodando os testes novos contra o código do HEAD anterior: trava guardava timestamp, a trava de B era apagada por A, a trava expirada era recriada pelo renew cego, a operação de 13 min não era recuperada no tick (5 falhas). **Verificação própria contra Postgres 17 e Redis 7 descartáveis** (2 testes, 18 verificações, removidos depois): `findRunningByEnvironmentId`/`listRunning` filtram por idade (a de 13 min some), `markStaleRunningAsInterrupted` devolve só as linhas marcadas e é idempotente, e `renewIfOwner`/`releaseIfOwner` (Lua) só agem para o dono (não-dono não libera nem renova; chave inexistente não é criada). Auditoria nova: `infra.environment_power_requested` (antes do 202), `infra.environment_power_denied` (protegido, inexistente, ocupado, keepOnUntil — com o motivo e relançando o mesmo erro) e `infra.operation_interrupted` (ator system). Recuperação agora roda a cada tick do scheduler além do boot. Listagem: 1 consulta de operações em vez de 1 por ambiente.
+
+### Fase 7 — R2 (gateway, custos e configuração)
+
+`make validate` verde (api-ada 538, painel 70). **Vermelho comprovado:** 12 falhas no gateway (rate limit, `activeDeploymentId`, `verifyAccess`) e 2 em `runPowerOperation` (parar/religar o deployment ativo). **Leitura real (só leitura) confirmou o defeito do deployment ativo:** o serviço `osrm-production` tem o último deployment `FAILED` com `deploymentStopped=true` e o ativo é outro, rodando; o código antigo o trataria como parado e miraria o deployment errado. Implementado: `Retry-After`/`X-RateLimit-Reset` com teto de 5 min e sem `fetch` enquanto bloqueado; custos sem retry em 429 (e, ajuste meu depois da revisão: com cópia antiga, devolve-a como desatualizada em vez de falhar); resultado de mês-calendário por falha transitória com TTL de 60 s e fora do `last-good`; cache validado com zod (JSON inválido = miss); `verifyAccess` separa `token_invalid` (cacheado 60 s) de `unavailable` (não cacheado); banco por nome exato de imagem (`redis-commander`, `mongo-express`, `postgrest` deixam de contar); `activeWeekdays` ≤ 7; `RAILWAY_API_TOKEN` só aceito com `ENV=production`. Suposições não verificadas: formato real de `X-RateLimit-Reset` e texto exato do erro de autenticação do Railway (se diferir, cai em `unavailable`, que não é cacheado). Nenhuma mutation real executada.
+
+### Fase 7 — R3 (agenda, rotas e painel)
+
+`make validate` verde (api-ada 564, painel 68). **Vermelho comprovado** (sem a correção, 5 falhas: 2 casos pontuais e 3 cenários de simulação). **A simulação minuto a minuto pegou um defeito que a correção do subagente deixou passar:** com `keepOnUntil` depois do fim da janela, a previsão ainda errava ANTES da janela abrir (07:00 + 21:00 previa 20:00, o disparo real é 21:00); o conserto do ramo "dentro da janela" cobria só metade. Extraí `applyKeepOnExtension` e usei nos dois ramos; agora 6 cenários de simulação (dentro, fora com a janela abrindo antes, vencendo antes da janela, vencendo dentro da janela seguinte) coincidem com os disparos reais em todo minuto (46 testes do arquivo). Servidor informa `requiresKeepOnUntil` e o painel deixou de deduzir; scheduler só lê o inventário quando há ação (zero leituras com tudo NONE); limite de power por agente (7º pedido → 429; outro agente intacto). **Navegador (simulador atualizado):** seletor "manter ligado até" aparece só no ambiente que o servidor marca como obrigatório (e não no ambiente sem agenda); banner `unavailable` informativo (`role="status"`), distinto do erro de token inválido.
+
+### Fase 7 — R4 e auditoria §15 (T6.3, parte automática)
+
+**Auditoria por varredura** (`grep` com aspas corretas): sem `console.`, `process.env` fora de config, `any`, `enum`, `export default`, `TODO`, `.only`, `style=` ou `dangerouslySetInnerHTML`; nenhum `token` em log ou mensagem de erro; cabeçalho de copyright em todos os arquivos do módulo; `.stack` só no filtro de exceções que já existia (grava no log do servidor, não na resposta). **Achados:** 1 `Promise.all` na recuperação (trocado por `allSettled`, com teste) e **8 arquivos > 200 linhas e 2 funções > 40**, contra o padrão do usuário. **R4 (refatoração pura):** `powerEnvironment` 414→185, `infra.types.ts` 375 dividido por assunto (sem barril), `infraFakes` em pasta, `RailwayGateway` 357→199, `runPowerOperation`, `runInfraSchedules`, `resolveScheduleAction`, `getInfraCosts` e `buildInfraRoutes` divididos; nenhum arquivo do módulo passa de 200 linhas e nenhuma função de 40 (scanner via TypeScript compiler API, inclui arrows). **Prova de que não mudou comportamento:** `make validate` api-ada 565 (564 + 1 teste novo) e painel 68; nenhum teste removido; diff dos testes preexistentes só em imports (conferido por mim); 36 comentários de "porquê" antes e 36 depois; **API real sobre Postgres e Redis descartáveis** após o refactor: sem token → 503 (environments e costs), 404 (operação inexistente), 401 (sem login), `/health/ready` 200, zero erros no log; com token fora de produção o boot recusa ("Variaveis de ambiente invalidas"). O `RAILWAY_API_TOKEN` não aparece em nenhum arquivo de ambiente.
