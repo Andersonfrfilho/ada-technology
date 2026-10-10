@@ -8,13 +8,12 @@
 
 import {
   INFRA_ACCESS_CACHE_KEY,
-  INFRA_ACCESS_CACHE_TTL_SECONDS,
   INFRA_ACCESS_STATUS,
-  INFRA_ACCESS_TOKEN_INVALID_CACHE_TTL_SECONDS,
   INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS,
   INFRA_INVENTORY_CACHE_KEY,
   type InfraAccessStatus,
 } from '@/modules/infra/infra.constant';
+import { parseAccessStatus, resolveAccessCacheTtlSeconds } from '@/modules/infra/infraAccessCache';
 import { InfraNotConfiguredError } from '@/modules/infra/infra.error';
 import { infraInventoryCacheSchema } from '@/modules/infra/infraInventory.schema';
 import { parseCachedJson } from '@/modules/infra/parseCachedJson';
@@ -50,12 +49,6 @@ type Dependencies = {
   readonly now?: () => Date;
 };
 
-const ACCESS_STATUSES = Object.values(INFRA_ACCESS_STATUS) as readonly string[];
-
-function isAccessStatus(value: string | null): value is InfraAccessStatus {
-  return value !== null && ACCESS_STATUSES.includes(value);
-}
-
 function byName<TItem>(getName: (item: TItem) => string): (left: TItem, right: TItem) => number {
   return (left, right) => getName(left).localeCompare(getName(right));
 }
@@ -90,19 +83,12 @@ export class ListInfraEnvironmentsUseCase {
 
   private async resolveAccess(railwayGateway: RailwayGatewayInterface): Promise<InfraAccessStatus> {
     const { cache } = this.dependencies;
-    const cached = await cache.get(INFRA_ACCESS_CACHE_KEY);
-    if (isAccessStatus(cached)) return cached;
+    const cached = parseAccessStatus(await cache.get(INFRA_ACCESS_CACHE_KEY));
+    if (cached) return cached;
 
     const access = await railwayGateway.verifyAccess();
-    // Falha transitoria nao pode ficar gravada como veredito: o proximo pedido tenta de novo.
-    if (access === INFRA_ACCESS_STATUS.UNAVAILABLE) return access;
-
-    // Token invalido expira antes: quem corrige o token precisa ver o efeito logo.
-    const ttlSeconds =
-      access === INFRA_ACCESS_STATUS.TOKEN_INVALID
-        ? INFRA_ACCESS_TOKEN_INVALID_CACHE_TTL_SECONDS
-        : INFRA_ACCESS_CACHE_TTL_SECONDS;
-    await cache.set(INFRA_ACCESS_CACHE_KEY, access, ttlSeconds);
+    const ttlSeconds = resolveAccessCacheTtlSeconds(access);
+    if (ttlSeconds !== undefined) await cache.set(INFRA_ACCESS_CACHE_KEY, access, ttlSeconds);
     return access;
   }
 

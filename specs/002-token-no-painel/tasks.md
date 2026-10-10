@@ -82,7 +82,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
 ## Fase 4 — Casos de uso e rotas
 > 🤖 Modelo: `sonnet`
 
-- [ ] **T4.1 Casos de uso** `get|save|verify|removeInfraIntegration` (plan §1): ordem das checagens; transação com
+- [x] **T4.1 Casos de uso** `get|save|verify|removeInfraIntegration` (plan §1): ordem das checagens; transação com
   `FOR UPDATE`; auditoria tipada; limpeza das quatro chaves Redis e `invalidate()`. Aceite: com fakes, **cada falha antes
   de gravar grava zero**, `configured` × `replaced` correto, token da variável de ambiente não se remove, linha
   ilegível = fail closed.
