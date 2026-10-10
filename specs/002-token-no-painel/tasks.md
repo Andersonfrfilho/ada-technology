@@ -36,7 +36,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
   Testes primeiro, **mostre o vermelho**: ida e volta, IV diferente a cada chamada, adulterar 1 byte falha, chave errada
   falha, `key_id`/`provider`/`workspace_id` trocados falham, tag truncada recusada, chave de tamanho errado recusada.
   **Teste de mutação próprio** (IV fixo, tag curta, AAD sem workspace devem quebrar testes). Aceite: testes + `make validate`.
-- [ ] **T1.2 Variáveis de ambiente.** `INFRA_SECRET_ENCRYPTION_KEY` com as regras do RF4 (base64 de 32 bytes; recusada fora
+- [x] **T1.2 Variáveis de ambiente.** `INFRA_SECRET_ENCRYPTION_KEY` com as regras do RF4 (base64 de 32 bytes; recusada fora
   de `ENV=production`; diferente de `PANEL_JWT_SECRET`; exige `RAILWAY_WORKSPACE_ID` e `RAILWAY_ENVIRONMENT_ID`). Aceite:
   testes de cada regra e nenhum valor de chave em mensagem de erro.
 - [ ] **T1.3 Tabela e repositório.** `infra_integration_secrets` (plan §2.2), migration `0005` **só aditiva** (parar e

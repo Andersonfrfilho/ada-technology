@@ -8,6 +8,8 @@
 
 import { z } from 'zod';
 
+import { validateInfraSecretKeyEnvironment } from '@/infra/config/infraSecretKeyEnvironment';
+
 const commaSeparatedList = z
   .string()
   .transform((value) => value.split(',').map((item) => item.trim()).filter(Boolean));
@@ -148,6 +150,8 @@ export const environmentSchema = z
     RAILWAY_ENVIRONMENT_ID: z.string().default(''),
     RAILWAY_MANAGED_ENVIRONMENT_PATTERN: z.string().default('staging'),
     RAILWAY_DATABASE_WAIT_SECONDS: z.coerce.number().int().min(10).max(600).default(120),
+
+    INFRA_SECRET_ENCRYPTION_KEY: z.string().default(''),
   })
   // Fail-closed: canal habilitado sem segredo nao sobe, em vez de aceitar
   // webhook sem assinatura verificavel.
@@ -293,6 +297,7 @@ export const environmentSchema = z
       }
     }
   })
+  .superRefine(validateInfraSecretKeyEnvironment)
   .superRefine((value, context) => {
     try {
       new RegExp(value.RAILWAY_MANAGED_ENVIRONMENT_PATTERN);
