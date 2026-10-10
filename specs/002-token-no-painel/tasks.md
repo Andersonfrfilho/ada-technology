@@ -31,7 +31,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
 ## Fase 1 — Cifra, configuração e armazenamento
 > 🤖 Modelo: `sonnet` (T1.4 → `haiku`)
 
-- [ ] **T1.1 Cifra (TDD, função pura).** `infraSecretCipher.ts` + `infraSecretKey.ts` (RF4): AES-256-GCM, IV de 12 e tag
+- [x] **T1.1 Cifra (TDD, função pura).** `infraSecretCipher.ts` + `infraSecretKey.ts` (RF4): AES-256-GCM, IV de 12 e tag
   de 16 bytes validados, AAD com `key_id`, `provider` e `workspace_id`, formato `v1.<key_id>.<iv>.<tag>.<dados>`.
   Testes primeiro, **mostre o vermelho**: ida e volta, IV diferente a cada chamada, adulterar 1 byte falha, chave errada
   falha, `key_id`/`provider`/`workspace_id` trocados falham, tag truncada recusada, chave de tamanho errado recusada.
