@@ -72,10 +72,10 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
   descartáveis, sem token) como na spec 001: 503/404/401/`/health/ready` 200.
 - [x] **T3.3 Scheduler só em produção (RF12).** `infra-schedules` e a recuperação do boot registrados apenas com
   `ENV=production`; sem token retornam sem chamar o Railway. Aceite: teste + boot real em dev (sem relógio) e produção.
-- [ ] **T3.4 `probeWorkspace`.** Resultado discriminado e cliente descartável com bloqueio próprio; compara o id do
+- [x] **T3.4 `probeWorkspace`.** Resultado discriminado e cliente descartável com bloqueio próprio; compara o id do
   workspace; recusa token de conta (`me` responde). Aceite: testes com fetch falso para cada resultado e prova de que
   o bloqueio de rate limit do gateway em uso não é contaminado.
-- [ ] **T3.5 `verifyAgentPassword`.** `findCredentialsById` no repositório de agente; relê `isActive` e `role`; contador de
+- [x] **T3.5 `verifyAgentPassword`.** `findCredentialsById` no repositório de agente; relê `isActive` e `role`; contador de
   falhas (Redis, 15 min); na 5ª revoga as sessões do agente e bloqueia 15 min. Aceite: certo, errado, papel rebaixado no
   banco com JWT ainda válido, 5ª falha (sessões revogadas, 423), e que a mensagem não revela qual campo falhou.
 

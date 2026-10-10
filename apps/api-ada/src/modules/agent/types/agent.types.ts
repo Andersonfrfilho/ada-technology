@@ -8,6 +8,7 @@
 
 import type { UserProfile, UserSession } from '@ada/user-sdk';
 
+import type { InfraFailureCounterInterface } from '@/modules/infra/types/infraFailureCounter.interface';
 import type { RecordAuditLogParams } from '@/modules/audit/types/audit.types';
 import type { AgentRole } from '@/shared/constants/domain.constant';
 
@@ -47,6 +48,8 @@ export type AgentAdminProfile = AgentProfile & {
 export type AgentRepositoryInterface = {
   findByEmail(email: string): Promise<AgentCredentials | undefined>;
   findById(agentId: string): Promise<AgentProfile | undefined>;
+  /** Com `passwordHash`, `isActive` e `role` lidos agora; devolve também conta inativa. */
+  findCredentialsById(agentId: string): Promise<AgentCredentials | undefined>;
   listActive(): Promise<readonly AgentProfile[]>;
   listAll(): Promise<readonly AgentAdminProfile[]>;
   setActive(agentId: string, isActive: boolean): Promise<AgentAdminProfile | undefined>;
@@ -88,6 +91,8 @@ export type RefreshTokenStoreInterface = {
   issue(agentId: string): Promise<IssuedRefreshToken>;
   rotate(token: string): Promise<RotatedRefreshToken | undefined>;
   revoke(token: string): Promise<void>;
+  /** Derruba todas as sessões do agente; devolve quantas existiam. */
+  revokeAllFor(agentId: string): Promise<number>;
 };
 
 export type AuthenticateAgentParams = {
@@ -139,4 +144,20 @@ export type AgentUpdateChanges = {
   readonly name?: string | undefined;
   readonly role?: string | undefined;
   readonly isActive?: boolean | undefined;
+};
+
+export type VerifyAgentPasswordParams = {
+  readonly agentId: string;
+  readonly password: string;
+};
+
+export type VerifyAgentPasswordResult =
+  | { readonly outcome: 'confirmed' }
+  | { readonly outcome: 'invalid' }
+  | { readonly outcome: 'locked'; readonly retryAfterSeconds: number; readonly isNewLock: boolean };
+
+export type VerifyAgentPasswordDependencies = {
+  readonly agents: Pick<AgentRepositoryInterface, 'findCredentialsById'>;
+  readonly refreshTokens: Pick<RefreshTokenStoreInterface, 'revokeAllFor'>;
+  readonly failureCounter: InfraFailureCounterInterface;
 };

@@ -41,6 +41,20 @@ export class DrizzleAgentRepository implements AgentRepositoryInterface {
     };
   }
 
+  async findCredentialsById(agentId: string): Promise<AgentCredentials | undefined> {
+    const [row] = await database.select().from(agents).where(eq(agents.id, agentId)).limit(1);
+    if (!row) return undefined;
+
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      role: row.role as AgentRole,
+      passwordHash: row.passwordHash,
+      isActive: row.isActive,
+    };
+  }
+
   async findById(agentId: string): Promise<AgentProfile | undefined> {
     const [row] = await database
       .select({
