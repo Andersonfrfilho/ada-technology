@@ -43,7 +43,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
   perguntar se o gerador produzir `DROP`/`ALTER`), `DrizzleInfraIntegrationRepository` com `SELECT … FOR UPDATE`. Aceite:
   teste temporário contra Postgres 17 **descartável** (migration do zero, `provider` único, `ciphertext` sem a isca,
   adulterar 1 byte e abrir falha, corrida de dois `upsert`), removido ao fim.
-- [ ] **T1.4 Constantes, erros e auditoria.** Códigos e classes do plan §2.1; `AUDIT_ACTION` das seis ações; metadata
+- [x] **T1.4 Constantes, erros e auditoria.** Códigos e classes do plan §2.1; `AUDIT_ACTION` das seis ações; metadata
   tipada e fechada. Aceite: typecheck + teste dos erros (status e código).
 
 ## Fase 2 — Pré-requisitos de segurança (achados da revisão)
