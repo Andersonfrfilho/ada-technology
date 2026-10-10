@@ -62,7 +62,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
 ## Fase 3 — Gateway por provedor e senha
 > 🤖 Modelo: `sonnet`
 
-- [ ] **T3.1 `RailwayGatewayProvider` + `ResolveGateway`.** Fonte única (variável de ambiente > painel > nenhuma), fail
+- [x] **T3.1 `RailwayGatewayProvider` + `ResolveGateway`.** Fonte única (variável de ambiente > painel > nenhuma), fail
   closed, relê a linha a cada 30 s, remonta só com credencial nova (preserva `Retry-After`), contador de geração,
   não lê a tabela fora de produção, par token+workspace nunca misturado. Aceite: testes de precedência, geração (corrida
   de `invalidate`), cache de 30 s, falha de decifragem sem fallback, fora de produção.
