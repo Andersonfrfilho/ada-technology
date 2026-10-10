@@ -93,9 +93,9 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
 ## Fase 5 — Painel
 > 🤖 Modelo: `sonnet`
 
-- [ ] **T5.1 Navegação, API e hook.** Seção `integracao` (admin), 4 chamadas, hook com `gcTime: 0` e `reset()`, locale.
+- [x] **T5.1 Navegação, API e hook.** Seção `integracao` (admin), 4 chamadas, hook com `gcTime: 0` e `reset()`, locale.
   Aceite: typecheck + testes de caminho/método/corpo e visibilidade.
-- [ ] **T5.2 Tela de Integração.** Status, formulário (RF13), workspace somente leitura, remover com senha, avisos fixos
+- [x] **T5.2 Tela de Integração.** Status, formulário (RF13), workspace somente leitura, remover com senha, avisos fixos
   ("não revoga no Railway", "variável de ambiente tem prioridade"). Aceite: **navegador com API simulada** (leitura por
   árvore de acessibilidade e medição, uma captura final): fluxo feliz, cada erro, campo limpo, storage vazio, sem rolagem
   horizontal em 375 px, contraste e alvos de toque; **conferência manual de gerenciador de senhas** (anotar o que o

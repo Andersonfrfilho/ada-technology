@@ -19,7 +19,8 @@
       "clientes": "Clientes",
       "usuarios": "Usuários",
       "ambientes": "Ambientes",
-      "custos": "Custos"
+      "custos": "Custos",
+      "integracao": "Integração"
     },
     "groups": {
       "atendimento": "Atendimento",
