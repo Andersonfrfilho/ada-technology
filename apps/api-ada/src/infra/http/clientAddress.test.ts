@@ -17,20 +17,44 @@ function buildRequest(headers: Record<string, string> = {}): Request {
 }
 
 describe('resolveClientAddress', () => {
-  it('usa o primeiro salto do encaminhamento, que e o cliente', () => {
-    const request = buildRequest({ 'x-forwarded-for': '203.0.113.7, 10.0.0.1, 10.0.0.2' });
+  it('usa o X-Real-IP, que o proxy da Railway preenche com o cliente remoto', () => {
+    const request = buildRequest({ 'x-real-ip': '203.0.113.7' });
 
     expect(resolveClientAddress({ request, socketAddress: '10.0.0.1' })).toBe('203.0.113.7');
   });
 
-  it('cai no endereco do socket sem encaminhamento', () => {
+  it('aceita IPv6 no X-Real-IP', () => {
+    const request = buildRequest({ 'x-real-ip': '2001:db8::1' });
+
+    expect(resolveClientAddress({ request, socketAddress: '10.0.0.1' })).toBe('2001:db8::1');
+  });
+
+  it('nao confia no X-Forwarded-For, que o cliente forja', () => {
+    const request = buildRequest({ 'x-forwarded-for': '1.2.3.4', 'x-real-ip': '203.0.113.7' });
+
+    expect(resolveClientAddress({ request, socketAddress: '10.0.0.1' })).toBe('203.0.113.7');
+  });
+
+  it('um X-Forwarded-For forjado nao muda o endereco do socket', () => {
+    const request = buildRequest({ 'x-forwarded-for': '1.2.3.4' });
+
+    expect(resolveClientAddress({ request, socketAddress: '198.51.100.4' })).toBe('198.51.100.4');
+  });
+
+  it('cai no endereco do socket sem X-Real-IP', () => {
     expect(resolveClientAddress({ request: buildRequest(), socketAddress: '198.51.100.4' })).toBe(
       '198.51.100.4',
     );
   });
 
-  it('ignora encaminhamento vazio em vez de virar balde sem nome', () => {
-    const request = buildRequest({ 'x-forwarded-for': '   ' });
+  it('ignora X-Real-IP que nao e um IP', () => {
+    const request = buildRequest({ 'x-real-ip': 'nao-e-um-ip' });
+
+    expect(resolveClientAddress({ request, socketAddress: '198.51.100.4' })).toBe('198.51.100.4');
+  });
+
+  it('ignora X-Real-IP vazio', () => {
+    const request = buildRequest({ 'x-real-ip': '   ' });
 
     expect(resolveClientAddress({ request, socketAddress: '198.51.100.4' })).toBe('198.51.100.4');
   });

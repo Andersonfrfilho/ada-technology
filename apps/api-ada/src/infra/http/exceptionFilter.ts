@@ -12,6 +12,7 @@ import { ZodError } from 'zod';
 import { isAppError } from '@/shared/errors/AppError';
 import { ERROR_CODES } from '@/shared/errors/codes';
 import { jsonError } from '@/infra/http/responses';
+import { buildUnknownErrorMeta } from '@/infra/http/unknownErrorMeta';
 import { logger } from '@/shared/logger';
 
 const SOURCE = 'infra.http.exceptionFilter';
@@ -87,12 +88,7 @@ export function handleUncaughtError({ error, traceId, path }: HandleUncaughtErro
     message: 'Erro nao tratado',
     source: SOURCE,
     traceId,
-    meta: {
-      path,
-      errorName: error instanceof Error ? error.name : typeof error,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    },
+    meta: { path, ...buildUnknownErrorMeta(error) },
   });
 
   return jsonError({

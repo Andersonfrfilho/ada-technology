@@ -20,6 +20,7 @@ const REQUEST_TIMEOUT_MILLISECONDS = 20_000;
 const HTTP_TOO_MANY_REQUESTS = 429;
 const AUTH_FAILURE_STATUSES: readonly number[] = [401, 403];
 const AUTH_FAILURE_MESSAGE_PATTERN = /not authorized|unauthorized|unauthenticated/i;
+const NOT_FOUND_MESSAGE_PATTERN = /not found/i;
 
 export type RailwayGraphqlClientDependencies = {
   readonly token: string;
@@ -32,10 +33,15 @@ export type RailwayGraphqlClientDependencies = {
  * conta como falha mesmo com HTTP 200. O token so vai no header; nunca entra em mensagem, contexto de erro ou log.
  */
 export class RailwayGraphqlClient {
+  // Campo `#`: nao aparece em Object.keys, JSON.stringify nem inspect, entao console.log do cliente nao vaza o token.
+  readonly #token: string;
+  private readonly fetchImplementation: typeof fetch;
   private readonly rateLimitGate: RailwayRateLimitGate;
 
-  constructor(private readonly dependencies: RailwayGraphqlClientDependencies) {
-    this.rateLimitGate = new RailwayRateLimitGate(dependencies.now);
+  constructor({ token, fetchImplementation, now }: RailwayGraphqlClientDependencies) {
+    this.#token = token;
+    this.fetchImplementation = fetchImplementation;
+    this.rateLimitGate = new RailwayRateLimitGate(now);
   }
 
   async execute<TData>(params: ExecuteRailwayParams<TData>): Promise<TData> {
@@ -43,11 +49,11 @@ export class RailwayGraphqlClient {
     this.rateLimitGate.assertNotBlocked();
 
     try {
-      const response = await this.dependencies.fetchImplementation(RAILWAY_GRAPHQL_URL, {
+      const response = await this.fetchImplementation(RAILWAY_GRAPHQL_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.dependencies.token}`,
+          Authorization: `Bearer ${this.#token}`,
         },
         body: JSON.stringify({ query, variables }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MILLISECONDS),
@@ -65,6 +71,7 @@ export class RailwayGraphqlClient {
         throw new RailwayRejectedError({
           operation: operationName,
           isAuthFailure: envelope.data.errors.some(isAuthErrorEntry),
+          isNotFound: envelope.data.errors.some(isNotFoundErrorEntry),
         });
       }
 
@@ -81,6 +88,14 @@ export class RailwayGraphqlClient {
 }
 
 function isAuthErrorEntry(entry: unknown): boolean {
+  return matchesErrorMessage(entry, AUTH_FAILURE_MESSAGE_PATTERN);
+}
+
+function isNotFoundErrorEntry(entry: unknown): boolean {
+  return matchesErrorMessage(entry, NOT_FOUND_MESSAGE_PATTERN);
+}
+
+function matchesErrorMessage(entry: unknown, pattern: RegExp): boolean {
   if (typeof entry !== 'object' || entry === null || !('message' in entry)) return false;
-  return typeof entry.message === 'string' && AUTH_FAILURE_MESSAGE_PATTERN.test(entry.message);
+  return typeof entry.message === 'string' && pattern.test(entry.message);
 }

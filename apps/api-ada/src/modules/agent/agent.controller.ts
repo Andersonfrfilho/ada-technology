@@ -23,6 +23,7 @@ import {
   refreshAgentSession,
   signOutAgent,
 } from '@/infra/container';
+import { isPanelOriginAllowed } from '@/infra/http/cors';
 import { logger } from '@/shared/logger';
 import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
 import { readJsonBody } from '@/infra/http/requestBody';
@@ -105,6 +106,9 @@ const refreshRoute: Route = {
   path: AUTH_ROUTE.REFRESH,
   rateLimit: RATE_LIMIT.PANEL_REFRESH,
   handler: async ({ request }) => {
+    // Browser sempre envia Origin em POST cross-site: sem ele, ou de fora do painel, nao e o painel.
+    if (!isPanelOriginAllowed(request.headers.get('origin'))) throw new AgentNotAuthenticatedError();
+
     const refreshToken = readRefreshCookie(request);
     if (!refreshToken) throw new AgentNotAuthenticatedError();
 

@@ -60,6 +60,7 @@ async function startOperation(
     trigger: 'manual',
   });
   return {
+    gateway: harness.gateway,
     operationId: operation.id,
     projectId: 'project-1',
     projectName: 'ada',

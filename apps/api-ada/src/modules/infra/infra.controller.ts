@@ -14,14 +14,29 @@ import {
   powerOnEnvironment,
   saveEnvironmentSchedule,
 } from '@/infra/container';
+import {
+  getInfraIntegration,
+  removeInfraIntegration,
+  saveInfraIntegration,
+  verifyInfraIntegration,
+} from '@/infra/integrationContainer';
 import type { Route } from '@/infra/http/router';
+import { buildInfraIntegrationRoutes } from '@/modules/infra/buildInfraIntegrationRoutes';
 import { buildInfraRoutes } from '@/modules/infra/buildInfraRoutes';
 
-export const infraRoutes: readonly Route[] = buildInfraRoutes({
-  listInfraEnvironments,
-  powerOffEnvironment,
-  powerOnEnvironment,
-  getInfraOperation,
-  getInfraCosts,
-  saveEnvironmentSchedule,
-});
+export const infraRoutes: readonly Route[] = [
+  ...buildInfraRoutes({
+    listInfraEnvironments,
+    powerOffEnvironment,
+    powerOnEnvironment,
+    getInfraOperation,
+    getInfraCosts,
+    saveEnvironmentSchedule,
+  }),
+  ...buildInfraIntegrationRoutes({
+    getInfraIntegration,
+    saveInfraIntegration,
+    removeInfraIntegration,
+    verifyInfraIntegration,
+  }),
+];

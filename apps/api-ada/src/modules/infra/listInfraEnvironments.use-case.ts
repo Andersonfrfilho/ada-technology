@@ -8,13 +8,12 @@
 
 import {
   INFRA_ACCESS_CACHE_KEY,
-  INFRA_ACCESS_CACHE_TTL_SECONDS,
   INFRA_ACCESS_STATUS,
-  INFRA_ACCESS_TOKEN_INVALID_CACHE_TTL_SECONDS,
   INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS,
   INFRA_INVENTORY_CACHE_KEY,
   type InfraAccessStatus,
 } from '@/modules/infra/infra.constant';
+import { parseAccessStatus, resolveAccessCacheTtlSeconds } from '@/modules/infra/infraAccessCache';
 import { InfraNotConfiguredError } from '@/modules/infra/infra.error';
 import { infraInventoryCacheSchema } from '@/modules/infra/infraInventory.schema';
 import { parseCachedJson } from '@/modules/infra/parseCachedJson';
@@ -37,9 +36,12 @@ import type { RailwayEnvironment, RailwayProject } from '@/modules/infra/types/r
 import type { InfraOperationRepositoryInterface } from '@/modules/infra/types/infraOperationRepository.interface';
 import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
+import type { ResolveGateway } from '@/modules/infra/types/resolveGateway.types';
 
 type Dependencies = {
-  readonly railwayGateway?: RailwayGatewayInterface;
+  readonly resolveGateway: ResolveGateway;
+  /** Ausente = sempre atual. Falso quando o token trocou durante a chamada: o resultado não vai para o cache. */
+  readonly isGatewayCurrent?: (gateway: RailwayGatewayInterface) => boolean;
   readonly cache: InfraCacheInterface;
   readonly operationRepository: InfraOperationRepositoryInterface;
   readonly scheduleRepository: InfraScheduleRepositoryInterface;
@@ -48,12 +50,6 @@ type Dependencies = {
   readonly databaseWaitSeconds: number;
   readonly now?: () => Date;
 };
-
-const ACCESS_STATUSES = Object.values(INFRA_ACCESS_STATUS) as readonly string[];
-
-function isAccessStatus(value: string | null): value is InfraAccessStatus {
-  return value !== null && ACCESS_STATUSES.includes(value);
-}
 
 function byName<TItem>(getName: (item: TItem) => string): (left: TItem, right: TItem) => number {
   return (left, right) => getName(left).localeCompare(getName(right));
@@ -67,7 +63,8 @@ export class ListInfraEnvironmentsUseCase {
   constructor(private readonly dependencies: Dependencies) {}
 
   async execute(): Promise<ListInfraEnvironmentsResult> {
-    const { railwayGateway } = this.dependencies;
+    // Antes de qualquer leitura de cache: remover o token precisa devolver 503 na hora.
+    const railwayGateway = await this.dependencies.resolveGateway();
     if (!railwayGateway) throw new InfraNotConfiguredError();
 
     const access = await this.resolveAccess(railwayGateway);
@@ -88,19 +85,12 @@ export class ListInfraEnvironmentsUseCase {
 
   private async resolveAccess(railwayGateway: RailwayGatewayInterface): Promise<InfraAccessStatus> {
     const { cache } = this.dependencies;
-    const cached = await cache.get(INFRA_ACCESS_CACHE_KEY);
-    if (isAccessStatus(cached)) return cached;
+    const cached = parseAccessStatus(await cache.get(INFRA_ACCESS_CACHE_KEY));
+    if (cached) return cached;
 
     const access = await railwayGateway.verifyAccess();
-    // Falha transitoria nao pode ficar gravada como veredito: o proximo pedido tenta de novo.
-    if (access === INFRA_ACCESS_STATUS.UNAVAILABLE) return access;
-
-    // Token invalido expira antes: quem corrige o token precisa ver o efeito logo.
-    const ttlSeconds =
-      access === INFRA_ACCESS_STATUS.TOKEN_INVALID
-        ? INFRA_ACCESS_TOKEN_INVALID_CACHE_TTL_SECONDS
-        : INFRA_ACCESS_CACHE_TTL_SECONDS;
-    await cache.set(INFRA_ACCESS_CACHE_KEY, access, ttlSeconds);
+    const ttlSeconds = resolveAccessCacheTtlSeconds(access);
+    if (ttlSeconds !== undefined && this.isCurrent(railwayGateway)) await cache.set(INFRA_ACCESS_CACHE_KEY, access, ttlSeconds);
     return access;
   }
 
@@ -113,8 +103,14 @@ export class ListInfraEnvironmentsUseCase {
     }
 
     const inventory = await railwayGateway.listInventory();
-    await cache.set(INFRA_INVENTORY_CACHE_KEY, JSON.stringify(inventory), INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS);
+    if (this.isCurrent(railwayGateway)) {
+      await cache.set(INFRA_INVENTORY_CACHE_KEY, JSON.stringify(inventory), INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS);
+    }
     return inventory;
+  }
+
+  private isCurrent(railwayGateway: RailwayGatewayInterface): boolean {
+    return this.dependencies.isGatewayCurrent?.(railwayGateway) ?? true;
   }
 
   private async indexSchedules(): Promise<ReadonlyMap<string, InfraScheduleRecord>> {

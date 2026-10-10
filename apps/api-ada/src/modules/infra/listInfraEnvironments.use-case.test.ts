@@ -185,7 +185,7 @@ function buildHarness(params: {
   };
 
   const useCase = new ListInfraEnvironmentsUseCase({
-    ...(params.isConfigured === false ? {} : { railwayGateway: gateway }),
+    resolveGateway: async () => (params.isConfigured === false ? undefined : gateway),
     cache,
     operationRepository,
     scheduleRepository,

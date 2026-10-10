@@ -15,3 +15,4 @@ export {
   knowledgeItems,
 } from '@/infra/database/schema/knowledge.schema';
 export { leads } from '@/infra/database/schema/lead.schema';
+export { infraIntegrationSecrets } from '@/infra/database/schema/infraIntegration.schema';

@@ -13,12 +13,13 @@ import {
   PANEL_GROUP,
   PANEL_SECTION,
   visibleSectionGroups,
+  type PanelSection,
 } from '@/modules/shared/navigation/panelSection.constant';
 
-const INFRA_SECTIONS = [PANEL_SECTION.INFRA_ENVIRONMENTS, PANEL_SECTION.INFRA_COSTS];
+const INFRA_SECTIONS = [PANEL_SECTION.INFRA_ENVIRONMENTS, PANEL_SECTION.INFRA_COSTS, PANEL_SECTION.INFRA_INTEGRATION];
 
 describe('navegacao de infraestrutura', () => {
-  it('mostra o grupo de infra com as duas secoes para admin', () => {
+  it('mostra o grupo de infra com as tres secoes para admin', () => {
     const group = visibleSectionGroups(true).find((candidate) => candidate.group === PANEL_GROUP.INFRA);
 
     expect(group?.items.map((item) => item.section)).toEqual(INFRA_SECTIONS);
@@ -35,5 +36,19 @@ describe('navegacao de infraestrutura', () => {
       expect(canSeeSection(section, true)).toBe(true);
       expect(canSeeSection(section, false)).toBe(false);
     }
+  });
+});
+
+describe('navegacao da integracao de infraestrutura', () => {
+  it('usa o caminho integracao', () => {
+    expect(PANEL_SECTION.INFRA_INTEGRATION).toBe('integracao');
+  });
+
+  it('admin ve a integracao e o agente nao', () => {
+    const sectionsOf = (isAdmin: boolean): PanelSection[] =>
+      visibleSectionGroups(isAdmin).flatMap((group) => group.items.map((item) => item.section));
+
+    expect(sectionsOf(true)).toContain(PANEL_SECTION.INFRA_INTEGRATION);
+    expect(sectionsOf(false)).not.toContain(PANEL_SECTION.INFRA_INTEGRATION);
   });
 });
