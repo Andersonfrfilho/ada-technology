@@ -7,7 +7,7 @@
  */
 
 import { beforeAll, describe, expect, it } from 'bun:test';
-import { MutationObserver, QueryClient } from '@tanstack/react-query';
+import { MutationObserver, QueryClient, QueryObserver } from '@tanstack/react-query';
 
 import { INFRA_QUERY_KEY } from '@/modules/infra/infra.constant';
 
@@ -59,19 +59,56 @@ describe('invalidacao depois de mexer na integracao', () => {
     for (const key of keys) expect(queryClient.getQueryState([key])?.isInvalidated).toBe(true);
   });
 
-  it('salvar, remover e verificar disparam a invalidacao ao terminar', async () => {
+  it('salvar e remover invalidam integracao, ambientes e custos ao terminar, sem devolver Promise', () => {
     const queryClient = new QueryClient();
-    const builders = [
-      hook.buildSaveIntegrationOptions,
-      hook.buildRemoveIntegrationOptions,
-      hook.buildVerifyIntegrationOptions,
-    ];
+    const builders = [hook.buildSaveIntegrationOptions, hook.buildRemoveIntegrationOptions];
+    const keys = [INFRA_QUERY_KEY.INTEGRATION, INFRA_QUERY_KEY.ENVIRONMENTS, INFRA_QUERY_KEY.COSTS];
 
     for (const build of builders) {
-      queryClient.setQueryData([INFRA_QUERY_KEY.COSTS], {});
-      await (build(queryClient).onSettled as () => Promise<void>)();
+      for (const key of keys) queryClient.setQueryData([key], {});
+      const returned: unknown = (build(queryClient).onSettled as () => unknown)();
 
-      expect(queryClient.getQueryState([INFRA_QUERY_KEY.COSTS])?.isInvalidated).toBe(true);
+      expect(returned).toBeUndefined();
+      for (const key of keys) expect(queryClient.getQueryState([key])?.isInvalidated).toBe(true);
     }
+  });
+
+  it('verificar invalida so a integracao: ambientes e custos nao dependem do veredito', () => {
+    const queryClient = new QueryClient();
+    const keys = [INFRA_QUERY_KEY.INTEGRATION, INFRA_QUERY_KEY.ENVIRONMENTS, INFRA_QUERY_KEY.COSTS];
+    for (const key of keys) queryClient.setQueryData([key], {});
+
+    const returned: unknown = (hook.buildVerifyIntegrationOptions(queryClient).onSettled as () => unknown)();
+
+    expect(returned).toBeUndefined();
+    expect(queryClient.getQueryState([INFRA_QUERY_KEY.INTEGRATION])?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState([INFRA_QUERY_KEY.ENVIRONMENTS])?.isInvalidated).toBe(false);
+    expect(queryClient.getQueryState([INFRA_QUERY_KEY.COSTS])?.isInvalidated).toBe(false);
+  });
+});
+
+describe('limpeza de segredo logo apos a resposta', () => {
+  it('o callback de sucesso roda mesmo com a releitura da integracao ainda pendente', async () => {
+    const queryClient = new QueryClient();
+    const neverResolves = new QueryObserver(queryClient, {
+      queryKey: [INFRA_QUERY_KEY.INTEGRATION],
+      queryFn: () => new Promise<never>(() => undefined),
+    });
+    const unsubscribe = neverResolves.subscribe(() => undefined);
+    const observer = new MutationObserver(queryClient, {
+      ...hook.buildSaveIntegrationOptions(queryClient),
+      mutationFn: async () => ({ source: 'panel', state: 'configured', environmentTokenAlsoPresent: false }) as never,
+    });
+
+    const unsubscribeMutation = observer.subscribe(() => undefined);
+    const cleared = new Promise<string>((resolve) => {
+      void observer.mutate({ token: BAIT_TOKEN, password: 'senha' }, { onSuccess: () => resolve('cleared') });
+    });
+    const timeout = new Promise<string>((resolve) => setTimeout(() => resolve('timeout'), 200));
+
+    expect(await Promise.race([cleared, timeout])).toBe('cleared');
+    unsubscribe();
+    unsubscribeMutation();
+    observer.reset();
   });
 });

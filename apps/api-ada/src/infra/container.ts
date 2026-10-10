@@ -132,8 +132,9 @@ import { SimulateInboundMessageUseCase } from '@/modules/simulation/simulateInbo
 import { WhatsAppInboundSimulator } from '@/modules/simulation/WhatsAppInboundSimulator';
 import { RedisUserRefreshTokenStore } from '@/modules/user/RedisUserRefreshTokenStore';
 import type { PowerEnvironmentDependencies } from '@/modules/infra/powerEnvironment.use-case';
-import type { InfraLogger } from '@/modules/infra/types/infraRuntime.types';
+import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 import type { ResolveGateway } from '@/modules/infra/types/resolveGateway.types';
+import type { RailwayGatewayProviderLogger } from '@/modules/infra/types/railwayGatewayProvider.types';
 import { logger } from '@/shared/logger';
 
 // Estado inicial de sessao nova. O modulo nao conhece a maquina de estados do produto.
@@ -366,9 +367,10 @@ export const recordAuditLog = new RecordAuditLogUseCase();
 const INFRA_SOURCE = 'modules.infra';
 
 /** Só ids, códigos e contagens chegam aqui; o logger da Ada ainda redige o que for sensível. */
-export const infraLogger: InfraLogger = {
+export const infraLogger: RailwayGatewayProviderLogger = {
   info: (message, meta) => logger.info({ message, source: INFRA_SOURCE, meta: { ...meta } }),
   error: (message, meta) => logger.error({ message, source: INFRA_SOURCE, meta: { ...meta } }),
+  warn: (message, meta) => logger.warn({ message, source: INFRA_SOURCE, meta: { ...meta } }),
 };
 
 export const railwayGatewayProvider = new DefaultRailwayGatewayProvider({
@@ -385,6 +387,7 @@ export const railwayGatewayProvider = new DefaultRailwayGatewayProvider({
 });
 
 export const resolveGateway: ResolveGateway = () => railwayGatewayProvider.resolve();
+const isGatewayCurrent = (gateway: RailwayGatewayInterface): boolean => railwayGatewayProvider.isCurrent(gateway);
 
 const infraCache = new RedisCache();
 const infraOperationRepository = new DrizzleInfraOperationRepository();
@@ -392,6 +395,7 @@ const infraScheduleRepository = new DrizzleInfraScheduleRepository();
 
 export const listInfraEnvironments = new ListInfraEnvironmentsUseCase({
   resolveGateway,
+  isGatewayCurrent,
   cache: infraCache,
   operationRepository: infraOperationRepository,
   scheduleRepository: infraScheduleRepository,
@@ -424,6 +428,7 @@ export const saveEnvironmentSchedule = new SaveEnvironmentScheduleUseCase({
 
 export const getInfraCosts = new GetInfraCostsUseCase({
   resolveGateway,
+  isGatewayCurrent,
   cache: infraCache,
   sleep: (milliseconds) => Bun.sleep(milliseconds),
   now: () => new Date(),

@@ -79,7 +79,7 @@ export type SaveInfraIntegrationDependencies = {
 export type RemoveInfraIntegrationDependencies = Omit<SaveInfraIntegrationDependencies, 'probeWorkspace'>;
 
 export type VerifyInfraIntegrationDependencies = {
-  readonly gatewayProvider: Pick<RailwayGatewayProvider, 'resolve'>;
+  readonly gatewayProvider: Pick<RailwayGatewayProvider, 'resolve' | 'isCurrent'>;
   readonly cache: InfraCacheInterface;
   readonly recordAudit: InfraIntegrationRecordAudit;
   readonly logger: InfraLogger;

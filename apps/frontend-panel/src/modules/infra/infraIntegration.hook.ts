@@ -44,11 +44,16 @@ export async function invalidateInfraQueries(queryClient: QueryClient): Promise<
   ]);
 }
 
+/** Sem devolver a Promise: o react-query esperaria a releitura antes dos callbacks que limpam token e senha. */
+function invalidateWithoutWaiting(queryClient: QueryClient): void {
+  void invalidateInfraQueries(queryClient);
+}
+
 export function buildSaveIntegrationOptions(queryClient: QueryClient): SaveOptions {
   return {
     mutationFn: saveIntegration,
     gcTime: SENSITIVE_MUTATION_GC_TIME_MS,
-    onSettled: () => invalidateInfraQueries(queryClient),
+    onSettled: () => invalidateWithoutWaiting(queryClient),
   };
 }
 
@@ -56,14 +61,17 @@ export function buildRemoveIntegrationOptions(queryClient: QueryClient): RemoveO
   return {
     mutationFn: removeIntegration,
     gcTime: SENSITIVE_MUTATION_GC_TIME_MS,
-    onSettled: () => invalidateInfraQueries(queryClient),
+    onSettled: () => invalidateWithoutWaiting(queryClient),
   };
 }
 
 export function buildVerifyIntegrationOptions(queryClient: QueryClient): VerifyOptions {
   return {
     mutationFn: verifyIntegration,
-    onSettled: () => invalidateInfraQueries(queryClient),
+    // O veredito só atualiza a própria integração; ambientes e custos não mudam com ele.
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: [INFRA_QUERY_KEY.INTEGRATION] });
+    },
   };
 }
 

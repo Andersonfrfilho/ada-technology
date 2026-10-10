@@ -8,6 +8,8 @@
 
 import { DrizzleQueryError } from 'drizzle-orm';
 
+import { scrubSecretValues } from '@/shared/redaction';
+
 type DriverCause = { readonly code: string };
 
 function isDriverCause(value: unknown): value is DriverCause {
@@ -37,7 +39,7 @@ export function buildUnknownErrorMeta(error: unknown): Record<string, unknown> {
 
   return {
     errorName: error instanceof Error ? error.name : typeof error,
-    errorMessage: error instanceof Error ? error.message : String(error),
-    stack: error instanceof Error ? error.stack : undefined,
+    errorMessage: scrubSecretValues(error instanceof Error ? error.message : String(error)),
+    stack: error instanceof Error && error.stack !== undefined ? scrubSecretValues(error.stack) : undefined,
   };
 }

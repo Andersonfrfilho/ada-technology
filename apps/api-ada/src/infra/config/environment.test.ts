@@ -109,7 +109,7 @@ describe('environmentSchema (Railway)', () => {
   });
 });
 
-const TEST_KEY_BYTES = Buffer.from('chave-de-teste-inventada-32bytes');
+const TEST_KEY_BYTES = Buffer.from(Array.from({ length: 32 }, (_, index) => index * 7 + 11));
 const TEST_KEY = TEST_KEY_BYTES.toString('base64');
 const TEST_KEY_HEX = TEST_KEY_BYTES.toString('hex');
 const VALID_KEY_SETUP = {
@@ -143,6 +143,16 @@ describe('environmentSchema (chave de cifra da infra)', () => {
       expect(result.success).toBe(true);
       if (result.success) expect(result.data.INFRA_SECRET_ENCRYPTION_KEY).toBe('');
     }
+  });
+
+  test('chave de 32 bytes todos iguais falha sem vazar o valor', () => {
+    const key = Buffer.alloc(32, 9).toString('base64');
+    expectRejectedWithoutLeak({ INFRA_SECRET_ENCRYPTION_KEY: key }, 'INFRA_SECRET_ENCRYPTION_KEY');
+  });
+
+  test('chave de 32 bytes com menos de 16 distintos falha sem vazar o valor', () => {
+    const key = Buffer.from(Array.from({ length: 32 }, (_, index) => index % 8)).toString('base64');
+    expectRejectedWithoutLeak({ INFRA_SECRET_ENCRYPTION_KEY: key }, 'INFRA_SECRET_ENCRYPTION_KEY');
   });
 
   test.each([31, 33])('chave de %i bytes falha sem vazar o valor', (size) => {

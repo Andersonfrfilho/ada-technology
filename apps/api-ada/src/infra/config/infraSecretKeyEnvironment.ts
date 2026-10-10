@@ -34,7 +34,7 @@ export function validateInfraSecretKeyEnvironment(
   try {
     loadInfraSecretKey(value.INFRA_SECRET_ENCRYPTION_KEY);
   } catch {
-    addIssue(KEY_PATH, `${KEY_PATH} precisa ser base64 canonico de exatamente 32 bytes`);
+    addIssue(KEY_PATH, `${KEY_PATH} precisa ser base64 canonico de exatamente 32 bytes, com ao menos 16 bytes distintos (gere com openssl rand -base64 32)`);
   }
 
   if (value.ENV !== 'production') addIssue(KEY_PATH, `${KEY_PATH} so e aceito com ENV=production`);

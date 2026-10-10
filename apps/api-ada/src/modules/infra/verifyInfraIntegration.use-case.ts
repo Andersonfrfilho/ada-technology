@@ -54,11 +54,13 @@ export class VerifyInfraIntegrationUseCase {
 
   // Veredito de 30 s por cima de tudo: repetir o clique nao esgota a cota horaria do token no Railway.
   private async resolveAccess(gateway: RailwayGatewayInterface): Promise<InfraAccessStatus> {
-    const { cache } = this.dependencies;
+    const { cache, gatewayProvider } = this.dependencies;
     const cached = parseAccessStatus(await cache.get(INFRA_INTEGRATION_VERIFY_CACHE_KEY));
     if (cached) return cached;
 
     const access = await gateway.verifyAccess();
+    // Token trocado durante a chamada: o veredito é da credencial antiga e não pode ser servido à nova.
+    if (!gatewayProvider.isCurrent(gateway)) return access;
     await cache.set(INFRA_INTEGRATION_VERIFY_CACHE_KEY, access, INFRA_INTEGRATION_VERIFY_CACHE_TTL_SECONDS);
     const accessTtlSeconds = resolveAccessCacheTtlSeconds(access);
     if (accessTtlSeconds !== undefined) await cache.set(INFRA_ACCESS_CACHE_KEY, access, accessTtlSeconds);

@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 import {
   INFRA_SECRET_KEY_BYTES,
   INFRA_SECRET_KEY_ID_BYTES,
+  INFRA_SECRET_KEY_MIN_DISTINCT_BYTES,
 } from '@/modules/infra/infraSecret.constant';
 import { InfraSecretKeyInvalidError } from '@/modules/infra/infraSecret.error';
 
@@ -45,5 +46,6 @@ export function loadInfraSecretKey(base64: string): InfraSecretKey {
   const keyBytes = Buffer.from(base64, 'base64');
   const isCanonical = keyBytes.toString('base64') === base64.trim();
   if (!isCanonical || keyBytes.length !== INFRA_SECRET_KEY_BYTES) throw new InfraSecretKeyInvalidError();
+  if (new Set(keyBytes).size < INFRA_SECRET_KEY_MIN_DISTINCT_BYTES) throw new InfraSecretKeyInvalidError();
   return new InfraSecretKey(new Uint8Array(keyBytes));
 }

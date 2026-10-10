@@ -11,6 +11,7 @@ import { describe, expect, it } from 'bun:test';
 import { DomainError } from '@/shared/errors/AppError';
 import { ERROR_CODES } from '@/shared/errors/codes';
 import {
+  InfraIntegrationConcurrentChangeError,
   InfraIntegrationEnvironmentManagedError,
   InfraIntegrationLockedError,
   InfraIntegrationPasswordInvalidError,
@@ -31,6 +32,7 @@ type IntegrationErrorCase = {
 const SECRET_SENTINEL = 'ISCA-SEGREDO-0000';
 
 const INTEGRATION_ERROR_CASES: IntegrationErrorCase[] = [
+  { name: 'InfraIntegrationConcurrentChangeError', build: () => new InfraIntegrationConcurrentChangeError(), code: ERROR_CODES.infra.INFRA_INTEGRATION_CONCURRENT_CHANGE, statusCode: 409 },
   { name: 'InfraSecretKeyMissingError', build: () => new InfraSecretKeyMissingError(), code: ERROR_CODES.infra.INFRA_SECRET_KEY_MISSING, statusCode: 503 },
   { name: 'InfraIntegrationProductionOnlyError', build: () => new InfraIntegrationProductionOnlyError(), code: ERROR_CODES.infra.INFRA_INTEGRATION_PRODUCTION_ONLY, statusCode: 403 },
   { name: 'InfraIntegrationPasswordInvalidError', build: () => new InfraIntegrationPasswordInvalidError(), code: ERROR_CODES.infra.INFRA_INTEGRATION_PASSWORD_INVALID, statusCode: 403 },

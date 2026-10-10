@@ -94,6 +94,31 @@ describe('rotas de integracao: recusas do dominio', () => {
     }
   });
 
+  it('503 do probe limitado sem prazo do Railway nunca devolve Retry-After 0', async () => {
+    const results = [
+      { outcome: PROBE_WORKSPACE_OUTCOME.RATE_LIMITED },
+      { outcome: PROBE_WORKSPACE_OUTCOME.RATE_LIMITED, retryAfterSeconds: 0 },
+    ] as const;
+    for (const probeResult of results) {
+      const setup = buildIntegrationRoutesSetup({ identity: ADMIN_IDENTITY });
+      setup.harness.state.probeResult = probeResult;
+      const response = await setup.handle(put());
+
+      await expectRefusal({ response, status: 503, code: 'RAILWAY_RATE_LIMITED', harness: setup.harness, setup });
+      const retryAfter = response.headers.get('Retry-After');
+      expect(retryAfter === null || Number(retryAfter) >= 1).toBe(true);
+    }
+  });
+
+  it('503 do probe limitado com prazo mantem o Retry-After informado', async () => {
+    const setup = buildIntegrationRoutesSetup({ identity: ADMIN_IDENTITY });
+    setup.harness.state.probeResult = { outcome: PROBE_WORKSPACE_OUTCOME.RATE_LIMITED, retryAfterSeconds: 42 };
+    const response = await setup.handle(put());
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('Retry-After')).toBe('42');
+  });
+
   it('DELETE com senha errada nao remove', async () => {
     const setup = buildIntegrationRoutesSetup({ identity: ADMIN_IDENTITY });
     setup.harness.state.passwordResult = { outcome: 'invalid' };

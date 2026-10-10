@@ -29,6 +29,8 @@ import type { ResolveGateway } from '@/modules/infra/types/resolveGateway.types'
 
 type Dependencies = {
   readonly resolveGateway: ResolveGateway;
+  /** Ausente = sempre atual. Falso quando o token trocou durante a chamada: o resultado não vai para o cache. */
+  readonly isGatewayCurrent?: (gateway: RailwayGatewayInterface) => boolean;
   readonly cache: InfraCacheInterface;
   readonly sleep: InfraSleep;
   readonly now: () => Date;
@@ -55,7 +57,7 @@ export class GetInfraCostsUseCase {
 
     const inventory = await railwayGateway.listInventory();
     const result = buildCostsResult({ window, rows, inventory, now: this.dependencies.now() });
-    await this.storeResult(result);
+    if (this.dependencies.isGatewayCurrent?.(railwayGateway) ?? true) await this.storeResult(result);
     return result;
   }
 

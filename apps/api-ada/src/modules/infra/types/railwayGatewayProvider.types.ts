@@ -39,6 +39,8 @@ export interface RailwayGatewayProvider {
   resolve(): Promise<RailwayGatewayInterface | undefined>;
   describe(): Promise<InfraIntegrationDescription>;
   invalidate(): void;
+  /** `false` quando o gateway pertence a uma credencial já invalidada: resultado dele não pode ir para o cache. */
+  isCurrent(gateway: RailwayGatewayInterface): boolean;
 }
 
 export type RailwayGatewayProviderConfig = {
@@ -49,12 +51,16 @@ export type RailwayGatewayProviderConfig = {
   readonly encryptionKeyBase64: string;
 };
 
+export type RailwayGatewayProviderLogger = InfraLogger & {
+  warn(message: string, meta: Readonly<Record<string, unknown>>): void;
+};
+
 export type RailwayGatewayProviderDependencies = {
   readonly config: RailwayGatewayProviderConfig;
   readonly integrationRepository: InfraIntegrationRepositoryInterface;
   readonly buildGateway?: (params: CreateRailwayGatewayParams) => RailwayGatewayInterface | undefined;
   readonly now: () => number;
-  readonly logger: InfraLogger;
+  readonly logger: RailwayGatewayProviderLogger;
   readonly rereadIntervalMilliseconds?: number;
 };
 

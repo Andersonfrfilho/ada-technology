@@ -19,5 +19,6 @@ export function buildStaticGatewayProvider(gateway: RailwayGatewayInterface | un
       environmentTokenAlsoPresent: false,
     }),
     invalidate: () => undefined,
+    isCurrent: () => true,
   };
 }

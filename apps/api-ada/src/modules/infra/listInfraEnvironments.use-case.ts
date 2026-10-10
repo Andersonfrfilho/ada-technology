@@ -40,6 +40,8 @@ import type { ResolveGateway } from '@/modules/infra/types/resolveGateway.types'
 
 type Dependencies = {
   readonly resolveGateway: ResolveGateway;
+  /** Ausente = sempre atual. Falso quando o token trocou durante a chamada: o resultado não vai para o cache. */
+  readonly isGatewayCurrent?: (gateway: RailwayGatewayInterface) => boolean;
   readonly cache: InfraCacheInterface;
   readonly operationRepository: InfraOperationRepositoryInterface;
   readonly scheduleRepository: InfraScheduleRepositoryInterface;
@@ -88,7 +90,7 @@ export class ListInfraEnvironmentsUseCase {
 
     const access = await railwayGateway.verifyAccess();
     const ttlSeconds = resolveAccessCacheTtlSeconds(access);
-    if (ttlSeconds !== undefined) await cache.set(INFRA_ACCESS_CACHE_KEY, access, ttlSeconds);
+    if (ttlSeconds !== undefined && this.isCurrent(railwayGateway)) await cache.set(INFRA_ACCESS_CACHE_KEY, access, ttlSeconds);
     return access;
   }
 
@@ -101,8 +103,14 @@ export class ListInfraEnvironmentsUseCase {
     }
 
     const inventory = await railwayGateway.listInventory();
-    await cache.set(INFRA_INVENTORY_CACHE_KEY, JSON.stringify(inventory), INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS);
+    if (this.isCurrent(railwayGateway)) {
+      await cache.set(INFRA_INVENTORY_CACHE_KEY, JSON.stringify(inventory), INFRA_ENVIRONMENTS_CACHE_TTL_SECONDS);
+    }
     return inventory;
+  }
+
+  private isCurrent(railwayGateway: RailwayGatewayInterface): boolean {
+    return this.dependencies.isGatewayCurrent?.(railwayGateway) ?? true;
   }
 
   private async indexSchedules(): Promise<ReadonlyMap<string, InfraScheduleRecord>> {

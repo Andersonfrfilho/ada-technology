@@ -148,3 +148,22 @@ Credenciais de CORS só para o painel; `refresh` recusa `Origin` que não seja d
 4. Pedir a mesma confirmação por senha na criação e na promoção de admin, para a D2 proteger de fato contra sessão roubada.
 5. IP confiável para rate limit e auditoria: a documentação do Railway diz que `X-Real-IP` identifica o IP do cliente e a API passou a usá-lo (T2.1); **falta conferir no ambiente real que o proxy sobrescreve um `X-Real-IP` enviado pelo cliente** (um `curl` com `X-Real-IP` falso).
 6. 13 achados `high` do `bun audit` (fora do caminho do token).
+
+## Revisão independente (T6.3, 2026-10-09)
+
+`code-reviewer` e `security-reviewer` (sonnet, somente leitura): 0 bloqueantes/críticos. **Corrigidos** (teste vermelho antes):
+cache regravado com dado do token antigo após troca (`isCurrent` no provedor), `Retry-After: 0` no probe, token/senha retidos no
+painel até a releitura, bloqueio de rate limit perdido em queda do banco, corrida DELETE×upsert (agora 409
+`INFRA_INTEGRATION_CONCURRENT_CHANGE`), `catch` mudo em `hasPanelRow`, redação por valor e mais fragmentos, chave de baixa entropia.
+
+**Aceitos, sem mudança de código:**
+- Probe limitado pelo Railway responde 503 (herdado da spec 001), não 429 como o RF2.
+- Contador de falhas de senha zera no sucesso (o limite de 5/min por rota e a janela de 15 min limitam o ganho).
+- Corpo das rotas sem limite global (`maxRequestBodySize` afetaria upload do widget); só autenticado e com 5/min.
+- Papel/`isActive` do JWT valem até 15 min nas leituras (GET/verify); escritas relêem o banco.
+- Constantes repetidas (`'production'`, `'Muitas requisicoes'`), auditoria `locked` duplicável em requisições paralelas, fingerprint sem hash do cifrado.
+- Replay de ciphertext antigo por quem escreve no banco (coberto por T8/T11).
+
+**Abertos para o deploy (decisão do usuário):** confirmar `X-Real-IP` sobrescrito pelo proxy do Railway; sobreposição de
+origens painel×widget só avisa (tornar fatal pode impedir o boot); `CORS_ALLOWED_ORIGINS` de produção precisa conter o domínio exato do painel (o refresh agora exige `Origin`).
+

@@ -71,7 +71,9 @@ function classifyWorkspaceFailure(error: unknown): ProbeWorkspaceResult {
 function classifyCommonFailure(error: unknown): ProbeWorkspaceResult {
   if (error instanceof RailwayRateLimitedError) {
     const retryAfterSeconds = error.context.retryAfterSeconds;
-    return { outcome: OUTCOME.RATE_LIMITED, retryAfterSeconds: typeof retryAfterSeconds === 'number' ? retryAfterSeconds : 0 };
+    // Sem prazo valido o header e omitido: `Retry-After: 0` mandaria o cliente repetir na hora.
+    const hasDeadline = typeof retryAfterSeconds === 'number' && retryAfterSeconds >= 1;
+    return { outcome: OUTCOME.RATE_LIMITED, ...(hasDeadline ? { retryAfterSeconds } : {}) };
   }
   return { outcome: OUTCOME.UNAVAILABLE };
 }

@@ -13,9 +13,9 @@ import { loadInfraSecretKey } from '@/modules/infra/infraSecretKey';
 import { InfraSecretUnreadableError } from '@/modules/infra/infraSecret.error';
 
 const BAIT = 'ISCA-TOKEN-0123456789';
-const KEY_BASE64 = Buffer.alloc(32, 3).toString('base64');
+const KEY_BASE64 = Buffer.from(Array.from({ length: 32 }, (_, index) => index * 3 + 1)).toString('base64');
 const key = loadInfraSecretKey(KEY_BASE64);
-const otherKey = loadInfraSecretKey(Buffer.alloc(32, 4).toString('base64'));
+const otherKey = loadInfraSecretKey(Buffer.from(Array.from({ length: 32 }, (_, index) => index * 4 + 1)).toString('base64'));
 const scope = { provider: 'railway', workspaceId: 'ws-1' };
 
 function seal(): string {

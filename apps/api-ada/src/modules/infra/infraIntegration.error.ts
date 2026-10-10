@@ -100,3 +100,14 @@ export class InfraIntegrationEnvironmentManagedError extends DomainError {
     });
   }
 }
+
+/** Outra requisicao trocou ou removeu a linha no mesmo instante: repetir o PUT resolve. */
+export class InfraIntegrationConcurrentChangeError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.infra.INFRA_INTEGRATION_CONCURRENT_CHANGE,
+      message: 'A integracao foi alterada por outra requisicao; tente novamente',
+      statusCode: CONFLICT,
+    });
+  }
+}

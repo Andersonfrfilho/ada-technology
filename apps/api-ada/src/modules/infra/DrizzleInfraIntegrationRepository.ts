@@ -10,6 +10,7 @@ import { eq } from 'drizzle-orm';
 
 import { database } from '@/infra/database/client';
 import { infraIntegrationSecrets } from '@/infra/database/schema';
+import { upsertIntegrationRow } from '@/modules/infra/upsertIntegrationRow';
 import type { InfraIntegrationProvider } from '@/modules/infra/infra.constant';
 import type {
   InfraIntegrationRecord,
@@ -17,6 +18,7 @@ import type {
   UpsertLockedIntegrationResult,
 } from '@/modules/infra/types/infraIntegration.types';
 import type { InfraIntegrationRepositoryInterface } from '@/modules/infra/types/infraIntegrationRepository.interface';
+import type { IntegrationRowOperations } from '@/modules/infra/types/upsertIntegrationRow.types';
 
 type Transaction = Parameters<Parameters<typeof database.transaction>[0]>[0];
 
@@ -56,31 +58,19 @@ async function replaceRow(
   return row;
 }
 
-async function upsertInTransaction(
-  transaction: Transaction,
-  params: UpsertLockedIntegrationParams,
-): Promise<UpsertLockedIntegrationResult> {
-  if (await selectForUpdate(transaction, params.provider)) return replaceExisting(transaction, params);
-
-  const [inserted] = await transaction
-    .insert(infraIntegrationSecrets)
-    .values(buildValues(params))
-    .onConflictDoNothing({ target: infraIntegrationSecrets.provider })
-    .returning();
-  if (inserted) return { record: inserted, wasReplacement: false };
-
-  // Um INSERT concorrente venceu a unicidade e ja commitou: aqui a linha existe, entao e troca.
-  await selectForUpdate(transaction, params.provider);
-  return replaceExisting(transaction, params);
-}
-
-async function replaceExisting(
-  transaction: Transaction,
-  params: UpsertLockedIntegrationParams,
-): Promise<UpsertLockedIntegrationResult> {
-  const record = await replaceRow(transaction, params);
-  if (!record) throw new Error('Troca da integracao de infra nao retornou linha');
-  return { record, wasReplacement: true };
+function buildRowOperations(transaction: Transaction, params: UpsertLockedIntegrationParams): IntegrationRowOperations {
+  return {
+    lockExisting: async () => (await selectForUpdate(transaction, params.provider)) !== undefined,
+    insertIfAbsent: async () => {
+      const [inserted] = await transaction
+        .insert(infraIntegrationSecrets)
+        .values(buildValues(params))
+        .onConflictDoNothing({ target: infraIntegrationSecrets.provider })
+        .returning();
+      return inserted;
+    },
+    replace: () => replaceRow(transaction, params),
+  };
 }
 
 export class DrizzleInfraIntegrationRepository implements InfraIntegrationRepositoryInterface {
@@ -94,7 +84,7 @@ export class DrizzleInfraIntegrationRepository implements InfraIntegrationReposi
   }
 
   async upsertLocked(params: UpsertLockedIntegrationParams): Promise<UpsertLockedIntegrationResult> {
-    return database.transaction((transaction) => upsertInTransaction(transaction, params));
+    return database.transaction((transaction) => upsertIntegrationRow(buildRowOperations(transaction, params)));
   }
 
   async deleteLocked(provider: InfraIntegrationProvider): Promise<boolean> {

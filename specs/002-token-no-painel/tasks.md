@@ -111,7 +111,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
   `RAILWAY_WORKSPACE_ID` como pré-requisitos; **corrigir o caminho de criação do token** para `railway.com/account/tokens` com
   o seletor de workspace), `SECURITY.md` (achado datado: token no banco cifrado, rotação e perda da chave, "remover não revoga",
   o que a auditoria não cobre).
-- [ ] **T6.3 Revisão independente** (`code-reviewer` e `security-reviewer`, `sonnet`, somente leitura, passada separada da
+- [x] **T6.3 Revisão independente** (`code-reviewer` e `security-reviewer`, `sonnet`, somente leitura, passada separada da
   escrita) sobre o diff; corrigir o que for real e registrar o aceito no ADR. Auditoria §15 e conformidade de tamanho
   (arquivo ≤ 200, função ≤ 40).
 - [ ] **T6.4 Roteiro manual (do usuário).** Depois do deploy: definir `INFRA_SECRET_ENCRYPTION_KEY` e `RAILWAY_WORKSPACE_ID` na

@@ -55,6 +55,11 @@ export class DefaultRailwayGatewayProvider implements RailwayGatewayProvider {
     this.inFlight = undefined;
   }
 
+  isCurrent(gateway: RailwayGatewayInterface): boolean {
+    if (this.hasEnvironmentToken()) return gateway === this.environmentGateway;
+    return this.cached?.resolved.gateway === gateway;
+  }
+
   private hasEnvironmentToken(): boolean {
     return this.dependencies.config.environmentToken.length > 0;
   }
@@ -80,6 +85,9 @@ export class DefaultRailwayGatewayProvider implements RailwayGatewayProvider {
     try {
       return (await this.dependencies.integrationRepository.findByProvider(INFRA_INTEGRATION_PROVIDER.RAILWAY)) !== undefined;
     } catch {
+      this.dependencies.logger.warn('infra.integration.panel_row_check_failed', {
+        reason: INFRA_INTEGRATION_STATE.STORE_UNAVAILABLE,
+      });
       return false;
     }
   }
@@ -107,6 +115,8 @@ export class DefaultRailwayGatewayProvider implements RailwayGatewayProvider {
     const isTransientFailure = state === INFRA_INTEGRATION_STATE.STORE_UNAVAILABLE;
     const interval = this.dependencies.rereadIntervalMilliseconds ?? DEFAULT_REREAD_INTERVAL_MILLISECONDS;
     this.cached = isTransientFailure ? undefined : { resolved, expiresAt: this.dependencies.now() + interval };
+    // Queda do banco não prova que a credencial mudou: manter o gateway preserva o bloqueio de rate limit.
+    if (isTransientFailure) return;
     this.lastPanelGateway =
       resolved.gateway && resolved.fingerprint
         ? { fingerprint: resolved.fingerprint, gateway: resolved.gateway }

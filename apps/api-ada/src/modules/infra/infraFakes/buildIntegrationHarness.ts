@@ -58,6 +58,8 @@ export class FakeGatewayProvider implements RailwayGatewayProvider {
   invalidations = 0;
   resolveCalls = 0;
   gateway: RailwayGatewayInterface | undefined;
+  /** Quando definido, só este gateway conta como atual (simula troca de token em voo). */
+  currentGateway: RailwayGatewayInterface | undefined;
   description: InfraIntegrationDescription = {
     source: 'none',
     state: 'not_configured',
@@ -76,6 +78,10 @@ export class FakeGatewayProvider implements RailwayGatewayProvider {
   invalidate(): void {
     this.events.push('invalidate');
     this.invalidations += 1;
+  }
+
+  isCurrent(gateway: RailwayGatewayInterface): boolean {
+    return this.currentGateway === undefined || gateway === this.currentGateway;
   }
 }
 

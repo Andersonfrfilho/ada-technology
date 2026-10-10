@@ -19,4 +19,4 @@ type ProbeOutcome = (typeof PROBE_WORKSPACE_OUTCOME)[keyof typeof PROBE_WORKSPAC
 
 export type ProbeWorkspaceResult =
   | { readonly outcome: Exclude<ProbeOutcome, typeof PROBE_WORKSPACE_OUTCOME.RATE_LIMITED> }
-  | { readonly outcome: typeof PROBE_WORKSPACE_OUTCOME.RATE_LIMITED; readonly retryAfterSeconds: number };
+  | { readonly outcome: typeof PROBE_WORKSPACE_OUTCOME.RATE_LIMITED; readonly retryAfterSeconds?: number };

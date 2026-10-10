@@ -20,8 +20,8 @@ import type { RailwayGatewayProviderConfig } from '@/modules/infra/types/railway
 
 export const DECOY_TOKEN = 'ISCA-TOKEN-0123456789';
 export const WORKSPACE_ID = 'workspace-1';
-export const KEY_BASE64 = Buffer.alloc(32, 3).toString('base64');
-export const OTHER_KEY_BASE64 = Buffer.alloc(32, 8).toString('base64');
+export const KEY_BASE64 = Buffer.from(Array.from({ length: 32 }, (_, index) => index * 3 + 1)).toString('base64');
+export const OTHER_KEY_BASE64 = Buffer.from(Array.from({ length: 32 }, (_, index) => index * 8 + 1)).toString('base64');
 export const REREAD_MILLISECONDS = 30_000;
 
 export class ControlledRepository extends FakeIntegrationRepository {
@@ -62,6 +62,7 @@ export type ProviderHarnessOptions = { readonly config?: Partial<RailwayGatewayP
 export function buildProviderHarness(options: ProviderHarnessOptions = {}) {
   const repository = new ControlledRepository();
   const logs: string[] = [];
+  const warnings: string[] = [];
   const builtWith: CreateRailwayGatewayParams[] = [];
   const clock = { now: 0 };
   const config: RailwayGatewayProviderConfig = {
@@ -83,7 +84,8 @@ export function buildProviderHarness(options: ProviderHarnessOptions = {}) {
     logger: {
       info: (message, meta) => void logs.push(`${message} ${JSON.stringify(meta)}`),
       error: (message, meta) => void logs.push(`${message} ${JSON.stringify(meta)}`),
+      warn: (message, meta) => void warnings.push(`${message} ${JSON.stringify(meta)}`),
     },
   });
-  return { provider, repository, logs, builtWith, clock };
+  return { provider, repository, logs, warnings, builtWith, clock };
 }

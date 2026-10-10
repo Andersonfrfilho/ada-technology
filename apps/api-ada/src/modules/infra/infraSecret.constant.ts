@@ -16,6 +16,7 @@ export const INFRA_SECRET_FORMAT_VERSION = 'v1';
 export const INFRA_SECRET_AAD_PREFIX = 'ada.infra.railway-token';
 export const INFRA_SECRET_ALGORITHM = 'aes-256-gcm';
 export const INFRA_SECRET_KEY_BYTES = 32;
+export const INFRA_SECRET_KEY_MIN_DISTINCT_BYTES = 16;
 export const INFRA_SECRET_IV_BYTES = 12;
 export const INFRA_SECRET_TAG_BYTES = 16;
 export const INFRA_SECRET_KEY_ID_BYTES = 8;

@@ -13,7 +13,7 @@ import { InfraSecretKeyInvalidError } from '@/modules/infra/infraSecret.error';
 
 const KEY_BYTES = Uint8Array.from({ length: 32 }, (_, index) => index + 7);
 const KEY_BASE64 = Buffer.from(KEY_BYTES).toString('base64');
-const OTHER_BASE64 = Buffer.alloc(32, 9).toString('base64');
+const OTHER_BASE64 = Buffer.from(Array.from({ length: 32 }, (_, index) => index * 9 + 2)).toString('base64');
 
 describe('loadInfraSecretKey', () => {
   it('loads a 32 byte key and derives a 16 char hex keyId', () => {
@@ -35,6 +35,20 @@ describe('loadInfraSecretKey', () => {
     expect(() => loadInfraSecretKey(Buffer.alloc(length, 1).toString('base64'))).toThrow(
       InfraSecretKeyInvalidError,
     );
+  });
+
+  it.each([0, 1, 255])('rejects a 32 byte key whose bytes are all %i', (byteValue) => {
+    expect(() => loadInfraSecretKey(Buffer.alloc(32, byteValue).toString('base64'))).toThrow(InfraSecretKeyInvalidError);
+  });
+
+  it('rejects a 32 byte key with fewer than 16 distinct bytes', () => {
+    const lowEntropy = Buffer.from(Array.from({ length: 32 }, (_, index) => index % 15));
+    expect(() => loadInfraSecretKey(lowEntropy.toString('base64'))).toThrow(InfraSecretKeyInvalidError);
+  });
+
+  it('accepts a key with exactly 16 distinct bytes', () => {
+    const boundary = Buffer.from(Array.from({ length: 32 }, (_, index) => index % 16));
+    expect(() => loadInfraSecretKey(boundary.toString('base64'))).not.toThrow();
   });
 
   it('rejects invalid base64', () => {
