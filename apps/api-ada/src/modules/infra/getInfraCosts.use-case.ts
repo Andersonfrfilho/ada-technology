@@ -25,9 +25,10 @@ import type { CostsResult, ResolveCostsWindowResult } from '@/modules/infra/type
 import type { InfraSleep } from '@/modules/infra/types/infraRuntime.types';
 import type { RailwayUsageRow } from '@/modules/infra/types/railwayInventory.types';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
+import type { ResolveGateway } from '@/modules/infra/types/resolveGateway.types';
 
 type Dependencies = {
-  readonly railwayGateway?: RailwayGatewayInterface;
+  readonly resolveGateway: ResolveGateway;
   readonly cache: InfraCacheInterface;
   readonly sleep: InfraSleep;
   readonly now: () => Date;
@@ -41,7 +42,8 @@ export class GetInfraCostsUseCase {
   constructor(private readonly dependencies: Dependencies) {}
 
   async execute(): Promise<CostsResult> {
-    const { railwayGateway, cache } = this.dependencies;
+    // Antes de qualquer leitura de cache: remover o token precisa devolver 503 na hora.
+    const railwayGateway = await this.dependencies.resolveGateway();
     if (!railwayGateway) throw new InfraNotConfiguredError();
 
     const cached = await this.readCostsCache(INFRA_COSTS_CACHE_KEY);

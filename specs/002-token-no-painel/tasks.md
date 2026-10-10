@@ -66,7 +66,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
   closed, relê a linha a cada 30 s, remonta só com credencial nova (preserva `Retry-After`), contador de geração,
   não lê a tabela fora de produção, par token+workspace nunca misturado. Aceite: testes de precedência, geração (corrida
   de `invalidate`), cache de 30 s, falha de decifragem sem fallback, fora de produção.
-- [ ] **T3.2 Trocar `railwayGateway?` por `resolveGateway()`** nos cinco casos de uso e no container (plan §2.4);
+- [x] **T3.2 Trocar `railwayGateway?` por `resolveGateway()`** nos cinco casos de uso e no container (plan §2.4);
   `powerEnvironment` resolve uma vez e passa o gateway ao runner. **Nenhum teste existente pode ser removido, pulado ou
   enfraquecido.** Aceite: `make validate` com totais iguais ou maiores (565 + 68) e **API real** (Postgres + Redis
   descartáveis, sem token) como na spec 001: 503/404/401/`/health/ready` 200.

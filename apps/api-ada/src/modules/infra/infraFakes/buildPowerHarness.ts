@@ -66,7 +66,7 @@ export function buildPowerHarness(params: HarnessOptions): PowerHarness {
     sleeps,
     failAudit: false,
     dependencies: {
-      ...(params.isConfigured === false ? {} : { railwayGateway: gateway }),
+      resolveGateway: async () => (params.isConfigured === false ? undefined : gateway),
       cache,
       operationRepository: repository,
       scheduleRepository,

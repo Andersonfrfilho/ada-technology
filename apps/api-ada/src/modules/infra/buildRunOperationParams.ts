@@ -7,6 +7,7 @@
  */
 
 import type { PowerEnvironmentParams, RunOperationParams } from '@/modules/infra/types/infraOperation.types';
+import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 import type { RailwayEnvironment, RailwayProject } from '@/modules/infra/types/railwayInventory.types';
 
 type BuildRunOperationParamsOptions = {
@@ -15,11 +16,13 @@ type BuildRunOperationParamsOptions = {
   readonly project: RailwayProject;
   readonly environment: RailwayEnvironment;
   readonly lockOwner: string;
+  readonly gateway: RailwayGatewayInterface;
 };
 
 export function buildRunOperationParams(options: BuildRunOperationParamsOptions): RunOperationParams {
-  const { operationId, params, project, environment, lockOwner } = options;
+  const { operationId, params, project, environment, lockOwner, gateway } = options;
   return {
+    gateway,
     operationId,
     projectId: project.id,
     projectName: project.name,

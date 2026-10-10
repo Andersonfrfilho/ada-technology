@@ -75,7 +75,7 @@ function buildUseCase(params: {
     },
   };
   const useCase = new GetInfraCostsUseCase({
-    ...(params.isConfigured === false ? {} : { railwayGateway: gateway }),
+    resolveGateway: async () => (params.isConfigured === false ? undefined : gateway),
     cache,
     sleep: async (milliseconds) => void sleeps.push(milliseconds),
     now: () => NOW,

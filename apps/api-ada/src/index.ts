@@ -17,8 +17,8 @@ import {
   infraSchedules,
   notificationBullQueue,
   notificationWorker,
-  railwayGateway,
   recoverInterruptedInfraOperations,
+  resolveGateway,
   seedNotificationTemplates,
 } from '@/infra/container';
 import { BULL_BOARD_BASE_PATH } from '@/infra/queue/bullBoard.constant';
@@ -107,8 +107,10 @@ const server = Bun.serve({
  * Sem `META_CATALOG_*` o modulo devolve lista de agendamentos vazia, e o relogio nem sobe: quem so
  * usa o catalogo interno nao paga por um timer que nao tem o que sincronizar.
  */
+const gatewayAtBoot = await resolveGateway();
+
 const scheduler = startScheduler({
-  tasks: [...catalogModule.schedules, ...(railwayGateway ? [infraSchedules] : [])],
+  tasks: [...catalogModule.schedules, ...(gatewayAtBoot ? [infraSchedules] : [])],
   companyId: environment.ADA_COMPANY_ID,
 });
 
@@ -136,7 +138,7 @@ try {
  * Operacao de infra `running` de um processo que morreu (deploy no meio) travaria o painel. Falha aqui
  * so e logada: recuperar historico nunca pode impedir a API de subir.
  */
-if (railwayGateway) {
+if (gatewayAtBoot) {
   try {
     const recovered = await recoverInterruptedInfraOperations.execute();
     if (recovered > 0) {

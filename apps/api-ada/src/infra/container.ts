@@ -99,7 +99,8 @@ import { notificationAuthResolver } from '@/modules/notification/notificationAut
 import { notificationRecipientResolver } from '@/modules/notification/notificationRecipientResolver';
 import { createPasswordResetNotifier } from '@/modules/notification/passwordResetNotifier';
 import { SendAgentPasswordResetUseCase } from '@/modules/agent/sendAgentPasswordReset.use-case';
-import { createRailwayGateway } from '@/modules/infra/createRailwayGateway';
+import { DefaultRailwayGatewayProvider } from '@/modules/infra/RailwayGatewayProvider';
+import { DrizzleInfraIntegrationRepository } from '@/modules/infra/DrizzleInfraIntegrationRepository';
 import { DrizzleInfraOperationRepository } from '@/modules/infra/DrizzleInfraOperationRepository';
 import { DrizzleInfraScheduleRepository } from '@/modules/infra/DrizzleInfraScheduleRepository';
 import { GetInfraCostsUseCase } from '@/modules/infra/getInfraCosts.use-case';
@@ -132,6 +133,7 @@ import { WhatsAppInboundSimulator } from '@/modules/simulation/WhatsAppInboundSi
 import { RedisUserRefreshTokenStore } from '@/modules/user/RedisUserRefreshTokenStore';
 import type { PowerEnvironmentDependencies } from '@/modules/infra/powerEnvironment.use-case';
 import type { InfraLogger } from '@/modules/infra/types/infraRuntime.types';
+import type { ResolveGateway } from '@/modules/infra/types/resolveGateway.types';
 import { logger } from '@/shared/logger';
 
 // Estado inicial de sessao nova. O modulo nao conhece a maquina de estados do produto.
@@ -361,11 +363,6 @@ export const postWidgetAudio = new PostWidgetAudioUseCase({
 
 export const recordAuditLog = new RecordAuditLogUseCase();
 
-export const railwayGateway = createRailwayGateway({
-  token: environment.RAILWAY_API_TOKEN,
-  workspaceId: environment.RAILWAY_WORKSPACE_ID,
-});
-
 const INFRA_SOURCE = 'modules.infra';
 
 /** Só ids, códigos e contagens chegam aqui; o logger da Ada ainda redige o que for sensível. */
@@ -374,12 +371,27 @@ const infraLogger: InfraLogger = {
   error: (message, meta) => logger.error({ message, source: INFRA_SOURCE, meta: { ...meta } }),
 };
 
+export const railwayGatewayProvider = new DefaultRailwayGatewayProvider({
+  config: {
+    env: environment.ENV,
+    environmentToken: environment.RAILWAY_API_TOKEN,
+    workspaceId: environment.RAILWAY_WORKSPACE_ID,
+    environmentId: environment.RAILWAY_ENVIRONMENT_ID,
+    encryptionKeyBase64: environment.INFRA_SECRET_ENCRYPTION_KEY,
+  },
+  integrationRepository: new DrizzleInfraIntegrationRepository(),
+  now: Date.now,
+  logger: infraLogger,
+});
+
+export const resolveGateway: ResolveGateway = () => railwayGatewayProvider.resolve();
+
 const infraCache = new RedisCache();
 const infraOperationRepository = new DrizzleInfraOperationRepository();
 const infraScheduleRepository = new DrizzleInfraScheduleRepository();
 
 export const listInfraEnvironments = new ListInfraEnvironmentsUseCase({
-  ...(railwayGateway ? { railwayGateway } : {}),
+  resolveGateway,
   cache: infraCache,
   operationRepository: infraOperationRepository,
   scheduleRepository: infraScheduleRepository,
@@ -389,7 +401,7 @@ export const listInfraEnvironments = new ListInfraEnvironmentsUseCase({
 });
 
 const infraPowerDependencies: PowerEnvironmentDependencies = {
-  ...(railwayGateway ? { railwayGateway } : {}),
+  resolveGateway,
   cache: infraCache,
   operationRepository: infraOperationRepository,
   scheduleRepository: infraScheduleRepository,
@@ -403,7 +415,7 @@ const infraPowerDependencies: PowerEnvironmentDependencies = {
 };
 
 export const saveEnvironmentSchedule = new SaveEnvironmentScheduleUseCase({
-  ...(railwayGateway ? { railwayGateway } : {}),
+  resolveGateway,
   scheduleRepository: infraScheduleRepository,
   recordAudit: recordAuditLog,
   managedPattern: environment.RAILWAY_MANAGED_ENVIRONMENT_PATTERN,
@@ -411,7 +423,7 @@ export const saveEnvironmentSchedule = new SaveEnvironmentScheduleUseCase({
 });
 
 export const getInfraCosts = new GetInfraCostsUseCase({
-  ...(railwayGateway ? { railwayGateway } : {}),
+  resolveGateway,
   cache: infraCache,
   sleep: (milliseconds) => Bun.sleep(milliseconds),
   now: () => new Date(),
@@ -432,7 +444,7 @@ export const recoverInterruptedInfraOperations = new RecoverInterruptedInfraOper
 
 export const infraSchedules = buildInfraSchedulesTask(
   new RunInfraSchedulesUseCase({
-    ...(railwayGateway ? { railwayGateway } : {}),
+    resolveGateway,
     scheduleRepository: infraScheduleRepository,
     powerOnEnvironment,
     powerOffEnvironment,

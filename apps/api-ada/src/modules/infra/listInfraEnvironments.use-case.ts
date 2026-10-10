@@ -37,9 +37,10 @@ import type { RailwayEnvironment, RailwayProject } from '@/modules/infra/types/r
 import type { InfraOperationRepositoryInterface } from '@/modules/infra/types/infraOperationRepository.interface';
 import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
+import type { ResolveGateway } from '@/modules/infra/types/resolveGateway.types';
 
 type Dependencies = {
-  readonly railwayGateway?: RailwayGatewayInterface;
+  readonly resolveGateway: ResolveGateway;
   readonly cache: InfraCacheInterface;
   readonly operationRepository: InfraOperationRepositoryInterface;
   readonly scheduleRepository: InfraScheduleRepositoryInterface;
@@ -67,7 +68,8 @@ export class ListInfraEnvironmentsUseCase {
   constructor(private readonly dependencies: Dependencies) {}
 
   async execute(): Promise<ListInfraEnvironmentsResult> {
-    const { railwayGateway } = this.dependencies;
+    // Antes de qualquer leitura de cache: remover o token precisa devolver 503 na hora.
+    const railwayGateway = await this.dependencies.resolveGateway();
     if (!railwayGateway) throw new InfraNotConfiguredError();
 
     const access = await this.resolveAccess(railwayGateway);

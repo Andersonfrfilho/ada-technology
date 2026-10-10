@@ -119,7 +119,7 @@ function buildScenario(params: {
   const dependencies = { ...harness.dependencies, now: () => clock.now };
   const buildUseCase: Scenario['buildUseCase'] = (overrides = {}) =>
       new RunInfraSchedulesUseCase({
-        railwayGateway: harness.gateway,
+        resolveGateway: async () => harness.gateway,
         scheduleRepository: harness.scheduleRepository,
         powerOnEnvironment: new PowerOnEnvironmentUseCase(dependencies),
         powerOffEnvironment: new PowerOffEnvironmentUseCase(dependencies),
@@ -404,6 +404,7 @@ describe('RunInfraSchedulesUseCase', () => {
     const scenario = buildScenario({ now: brt(5, '08:00') });
     seed(scenario, { lastEvaluatedAt: brt(5, '07:59') });
     const useCase = new RunInfraSchedulesUseCase({
+      resolveGateway: async () => undefined,
       scheduleRepository: scenario.harness.scheduleRepository,
       powerOnEnvironment: { execute: async () => ({ operationId: 'never' }) },
       powerOffEnvironment: { execute: async () => ({ operationId: 'never' }) },
