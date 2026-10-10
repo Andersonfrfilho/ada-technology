@@ -59,12 +59,15 @@ import type {
  */
 export class RailwayGateway implements RailwayGatewayInterface {
   private readonly client: RailwayGraphqlClient;
+  private readonly workspaceId: string;
 
-  constructor(private readonly dependencies: RailwayGatewayDependencies) {
+  // O token entra so no cliente (campo `#`): guardar `dependencies` inteiro deixaria o token enumeravel aqui.
+  constructor({ token, workspaceId, fetchImplementation, now }: RailwayGatewayDependencies) {
+    this.workspaceId = workspaceId;
     this.client = new RailwayGraphqlClient({
-      token: dependencies.token,
-      fetchImplementation: dependencies.fetchImplementation ?? fetch,
-      now: dependencies.now ?? Date.now,
+      token,
+      fetchImplementation: fetchImplementation ?? fetch,
+      now: now ?? Date.now,
     });
   }
 
@@ -72,7 +75,7 @@ export class RailwayGateway implements RailwayGatewayInterface {
     const data = await this.client.execute({
       operationName: RAILWAY_OPERATION.INVENTORY,
       query: INVENTORY_QUERY,
-      variables: { workspaceId: this.dependencies.workspaceId },
+      variables: { workspaceId: this.workspaceId },
       schema: inventoryResponseSchema,
     });
 
@@ -127,7 +130,7 @@ export class RailwayGateway implements RailwayGatewayInterface {
     const data = await this.client.execute({
       operationName: RAILWAY_OPERATION.BILLING_CYCLE,
       query: BILLING_CYCLE_QUERY,
-      variables: { workspaceId: this.dependencies.workspaceId },
+      variables: { workspaceId: this.workspaceId },
       schema: billingCycleResponseSchema,
     });
     const { currentUsage, billingPeriod } = data.workspace.customer;
@@ -140,7 +143,7 @@ export class RailwayGateway implements RailwayGatewayInterface {
       operationName: RAILWAY_OPERATION.USAGE,
       query: USAGE_QUERY,
       variables: {
-        workspaceId: this.dependencies.workspaceId,
+        workspaceId: this.workspaceId,
         startDate: params.startDate,
         endDate: params.endDate,
       },
@@ -159,7 +162,7 @@ export class RailwayGateway implements RailwayGatewayInterface {
     const data = await this.client.execute({
       operationName: RAILWAY_OPERATION.ESTIMATED_USAGE,
       query: ESTIMATED_USAGE_QUERY,
-      variables: { workspaceId: this.dependencies.workspaceId },
+      variables: { workspaceId: this.workspaceId },
       schema: estimatedUsageResponseSchema,
     });
 
@@ -171,7 +174,7 @@ export class RailwayGateway implements RailwayGatewayInterface {
       await this.client.execute({
         operationName: RAILWAY_OPERATION.VERIFY_WORKSPACE,
         query: WORKSPACE_QUERY,
-        variables: { workspaceId: this.dependencies.workspaceId },
+        variables: { workspaceId: this.workspaceId },
         schema: workspaceResponseSchema,
       });
     } catch (error) {

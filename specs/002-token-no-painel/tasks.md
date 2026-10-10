@@ -54,7 +54,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
   recusa `Origin` fora do painel. Conferir na **documentação do Railway** qual cabeçalho do proxy é confiável para o IP;
   só mudar a origem do IP se confirmado, senão registrar como risco. Aceite: testes + API real (origem do widget sem
   credenciais, sem `refresh`; widget intacto; painel intacto).
-- [ ] **T2.2 Redação e vazamento (RF9 a–c, e).** Redação por substring com allowlist `tokenHint`; metadata de auditoria
+- [x] **T2.2 Redação e vazamento (RF9 a–c, e).** Redação por substring com allowlist `tokenHint`; metadata de auditoria
   tipada; `exceptionFilter` sem `message` de erro do Drizzle; cliente GraphQL com `#token`. Aceite: testes que provam
   (a) as chaves já usadas nos logs continuam legíveis, (b) `railwayToken`, `newToken`, `currentPassword`, `ciphertext`
   passam a ser redigidas, (c) o erro do Drizzle com a isca nos parâmetros não vaza no ramo 500.

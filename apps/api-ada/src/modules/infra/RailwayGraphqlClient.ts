@@ -32,10 +32,15 @@ export type RailwayGraphqlClientDependencies = {
  * conta como falha mesmo com HTTP 200. O token so vai no header; nunca entra em mensagem, contexto de erro ou log.
  */
 export class RailwayGraphqlClient {
+  // Campo `#`: nao aparece em Object.keys, JSON.stringify nem inspect, entao console.log do cliente nao vaza o token.
+  readonly #token: string;
+  private readonly fetchImplementation: typeof fetch;
   private readonly rateLimitGate: RailwayRateLimitGate;
 
-  constructor(private readonly dependencies: RailwayGraphqlClientDependencies) {
-    this.rateLimitGate = new RailwayRateLimitGate(dependencies.now);
+  constructor({ token, fetchImplementation, now }: RailwayGraphqlClientDependencies) {
+    this.#token = token;
+    this.fetchImplementation = fetchImplementation;
+    this.rateLimitGate = new RailwayRateLimitGate(now);
   }
 
   async execute<TData>(params: ExecuteRailwayParams<TData>): Promise<TData> {
@@ -43,11 +48,11 @@ export class RailwayGraphqlClient {
     this.rateLimitGate.assertNotBlocked();
 
     try {
-      const response = await this.dependencies.fetchImplementation(RAILWAY_GRAPHQL_URL, {
+      const response = await this.fetchImplementation(RAILWAY_GRAPHQL_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.dependencies.token}`,
+          Authorization: `Bearer ${this.#token}`,
         },
         body: JSON.stringify({ query, variables }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MILLISECONDS),

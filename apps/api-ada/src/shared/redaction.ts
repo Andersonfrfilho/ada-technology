@@ -48,6 +48,15 @@ const SENSITIVE_KEYS = buildKeySet([
   'transcript',
 ]);
 
+// Nome que contenha um destes fragmentos e segredo, mesmo sem constar na lista exata (`railwayToken`, `newPassword`).
+const SENSITIVE_KEY_FRAGMENTS: readonly string[] = ['token', 'password', 'secret', 'ciphertext', 'encryptionkey'];
+
+// Excecoes ao fragmento: so o que comprovadamente nao e segredo, uma por linha com o motivo.
+const NON_SECRET_KEYS = buildKeySet([
+  // Ultimos 4 caracteres do token (coluna varchar(4)): serve so para a pessoa reconhecer qual token e.
+  'token-hint',
+]);
+
 const PHONE_KEYS = buildKeySet([
   'phone',
   'phone-number',
@@ -66,6 +75,12 @@ export function maskPhoneNumber(value: string): string {
   return `****${digits.slice(-4)}`;
 }
 
+function isSensitiveKey(normalized: string): boolean {
+  if (SENSITIVE_KEYS.has(normalized)) return true;
+  if (NON_SECRET_KEYS.has(normalized)) return false;
+  return SENSITIVE_KEY_FRAGMENTS.some((fragment) => normalized.includes(fragment));
+}
+
 function redactValue(key: string, value: unknown, depth: number): unknown {
   const normalized = normalizeKey(key);
 
@@ -73,7 +88,7 @@ function redactValue(key: string, value: unknown, depth: number): unknown {
     return typeof value === 'string' ? maskPhoneNumber(value) : REDACTED;
   }
 
-  if (SENSITIVE_KEYS.has(normalized)) {
+  if (isSensitiveKey(normalized)) {
     return REDACTED;
   }
 
@@ -95,6 +110,7 @@ function redactUnknown(value: unknown, depth: number): unknown {
   return result;
 }
 
+// Limite: a redacao olha o NOME da chave; segredo no valor de uma chave inocua passa em claro.
 export function redactLogMeta(meta: Record<string, unknown>): Record<string, unknown> {
   return redactUnknown(meta, 0) as Record<string, unknown>;
 }
