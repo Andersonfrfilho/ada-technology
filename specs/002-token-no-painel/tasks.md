@@ -70,7 +70,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
   `powerEnvironment` resolve uma vez e passa o gateway ao runner. **Nenhum teste existente pode ser removido, pulado ou
   enfraquecido.** Aceite: `make validate` com totais iguais ou maiores (565 + 68) e **API real** (Postgres + Redis
   descartáveis, sem token) como na spec 001: 503/404/401/`/health/ready` 200.
-- [ ] **T3.3 Scheduler só em produção (RF12).** `infra-schedules` e a recuperação do boot registrados apenas com
+- [x] **T3.3 Scheduler só em produção (RF12).** `infra-schedules` e a recuperação do boot registrados apenas com
   `ENV=production`; sem token retornam sem chamar o Railway. Aceite: teste + boot real em dev (sem relógio) e produção.
 - [ ] **T3.4 `probeWorkspace`.** Resultado discriminado e cliente descartável com bloqueio próprio; compara o id do
   workspace; recusa token de conta (`me` responde). Aceite: testes com fetch falso para cada resultado e prova de que
