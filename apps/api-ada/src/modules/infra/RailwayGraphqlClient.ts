@@ -20,6 +20,7 @@ const REQUEST_TIMEOUT_MILLISECONDS = 20_000;
 const HTTP_TOO_MANY_REQUESTS = 429;
 const AUTH_FAILURE_STATUSES: readonly number[] = [401, 403];
 const AUTH_FAILURE_MESSAGE_PATTERN = /not authorized|unauthorized|unauthenticated/i;
+const NOT_FOUND_MESSAGE_PATTERN = /not found/i;
 
 export type RailwayGraphqlClientDependencies = {
   readonly token: string;
@@ -70,6 +71,7 @@ export class RailwayGraphqlClient {
         throw new RailwayRejectedError({
           operation: operationName,
           isAuthFailure: envelope.data.errors.some(isAuthErrorEntry),
+          isNotFound: envelope.data.errors.some(isNotFoundErrorEntry),
         });
       }
 
@@ -86,6 +88,14 @@ export class RailwayGraphqlClient {
 }
 
 function isAuthErrorEntry(entry: unknown): boolean {
+  return matchesErrorMessage(entry, AUTH_FAILURE_MESSAGE_PATTERN);
+}
+
+function isNotFoundErrorEntry(entry: unknown): boolean {
+  return matchesErrorMessage(entry, NOT_FOUND_MESSAGE_PATTERN);
+}
+
+function matchesErrorMessage(entry: unknown, pattern: RegExp): boolean {
   if (typeof entry !== 'object' || entry === null || !('message' in entry)) return false;
-  return typeof entry.message === 'string' && AUTH_FAILURE_MESSAGE_PATTERN.test(entry.message);
+  return typeof entry.message === 'string' && pattern.test(entry.message);
 }
