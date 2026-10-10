@@ -1,129 +1,161 @@
 # Spec 002 — Token do Railway configurável pelo painel da Ada
 
-> Status: pronta para execução · Depende da spec 001 (já em `main`, PR #12)
-> Apps: `apps/api-ada`, `apps/frontend-panel` · Data: 2026-10-09
+> Status: **revisada em 2026-10-09 após revisão de arquitetura e de ameaças (opus)** · Depende da spec 001 (em `main`, PR #12)
+> Apps: `apps/api-ada`, `apps/frontend-panel` · Decisões e riscos: `docs/adr/0005-token-do-railway-no-painel.md`
 
 ## 1. Problema
 
-Hoje o `RAILWAY_API_TOKEN` só entra como variável de ambiente da `api` de produção, pelo painel do
-Railway. Trocar ou remover o token exige acesso ao Railway, redeploy da API, e não deixa claro dentro do
-painel da Ada se a integração está funcionando. O usuário decidiu que o token deve ser configurado **pelo
-painel da Ada**.
+Hoje o `RAILWAY_API_TOKEN` só entra como variável de ambiente da `api` de produção, pelo painel do Railway.
+Trocar ou remover o token exige acesso ao Railway e redeploy, e o painel da Ada não mostra se a integração
+funciona. O usuário decidiu que o token deve ser configurado **pelo painel da Ada**.
 
-Isso muda a postura de segurança. O token de workspace pode apagar serviços e volumes e ler variáveis de
-produção; passar por um formulário significa que ele trafega pelo navegador e passa a morar no banco.
-Esta spec existe para fazer isso **sem enfraquecer** as garantias da spec 001.
+Isso muda a postura de segurança: o token de workspace (apaga serviços e volumes, lê variáveis de produção)
+passa a trafegar pelo navegador e a morar no banco. Esta spec faz isso **sem enfraquecer** as garantias da spec 001.
 
 ## 2. Objetivo
 
-Uma tela **Infra › Integração** (só admin) que permite:
-
-1. informar o token e o id do workspace, **testar a conexão antes de salvar**, e salvar;
-2. ver o estado da integração (configurada ou não, origem, final do token, quem mudou e quando, acesso);
-3. verificar de novo o acesso e **remover** o token;
-
-com o token **cifrado em repouso**, **nunca devolvido** pela API, **nunca logado**, e passando a valer
-**sem redeploy**.
+Uma tela **Infra › Integração** (só admin) em que se informa o token, se **testa a conexão antes de salvar**,
+se vê o estado da integração e se pode verificar de novo, trocar ou remover o token. O token fica **cifrado em
+repouso**, **nunca é devolvido**, **nunca é logado** e passa a valer **sem redeploy**.
 
 ## 3. Histórias de usuário
 
-- **US1 — Configurar.** Como admin, abro *Infra › Integração*, colo o token e o id do workspace, confirmo
-  com a minha senha e clico em *Testar e salvar*. Se o Railway recusar o token, nada é salvo e vejo o motivo.
-  Se aceitar, a tela Infra passa a funcionar na hora.
-- **US2 — Acompanhar.** Vejo se está configurada, de onde vem (painel ou variável de ambiente), os 4 últimos
+- **US1 Configurar.** Abro *Infra › Integração*, colo o token, digito a minha senha e clico em *Testar e salvar*.
+  Se o Railway recusar, nada é salvo e vejo o motivo. Se aceitar, a tela Infra funciona na hora.
+- **US2 Acompanhar.** Vejo se está configurada, a origem (painel ou variável de ambiente), os 4 últimos
   caracteres, quem alterou e quando, e o resultado do último teste de acesso.
-- **US3 — Trocar.** Informo um token novo; o antigo deixa de existir. A troca exige a senha de novo.
-- **US4 — Remover.** Removo o token (com senha); o módulo Infra volta a ficar desligado (503
-  `INFRA_NOT_CONFIGURED`) e as agendas deixam de agir.
-- **US5 — Rastro.** Toda configuração, troca, remoção e teste fica na auditoria, sem o token.
+- **US3 Trocar.** Informo um token novo com a senha; o antigo deixa de ser usado. A tela avisa que o antigo
+  **continua válido no Railway até eu revogá-lo** lá.
+- **US4 Remover.** Removo o token (com senha): o módulo Infra volta a 503 e as agendas deixam de agir. Se o token vier
+  de variável de ambiente, a tela diz onde ele está e não deixa remover.
+- **US5 Rastro.** Configurar, trocar, remover, verificar, recusar e bloquear ficam na auditoria, sem o token.
 
 ## 4. Requisitos funcionais
 
-- **RF1** Rotas só admin: `GET /v1/panel/infra/integration`, `PUT /v1/panel/infra/integration`,
-  `POST /v1/panel/infra/integration/verify`, `DELETE /v1/panel/infra/integration`.
-- **RF2** O `PUT` valida o formato do token e do workspace (zod), **chama o Railway com o token recebido**
-  (`workspace(workspaceId)` precisa devolver o mesmo id) e só então grava. Falha de autenticação,
-  workspace não encontrado ou Railway indisponível **não gravam nada**, com erros distintos.
-- **RF3** `PUT` e `DELETE` exigem a **senha do admin logado** no corpo (confirmação de identidade). Senha
-  errada: 403 `INFRA_INTEGRATION_PASSWORD_INVALID`, sem gravar, e conta para o limite de tentativas.
-- **RF4** O token é guardado **cifrado** (AES-256-GCM, IV aleatório por gravação, dado autenticado com um
-  rótulo fixo e a versão da chave), com chave em variável de ambiente **separada do banco**
-  (`INFRA_SECRET_ENCRYPTION_KEY`). Sem a chave, `PUT` responde 503 `INFRA_SECRET_KEY_MISSING`; o banco
-  sozinho não decifra nada.
-- **RF5** **Nenhuma rota devolve o token**, nem cifrado. O `GET` devolve só estado: `configured`, `source`
-  (`panel` | `environment`), `tokenHint` (últimos 4 caracteres), `workspaceId`, `updatedAt`,
-  `updatedByName`, `access` (mesmo vocabulário da spec 001).
-- **RF6** O token vale **sem redeploy**: ao salvar, trocar ou remover, a API passa a usar o novo valor em
-  até 1 requisição (cache em memória invalidado no mesmo processo). A API continua com uma réplica (spec 001,
-  D3); com mais de uma, o valor vale em até 30 s (TTL do cache).
-- **RF7** **Só em produção.** `PUT` fora de `ENV=production` responde 403
-  `INFRA_INTEGRATION_PRODUCTION_ONLY` (a mesma regra do `RAILWAY_API_TOKEN`). `GET` funciona em qualquer ambiente
-  e mostra o estado.
-- **RF8** **Precedência:** token salvo pelo painel vale; sem ele, vale `RAILWAY_API_TOKEN` (compatibilidade
-  com o que a spec 001 documentou). Token vindo da variável de ambiente **não** pode ser removido pelo painel
-  (a tela explica onde ele está).
-- **RF9** Corpo de `PUT` e `DELETE` **nunca** entra em log, em erro, em contexto de erro nem no Sentry. A
-  redação existente (`token`, `password`) continua valendo e ganha teste dedicado.
-- **RF10** Limite de tentativas: `PUT` e `DELETE` com **5 por minuto por agente** e por IP; `verify` com 12.
-- **RF11** Auditoria: `infra.integration_configured`, `infra.integration_replaced`,
-  `infra.integration_removed`, `infra.integration_verified` e `infra.integration_denied` (senha errada,
-  fora de produção, token recusado), com ator, IP, alvo e motivo; **jamais** o token, nem os últimos 4
-  caracteres, na metadata.
-- **RF12** As rotas e o scheduler da spec 001 passam a obter o gateway **a cada uso** (provedor), e não mais
-  no boot. A tarefa do scheduler fica sempre registrada e só age quando há token.
-- **RF13** O painel nunca guarda o token: campo `type=password`, `autocomplete` desligado, limpo ao salvar,
-  ao falhar e ao desmontar; sem `localStorage`/`sessionStorage`; a mutação não mantém o valor no cache do
-  react-query.
+- **RF1** Rotas só admin, todas com `Cache-Control: no-store`: `GET /v1/panel/infra/integration`,
+  `PUT /v1/panel/infra/integration`, `POST /v1/panel/infra/integration/verify`, `DELETE /v1/panel/infra/integration`.
+- **RF2** **O workspace não vem do formulário.** O `PUT` recebe só `token` e `password`. O workspace é o de
+  `RAILWAY_WORKSPACE_ID`, fixado no ambiente (não é segredo), e o token precisa enxergar **exatamente** esse id.
+  O token é testado num cliente descartável (`probeWorkspace`, com resultado discriminado, sem contaminar o
+  bloqueio de rate limit em uso): recusado → 422 `INFRA_INTEGRATION_TOKEN_REJECTED`; workspace inacessível ou
+  inexistente → 422 `INFRA_INTEGRATION_WORKSPACE_NOT_FOUND` (um código só se o Railway não distinguir);
+  Railway fora → 503; limite do Railway → 429 com `Retry-After`. **Token de conta é recusado**: a query `me` é
+  documentada como negada a token de workspace, então se `me` responder o token é amplo demais → 422
+  `INFRA_INTEGRATION_TOKEN_TOO_BROAD`. Nenhuma falha grava nada. Sem `RAILWAY_WORKSPACE_ID` ou
+  `RAILWAY_ENVIRONMENT_ID`, `PUT` e provedor respondem 503 `INFRA_NOT_CONFIGURED`.
+- **RF3** `PUT` e `DELETE` exigem a **senha do admin logado**. O caso de uso relê o agente no banco e exige
+  `isActive` e papel `admin` **naquele instante** (o papel do JWT pode estar 15 min defasado), e confere a senha
+  com o mesmo `Bun.password.verify` do login, sem criar sessão. Senha errada: 403
+  `INFRA_INTEGRATION_PASSWORD_INVALID`. As falhas somam num contador por agente (TTL 15 min); na **5ª falha** a API
+  revoga todas as sessões do agente, bloqueia as rotas de integração dele por 15 min (423
+  `INFRA_INTEGRATION_LOCKED`, com `Retry-After`) e audita `infra.integration_locked`. O login não muda.
+- **RF4** **Cifra:** AES-256-GCM com `node:crypto`, IV aleatório de 12 bytes por gravação, tag fixada em 16 bytes
+  (IV ≠ 12 ou tag ≠ 16 é recusado antes de decifrar). Dado autenticado:
+  `ada.infra.railway-token|<key_id>|<provider>|<workspace_id>`, o que impede transplantar o cifrado entre linhas ou
+  workspaces. Chave em `INFRA_SECRET_ENCRYPTION_KEY` (base64 de exatamente 32 bytes), **recusada no boot fora de
+  `ENV=production`** e se for igual a `PANEL_JWT_SECRET`. `key_id` = 8 bytes (hex) do SHA-256 da chave, gravado com o
+  segredo. Em produção, com a chave presente, `RAILWAY_WORKSPACE_ID` e `RAILWAY_ENVIRONMENT_ID` são obrigatórias no boot.
+  Sem a chave, `PUT` responde 503 `INFRA_SECRET_KEY_MISSING`.
+- **RF5** **Nenhuma rota devolve o token**, nem cifrado. O `GET` devolve só estado: `source`
+  (`panel` | `environment` | `none`), `state` (`not_configured` | `configured` | `key_missing` | `key_mismatch` |
+  `secret_unreadable`), `tokenHint` (4 últimos caracteres), `workspaceId`, `updatedAt`, `updatedByName`,
+  `access` (vocabulário da spec 001, lido do cache `infra:access`, sem chamar o Railway a cada abertura) e
+  `environmentTokenAlsoPresent`.
+- **RF6** **Vale sem redeploy.** Os casos de uso da spec 001 trocam `railwayGateway?` por `resolveGateway()`,
+  chamado **uma vez** no início de cada `execute`; a operação de energia passa o gateway resolvido ao runner
+  (nunca troca de token no meio) e uma operação já admitida termina com o token com que começou. O provedor relê a
+  linha do banco no máximo a cada 30 s e **só remonta o gateway quando a credencial muda** (impressão digital de
+  `updated_at`, `key_id` e `workspace_id`), preservando o bloqueio de `Retry-After`; `invalidate()` vale na próxima
+  chamada, com contador de geração contra leitura em andamento. **Salvar, trocar e remover apagam as quatro chaves
+  Redis** (`infra:inventory`, `infra:access`, `infra:costs:v1`, `infra:costs:v1:last-good`).
+- **RF7** `PUT` fora de `ENV=production` responde 403 `INFRA_INTEGRATION_PRODUCTION_ONLY` (auditado). Fora de
+  produção o provedor **nem lê a tabela**; o `GET` funciona e mostra o estado.
+- **RF8** **Uma fonte de credencial por vez.** Com `RAILWAY_API_TOKEN` definida, ela vale (com o
+  `RAILWAY_WORKSPACE_ID` do ambiente), `source = environment`, e `PUT`/`DELETE` respondem 409
+  `INFRA_INTEGRATION_ENVIRONMENT_MANAGED`; uma linha do painel eventualmente existente é ignorada e o `GET` avisa.
+  Sem a variável, vale o painel. **Linha do painel presente e ilegível** (chave ausente, errada, tag inválida) é
+  **fail closed**: o módulo fica indisponível e o `GET` mostra `key_missing`/`key_mismatch`/`secret_unreadable`;
+  **nunca** cai para outra credencial. Trocar ou remover no painel **não revoga** o token no Railway: a tela e o
+  `SECURITY.md` mandam revogar o antigo em `railway.com/account/tokens`.
+- **RF9** **Sem vazamento.** O token, a senha e o texto cifrado nunca entram em log, resposta, erro, contexto de erro
+  nem `audit_logs`. (a) A redação do logger passa a casar por **substring** (`token`, `password`, `secret`,
+  `ciphertext`, `encryptionkey`), com allowlist explícita para `tokenHint`. (b) A metadata das ações
+  `infra.integration_*` é um **tipo fechado** (`reason` de enum fixo, `workspaceId?`, `source?`), sem texto livre.
+  (c) O filtro de exceção não loga `message` de erro do Drizzle (a mensagem carrega os parâmetros da consulta, que
+  incluiriam o cifrado), só o código da causa. (d) Os campos do corpo se chamam exatamente `token` e `password`, e
+  nenhum `refine` do zod interpola o valor. (e) O token fica em campo privado (`#token`) do cliente, nunca em
+  propriedade enumerável. (f) Teste com **valor-isca** varre stdout e stderr do **processo real**, as respostas e
+  `audit_logs`, em todos os caminhos (sucesso e cada falha, inclusive o ramo 500). A `api-ada` não usa Sentry.
+- **RF10** Limites: `PUT` e `DELETE` com 5/min por agente e por IP; `verify` com 3/min por agente e resultado
+  cacheado por 30 s (impede esgotar a cota horária do token).
+- **RF11** Auditoria: `infra.integration_configured`, `_replaced`, `_removed`, `_verified`, `_denied` e `_locked`,
+  com ator, IP e motivo; jamais o token nem os últimos 4 caracteres. `PUT`/`DELETE` rodam numa transação com
+  `SELECT … FOR UPDATE` na linha do provedor (sem last-write-wins), e `configured` × `replaced` é decidido dentro dela.
+- **RF12** A tarefa `infra-schedules` e a recuperação do boot passam a ser registradas **apenas com `ENV=production`**
+  (onde um token pode existir) e retornam sem chamar o Railway quando não há token. Em dev, test e staging o
+  comportamento da spec 001 não muda (sem token, o relógio nem sobe).
+- **RF13** **Formulário.** O campo do token não pode ser capturado por gerenciador de senhas nem corretor:
+  `autoComplete="off"`, `spellCheck={false}`, `autoCorrect="off"`, `autoCapitalize="off"`, `data-1p-ignore`,
+  `data-lpignore="true"`, `data-bwignore`, nome neutro; envio por clique, não por `submit` de `<form>`; a senha de
+  confirmação usa `autocomplete="current-password"`. O campo é limpo ao salvar, ao falhar e ao desmontar; sem
+  `localStorage`/`sessionStorage`; mutação com `gcTime: 0` e `reset()`. **Conferência manual** em Chrome, Safari e
+  Firefox: nenhum oferece salvar o token. O tratamento visual do campo (máscara) é escolhido para passar nessa conferência.
+- **RF14** **Pré-requisito de segurança (fora do módulo Infra, achado na revisão):** (a) o CORS com credenciais vale
+  **só** para `CORS_ALLOWED_ORIGINS` (painel); origens do widget recebem CORS sem `Access-Control-Allow-Credentials`;
+  (b) `POST /auth/refresh` recusa `Origin` que não seja do painel; (c) o widget não pode regredir (teste do fluxo do
+  widget antes e depois); (d) o IP usado em rate limit e auditoria hoje é o primeiro valor de `X-Forwarded-For`, que o
+  cliente controla: só trocar para o valor do proxy do Railway **depois de confirmar na documentação do Railway** qual
+  cabeçalho/posição é confiável; se não for confirmável, fica registrado como risco.
 
 ## 5. Requisitos não funcionais
 
-- **Cifra:** só `node:crypto` (nativo do Bun), sem biblioteca nova. Chave de 32 bytes em base64, validada no
-  boot (comprimento exato) quando presente. Versão da chave gravada com o segredo, para rotação futura.
-- **Rotação:** trocar a chave exige informar o token de novo (documentado). Sem suporte a duas chaves na v1.
-- **Compatibilidade:** sem a chave e sem token, tudo continua como na spec 001 (módulo desligado, 503).
-- **Migration** aditiva (`0005`), sem apagar nada.
+- Sem biblioteca nova (`node:crypto` e Drizzle já existentes). Migration aditiva (`0005`).
+- Sem a chave e sem token, tudo continua como na spec 001 (módulo desligado, 503).
+- Rotação da chave: informar o token de novo (sem suporte a duas chaves na v1); documentar.
 
 ## 6. Fora de escopo (v1)
 
-- Vários workspaces ou vários tokens.
-- Papéis finos além de admin; aprovação por duas pessoas.
-- Rotação automática do token no Railway e alerta de expiração.
-- Guardar outros segredos (WhatsApp, e-mail) por este mecanismo, embora o desenho permita.
-- Cache compartilhado entre réplicas (a spec 001 já fixa uma réplica).
+- Vários workspaces ou tokens; papéis além de admin; aprovação por duas pessoas.
+- Aviso por e-mail aos admins quando a integração muda (recomendado; abre item no ADR).
+- Pedir a mesma confirmação por senha na criação e promoção de admin (fecha o buraco da sessão roubada; item no ADR).
+- Atacar os 13 achados `high` do `bun audit` (fora do caminho do token).
+- Cache compartilhado entre réplicas (a spec 001 fixa uma réplica).
 
-## 7. Decisões assumidas (vetáveis antes da execução)
+## 7. Decisões (detalhe e alternativas no ADR 0005)
 
-| # | Decisão | Alternativa descartada |
-|---|---|---|
-| D1 | Token no banco **cifrado**, chave só em variável de ambiente separada | Texto puro no banco (um dump entregaria o token); chave no próprio banco (não protege) |
-| D2 | **Confirmar com a senha** do admin em `PUT`/`DELETE` | Só a sessão: um token de sessão roubado trocaria ou apagaria a integração sem nova prova |
-| D3 | **Testar no Railway antes de salvar** | Salvar e testar depois: guarda lixo e esconde o erro de digitação |
-| D4 | `GET` sem o token e **sem cifrado**; dica = 4 últimos caracteres | Devolver máscara maior ou hash: sem ganho |
-| D5 | Gateway por **provedor** consultado a cada uso, sem reiniciar | Reiniciar a API ao salvar: derruba a agenda e as operações em curso |
-| D6 | Painel > variável de ambiente; variável vira reserva | Remover a variável de ambiente: quebra o que a spec 001 documentou |
-| D7 | Token só pode ser gravado em `ENV=production` | Permitir em staging: o token mais poderoso do workspace num ambiente menos protegido |
+| # | Decisão |
+|---|---|
+| D1 | Token cifrado (AES-256-GCM), chave só em variável de ambiente, só em produção, `key_id` + AAD completo |
+| D2 | Confirmação por senha em `PUT`/`DELETE`, com papel e `isActive` relidos no banco e bloqueio na 5ª falha |
+| D3 | Testar no Railway antes de gravar (`probeWorkspace`), workspace fixado no ambiente, token de conta recusado |
+| D4 | A API nunca devolve o token; dica de 4 caracteres só na tela |
+| D5 | `resolveGateway()` por `execute`, provedor com geração e remontagem só quando a credencial muda; limpa o Redis |
+| D6 | **Fonte única:** a variável de ambiente, se existir, vale e trava o painel; sem ela vale o painel; falha de leitura = fail closed |
+| D7 | Só em produção (token, chave, `PUT`, leitura da tabela, scheduler) |
 
 ## 8. Riscos aceitos (a registrar no ADR 0005)
 
-- Quem tem uma **sessão admin válida e a senha** pode trocar ou remover o token. Isso já podia desligar
-  staging; agora também controla a integração. A senha de confirmação reduz o risco de sessão roubada.
-- **XSS** na página de Integração leria o campo enquanto o admin digita. Mitigação: sem `dangerouslySetInnerHTML`,
-  sem script de terceiros na tela, e o campo só existe nessa tela.
-- Quem tiver o **banco e a chave** (os dois) lê o token. A chave fica fora do banco, no mesmo cofre de
-  variáveis que já guarda o `PANEL_JWT_SECRET`.
-- O token em memória da API existe por 30 s no cache e enquanto uma requisição o usa.
+- **Sessão admin roubada:** a confirmação por senha acrescenta um passo e dois rastros, mas **não fecha** o caminho
+  enquanto criar/promover admin não exigir a mesma confirmação.
+- **XSS na tela de Integração:** o CSP real (`script-src 'self'`, sem inline nem terceiros) e a ausência de HTML
+  injetado reduzem; o resíduo é supply chain.
+- **Banco + chave** (mesmo cofre de variáveis que o `DATABASE_URL`): a cifra cobre dump, backup e leitura SQL, não quem
+  lê as variáveis do Railway.
+- **Token em memória** por 30 s e enquanto uma operação em curso o usa.
+- **Remover/trocar não revoga no Railway.** Depende de ação humana.
+- Falha ao gravar a auditoria depois de salvar: o segredo fica sem a linha de auditoria; autor e data saem da própria linha.
 
 ## 9. Critérios de aceite
 
-1. Sem a chave de cifra: `PUT` responde 503 `INFRA_SECRET_KEY_MISSING` e nada muda.
-2. Token inválido ou workspace errado: `PUT` responde com erro distinto e **nada é gravado** (conferido no banco).
-3. Senha errada em `PUT` e `DELETE`: 403 e nada muda; a 6ª tentativa no minuto leva 429.
-4. Token salvo: nenhuma resposta da API, nenhum log e nenhuma linha de auditoria contém o token (varredura
-   automática com um valor-isca nos testes e na API real).
-5. O banco guarda só texto cifrado (`ciphertext` não contém o token; trocar um byte faz a leitura falhar).
-6. Depois de salvar, as telas Ambientes e Custos funcionam **sem redeploy**; depois de remover, voltam a 503.
-7. Fora de `ENV=production`, `PUT` responde 403 e o `GET` mostra o estado.
-8. Com token só na variável de ambiente, o `GET` mostra `source: environment` e `DELETE` é recusado.
-9. O painel não deixa o token em `localStorage`, `sessionStorage` nem no cache de mutação (verificado no
-   navegador) e limpa o campo ao salvar e ao falhar.
-10. `make validate` verde; nenhum `test.skip`/`.only`.
+1. Sem a chave: `PUT` responde 503 `INFRA_SECRET_KEY_MISSING` e nada muda.
+2. Token recusado, workspace inacessível, token de conta ou Railway fora: erro distinto e **nada gravado** (conferido no banco).
+3. Senha errada em `PUT`/`DELETE`: 403, nada muda; a 5ª falha revoga as sessões do agente e bloqueia por 15 min; o papel rebaixado no banco é recusado mesmo com JWT válido.
+4. Com token salvo, **nenhuma** resposta, linha de log (stdout/stderr do processo real) ou linha de `audit_logs` contém o valor-isca.
+5. O banco guarda só texto cifrado (o `ciphertext` não contém o token; trocar 1 byte, trocar o `key_id` ou o `workspace_id` faz a leitura falhar).
+6. Depois de salvar, Ambientes e Custos funcionam **sem redeploy**; depois de remover, voltam a 503; trocar de token não mostra dados do anterior (Redis limpo).
+7. Fora de `ENV=production`: `PUT` 403, a tabela não é lida, o scheduler não sobe; o `GET` mostra o estado.
+8. Com `RAILWAY_API_TOKEN` na variável de ambiente: `source: environment`, `PUT`/`DELETE` 409.
+9. Linha ilegível: `state` correto e **nenhum** fallback para a variável de ambiente.
+10. Painel: nenhum dado do token em `localStorage`/`sessionStorage`/cache de mutação; campo limpo; nenhum navegador testado oferece salvar o token.
+11. RF14: origem do widget não recebe credenciais nem consegue `refresh`; o widget segue funcionando.
+12. `make validate` verde; nenhum `test.skip`/`.only`; nenhum arquivo > 200 linhas nem função > 40.
