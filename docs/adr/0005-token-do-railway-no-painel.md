@@ -1,7 +1,8 @@
 # ADR 0005 — Token do Railway configurável pelo painel
 
 - **Data:** 2026-10-09
-- **Status:** proposto
+- **Status:** aceito e implementado (spec 002, tarefas T0 a T5, 2026-10-09). Pendentes: T6.1 (API real ponta a ponta),
+  T6.3 (revisão independente) e T6.4 (roteiro manual com token de workspace real).
 - **Depende de:** ADR 0004 (Infra Railway no painel)
 - **Revisão:** arquitetura e modelo de ameaças por `architect` e `security-reviewer` (`opus`), antes de implementar;
   achados conferidos no código e incorporados (ver `specs/002-token-no-painel/evidence.md`).
@@ -67,7 +68,7 @@ Os cinco casos de uso trocam `railwayGateway?` por `resolveGateway()`, chamado *
 energia passa o gateway ao runner em segundo plano (nunca troca de token no meio; uma operação admitida termina com o token com que
 começou). O `RailwayGatewayProvider` relê a linha no máximo a cada 30 s e **só remonta o gateway quando a credencial muda**
 (impressão digital de `updated_at`, `key_id`, `workspace_id`), preservando o bloqueio de `Retry-After` do ADR 0004; `invalidate()` vale
-na próxima chamada, com contador de geração contra leitura em andamento. Salvar, trocar e remover **apagam as quatro chaves Redis**.
+na próxima chamada, com contador de geração contra leitura em andamento. Salvar, trocar e remover **apagam as quatro chaves Redis** (inventário, acesso, custos e o último bom de custos) e também `infra:integration:verify`, o cache de 30 s do `verify` (T4.1), para o teste não devolver o "ok" do token antigo.
 `PUT`/`DELETE` rodam em transação com `SELECT … FOR UPDATE`. O scheduler e a recuperação do boot são registrados **apenas em
 produção** e retornam sem chamar o Railway quando não há token.
 
@@ -95,7 +96,7 @@ Credenciais de CORS só para o painel; `refresh` recusa `Origin` que não seja d
 | # | Ativo | Ator | Vetor | Mitigação | Risco residual |
 |---|---|---|---|---|---|
 | T1 | Sessão admin | Script numa origem do widget | `fetch` com credenciais em `/auth/refresh` | RF14 | Baixo |
-| T2 | Senha do admin | Dono de sessão roubada | Força bruta em `PUT`/`DELETE`, XFF forjado | D2 (contador, revogação, papel no banco); IP do proxy se confirmado | Baixo |
+| T2 | Senha do admin | Dono de sessão roubada | Força bruta em `PUT`/`DELETE`, XFF forjado | D2 (contador, revogação, papel no banco); IP por `X-Real-IP` (confirmação no proxy do Railway em aberto, ponto 5) | Baixo |
 | T3 | Token no navegador | XSS ou extensão | Ler o campo | CSP `script-src 'self'`, sem HTML injetado | Médio (supply chain) |
 | T4 | Token no navegador | Gerenciador de senhas / corretor | Salvar ou enviar o campo | RF13 | Baixo |
 | T5 | Token em trânsito | Rede | Interceptação | HTTPS, HSTS, `no-store` | Baixo |
@@ -136,7 +137,7 @@ Credenciais de CORS só para o painel; `refresh` recusa `Origin` que não seja d
 
 - Sessão admin roubada (ver D2); XSS na tela (resíduo de supply chain); banco + chave no mesmo cofre de variáveis; token em memória
   por 30 s e durante uma operação em curso; remover/trocar não revoga no Railway; falha ao gravar a auditoria depois de salvar
-  (autor e data saem da própria linha); uma réplica só (com mais, outra réplica usa o token antigo por até 30 s).
+  (autor e data saem da própria linha); uma réplica só (com mais, outra réplica usa o token antigo por até 30 s); máscara do campo do token sem efeito no Firefox (`-webkit-text-security` não é suportado), e a conferência de gerenciador de senha nesse navegador segue manual (RF13).
 
 ## Pontos em aberto
 

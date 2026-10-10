@@ -135,6 +135,10 @@ headers de segurança e `X-Trace-Id`. Rate limit por IP declarado na própria ro
 | `PUT` | `/v1/panel/infra/environments/:environmentId/schedule` | 🔒 `admin`. Salva `{ activeWeekdays, powerOnTime, powerOffTime, isEnabled }`. Auditado (`infra.schedule_changed`). Devolve `nextScheduledAction`. `PANEL_WRITE`. |
 | `GET` | `/v1/panel/infra/operations/:operationId` | 🔒 `admin`. Estado de uma operação de ligar ou desligar, com o resultado por serviço. `404 INFRA_OPERATION_NOT_FOUND`. `PANEL_READ`. |
 | `GET` | `/v1/panel/infra/costs` | 🔒 `admin`. Custo do ciclo de cobrança por projeto e ambiente, com o total oficial do Railway ao lado. `PANEL_READ`. |
+| `GET` | `/v1/panel/infra/integration` | 🔒 `admin`. Estado da integração: `source` (`panel`, `environment`, `none`), `state`, dica dos 4 últimos caracteres, workspace, autor, data e `access` do cache. Nunca devolve o token, nem cifrado. `Cache-Control: no-store`. `PANEL_READ`. |
+| `PUT` | `/v1/panel/infra/integration` | 🔒 `admin`. Corpo `{ token, password }` (estrito: `workspaceId` no corpo é `400`). Testa o token no Railway antes de gravar, cifrado. Senha do admin relida no banco; 5 falhas em 15 min bloqueiam por 15 min (`423`). `403 INFRA_INTEGRATION_PRODUCTION_ONLY` fora de produção; `403 INFRA_INTEGRATION_PASSWORD_INVALID`; `503 INFRA_SECRET_KEY_MISSING`; `409 INFRA_INTEGRATION_ENVIRONMENT_MANAGED` com `RAILWAY_API_TOKEN`; `422` para token recusado, token de conta ou workspace não encontrado. `5/min` por IP e por agente. |
+| `POST` | `/v1/panel/infra/integration/verify` | 🔒 `admin`. Testa o acesso ao workspace com o token salvo e grava `access`. Resultado em cache de 30 s. `3/min` por agente. |
+| `DELETE` | `/v1/panel/infra/integration` | 🔒 `admin`. Corpo `{ password }`. Apaga o token do banco; não revoga no Railway. Mesmas senha, bloqueio e limites do `PUT`. |
 
 O catálogo de produtos vem inteiro do `@adatechnology/catalog-module`, montado sob
 `/v1/panel/catalog` (produtos, catálogos, seções, importação em lote), todas 🔒 `admin`. O
@@ -270,7 +274,7 @@ o envio por ausência.** Montagem em `infra/email/emailDriver.ts`, sobre
 - **Templates falha fechado.** Sem `WHATSAPP_ENABLED` / `WHATSAPP_BUSINESS_ACCOUNT_ID` não há
   provider e o catálogo responde `503 CHANNEL_WHATSAPP_DISABLED`. O nome já salvo vem pela rota de
   `template-settings`, que é independente — a tela abre e continua editável.
-- **Infra é só admin e só existe com token.** Sem `RAILWAY_API_TOKEN` as rotas `/v1/panel/infra/*` respondem `503 INFRA_NOT_CONFIGURED`, e o resto da API sobe normal.
+- **Infra é só admin e só existe com token.** Sem token configurado (no painel ou em `RAILWAY_API_TOKEN`), as rotas de ambientes, operações e custos respondem `503 INFRA_NOT_CONFIGURED`, e o resto da API sobe normal.
 - **Protegido não liga nem desliga.** Ambiente com `prod` no nome e o ambiente onde a própria API roda (`RAILWAY_ENVIRONMENT_ID`) respondem `403 INFRA_ENVIRONMENT_PROTECTED` antes de qualquer mutation. O painel não tem forma de liberar isso.
 - **Ligar e desligar são assíncronos.** `power-off` e `power-on` respondem `202` com `operationId` e rodam em segundo plano; o painel consulta a operação. Uma trava Redis por ambiente faz uma segunda chamada no mesmo ambiente responder `409 INFRA_OPERATION_IN_PROGRESS`.
 - **"Pronto" exige duas coisas.** Um serviço só conta como ligado com deployment não parado **e** instância `RUNNING`. Deployment parado continua `SUCCESS` e segue em `activeDeployments`, então o status sozinho não basta.
@@ -283,6 +287,14 @@ o envio por ausência.** Montagem em `infra/email/emailDriver.ts`, sobre
 - **Infra audita também o que recusa e o que interrompe.** Ligar/desligar aceito grava `infra.environment_power_requested` antes do 202; recusado (protegido, inexistente, ocupado, `keepOnUntil` ausente) grava `infra.environment_power_denied` com o motivo; operação interrompida (a API reiniciou no meio) grava `infra.operation_interrupted`. A recuperação de operações `running` presas roda a cada tick do scheduler, além do boot.
 - **A trava de operação tem dono.** A chave Redis `infra:operation-lock:<ambiente>` guarda um identificador por operação, e só o dono renova ou libera (script Lua). Ligar/desligar tem limite por IP e por agente (6 por minuto).
 - **Parar e religar usam o deployment ativo, e o painel não deduz `keepOnUntil`.** O alvo é `activeDeployments`, não o último deployment (um deploy falho pode coexistir com um ativo antigo). Quem decide se `keepOnUntil` é obrigatório é o servidor, via `requiresKeepOnUntil` na listagem. `RAILWAY_API_TOKEN` só é aceito com `ENV=production`.
+- **Token pelo painel, cifrado no banco.** *Infra › Integração* grava o token em `infra_integration_secrets` (uma linha, provedor único) com AES-256-GCM: IV de 12 bytes novo a cada gravação, tag de 16 bytes, AAD `ada.infra.railway-token|<key_id>|<provider>|<workspace_id>`. A chave vem de `INFRA_SECRET_ENCRYPTION_KEY` (base64 de 32 bytes), só em `ENV=production`, diferente de `PANEL_JWT_SECRET`, fora do banco. `key_id` é a impressão digital da chave; chave trocada ou perdida vira `key_mismatch` ou `key_missing`, e o token precisa ser informado de novo. Nenhuma rota devolve o token.
+- **Fonte única, fail closed.** Se `RAILWAY_API_TOKEN` existir, ela vale com o `RAILWAY_WORKSPACE_ID` do ambiente, `source = environment`, e `PUT`/`DELETE` respondem `409`; uma linha do painel é ignorada com aviso. Sem a variável, vale o painel. Linha ilegível (`key_missing`, `key_mismatch`, `secret_unreadable`) deixa o módulo indisponível, sem cair para outra credencial.
+- **Chave exige o workspace e o ambiente.** Com `INFRA_SECRET_ENCRYPTION_KEY` definida, `RAILWAY_WORKSPACE_ID` e `RAILWAY_ENVIRONMENT_ID` são obrigatórias no boot. Sem o id do ambiente, a proteção do ambiente da própria API some em silêncio.
+- **Testa antes de gravar, workspace fixado.** `PUT` recebe só `token` e `password`. O token é testado num cliente descartável que compara o id do workspace com `RAILWAY_WORKSPACE_ID`. Se a query `me` responder, é token de conta e é recusado (`TOKEN_TOO_BROAD`). Falha em qualquer etapa não grava nada.
+- **Vale sem redeploy.** Os casos de uso chamam `resolveGateway()` uma vez por `execute`. O provedor relê a linha no máximo a cada 30 s e só remonta o gateway quando a credencial muda, preservando o `Retry-After`. Salvar, trocar e remover apagam as chaves Redis de inventário, acesso, custos (incluindo o último bom) e do `verify`. Uma operação de energia já admitida termina com o token com que começou.
+- **Agenda só em produção.** O scheduler e a recuperação do boot são registrados só com `ENV=production`, e retornam sem chamar o Railway quando não há token. Fora de produção, `PUT` responde `403` e a tabela não é lida.
+- **Remover ou trocar não revoga no Railway.** A tela avisa. O token antigo continua válido até ser revogado em `railway.com/account/tokens`.
+- **Fronteira de origem e IP (RF14).** Credenciais de CORS só para o painel, `POST /v1/auth/refresh` recusa `Origin` que não seja do painel, e o IP de rate limit e auditoria vem de `X-Real-IP`, com `X-Forwarded-For` ignorado. A confirmação de que o proxy do Railway sobrescreve `X-Real-IP` enviado pelo cliente segue em aberto (ADR 0005, ponto 5).
 
 ## Painel
 
@@ -316,8 +328,9 @@ de carregamento aparece clara antes de a aplicação montar.
 | Clientes | `LeadsPage` | Leads capturados pelo bot: nome, contato, e-mail, interesse, origem, quando, link para a conversa. A coluna Contato lê `coalesce(leadPhone, leadContact)` — `leadContact` é o campo único de antes da separação entre WhatsApp e e-mail. |
 | Infra › Ambientes | Projetos e ambientes do workspace Railway, com ligar, desligar e agenda por ambiente. | Só admin. Produção e o ambiente da própria API mostram selo de protegido, sem botões. Desligar exige digitar o nome exato do ambiente. |
 | Infra › Custos | Custo do ciclo de cobrança por projeto e ambiente, com projeção de fechamento e o total oficial do Railway ao lado. | Só admin. A divergência entre o cálculo e o total oficial fica visível. |
+| Infra › Integração | Estado do token do Railway (origem, dica dos 4 últimos caracteres, autor, data, acesso), com testar e salvar, verificar, trocar e remover. | Só admin, só em produção para gravar. Salvar e remover pedem a senha do admin. O campo do token não é capturado por gerenciador de senha e não vai para storage do navegador. Com `RAILWAY_API_TOKEN` na variável, a tela só mostra o estado e o aviso. |
 
-Decisões, proteções e riscos da área Infra estão em `docs/adr/0004-infra-railway-no-painel.md`.
+Decisões, proteções e riscos da área Infra estão em `docs/adr/0004-infra-railway-no-painel.md`, e o token configurável pelo painel em `docs/adr/0005-token-do-railway-no-painel.md`.
 
 **A tela composta é o padrão de consumo** (`pluggable-module.md` §4): o pacote entra inteiro,
 customizado por `labels` e slots. Nada de fork.
@@ -376,13 +389,14 @@ Postgres e Redis. Passo a passo, tabela de variáveis e verificação pós-deplo
   pelo shell do serviço.
 - `style-src` ainda carrega `'unsafe-inline'` nos dois frontends — divergência registrada em
   `docs/SECURITY.md` com o encaminhamento.
-- **Módulo Infra.** Só a `api` lê as variáveis `RAILWAY_*`, e só a `api` de produção recebe `RAILWAY_API_TOKEN`. Procedimento de token e ordem de rollout em `docs/deploy-railway.md`, seção 11.
+- **Módulo Infra.** Só a `api` lê as variáveis `RAILWAY_*` e `INFRA_SECRET_ENCRYPTION_KEY`. O token de workspace é configurado pelo painel (*Infra › Integração*, cifrado no banco) ou, alternativamente, por `RAILWAY_API_TOKEN` na `api` de produção, que trava o painel. Procedimento e ordem de rollout em `docs/deploy-railway.md`, seção 11.
 
 | Variável | Obrigatória quando | Default | Nota |
 |---|---|---|---|
-| `RAILWAY_API_TOKEN` | opcional | vazio | token de workspace; vazio desliga o módulo Infra (`503 INFRA_NOT_CONFIGURED`); recusado fora de ENV=production |
-| `RAILWAY_WORKSPACE_ID` | `RAILWAY_API_TOKEN` definido | vazio | id do workspace do Railway |
-| `RAILWAY_ENVIRONMENT_ID` | `RAILWAY_API_TOKEN` definido | vazio | injetada pelo próprio Railway; sem ela a proteção do ambiente de produção não funciona |
+| `RAILWAY_API_TOKEN` | opcional | vazio | token de workspace pela variável; se existir, vale e trava o painel (`409`); recusado fora de ENV=production |
+| `INFRA_SECRET_ENCRYPTION_KEY` | para salvar o token pelo painel | vazio | base64 de exatamente 32 bytes (`openssl rand -base64 32`); só ENV=production; diferente de `PANEL_JWT_SECRET`; sem ela `PUT` responde `503 INFRA_SECRET_KEY_MISSING` |
+| `RAILWAY_WORKSPACE_ID` | com `INFRA_SECRET_ENCRYPTION_KEY` ou `RAILWAY_API_TOKEN` | vazio | id do workspace do Railway; o token precisa enxergar exatamente este id |
+| `RAILWAY_ENVIRONMENT_ID` | com `INFRA_SECRET_ENCRYPTION_KEY` ou `RAILWAY_API_TOKEN` | vazio | injetada pelo próprio Railway; sem ela a proteção do ambiente de produção não funciona |
 | `RAILWAY_MANAGED_ENVIRONMENT_PATTERN` | nunca (opcional) | `staging` | expressão regular dos ambientes que o painel pode ligar e desligar; inválida falha no boot |
 | `RAILWAY_DATABASE_WAIT_SECONDS` | nunca (opcional) | `120` | tempo de espera pelo banco ao ligar; entre 10 e 600 |
 

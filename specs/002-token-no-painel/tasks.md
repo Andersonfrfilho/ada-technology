@@ -107,7 +107,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
 - [ ] **T6.1 API real ponta a ponta.** Postgres + Redis descartáveis, `ENV=production`, chave de teste, `RAILWAY_WORKSPACE_ID` e
   `RAILWAY_ENVIRONMENT_ID` de teste: `PUT` com **isca** é recusado pelo Railway real e **não grava** (sem escrita no Railway);
   sem chave 503; fora de produção 403; varredura de stdout/stderr, banco e respostas sem a isca.
-- [ ] **T6.2 Documentação.** ADR 0005 final, `ai-context.md`, `docs/deploy-railway.md` §11 (configurar pelo painel; chave e
+- [x] **T6.2 Documentação.** ADR 0005 final, `ai-context.md`, `docs/deploy-railway.md` §11 (configurar pelo painel; chave e
   `RAILWAY_WORKSPACE_ID` como pré-requisitos; **corrigir o caminho de criação do token** para `railway.com/account/tokens` com
   o seletor de workspace), `SECURITY.md` (achado datado: token no banco cifrado, rotação e perda da chave, "remover não revoga",
   o que a auditoria não cobre).

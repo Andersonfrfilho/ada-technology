@@ -369,30 +369,52 @@ o sintoma classico de um `API_ORIGIN` copiado junto com o ambiente duplicado.
 ## 11. Modulo Infra (token de workspace)
 
 A area Infra do painel liga e desliga ambientes de staging e mostra o custo do workspace Railway.
-Ela fala com o Railway pela API GraphQL, com um **token de workspace**. As decisoes e a agenda
-estao em `docs/adr/0004-infra-railway-no-painel.md`; o que o token permite e o procedimento de
-rotacao e de vazamento estao em `docs/SECURITY.md`, achado de 2026-10-09.
+Ela fala com o Railway pela API GraphQL, com um **token de workspace**. As decisoes da agenda estao em
+`docs/adr/0004-infra-railway-no-painel.md`; o token configurado pelo painel, em
+`docs/adr/0005-token-do-railway-no-painel.md`. O que o token permite e os procedimentos de rotacao e de
+vazamento estao em `docs/SECURITY.md`, achado de 2026-10-09.
 
 ### Criar o token
 
-1. No Railway, abrir as configuracoes do workspace e a aba de tokens.
-2. Criar um token de **workspace**. Token de projeto nao serve: ele enxerga um ambiente so
-   (ADR 0004, D1).
+1. Entrar em `railway.com/account/tokens` e, no seletor de workspace da pagina, escolher o workspace
+   `AdA Technology`. O token tem de ser criado com esse workspace selecionado.
+2. Criar um token de **workspace**. Token de **conta** e recusado pela Ada como amplo demais (a query `me`
+   responde para ele). Token de **projeto** nao serve: ele enxerga um ambiente so (ADR 0004, D1).
+
+### Configurar pelo painel
+
+Pre-requisitos na `api` de producao, antes do token (sem eles a tela responde `503`):
+
+1. `INFRA_SECRET_ENCRYPTION_KEY`: a chave que cifra o token no banco. Gerar com `openssl rand -base64 32` e
+   definir na `api` de producao, pelo painel do Railway. **Nao colar a chave em chat, em commit, em arquivo
+   nem no historico do shell.** Ela nao pode ser igual a `PANEL_JWT_SECRET`.
+2. `RAILWAY_WORKSPACE_ID`: o id do workspace `AdA Technology`, copiado das configuracoes dele. Nao e segredo.
+
+Depois, no painel da Ada, em **Infra › Integração** (so admin): colar o token, digitar a senha do admin e
+clicar em *Testar e salvar*. Se o Railway recusar, nada e gravado e a tela mostra o motivo. Se aceitar,
+Ambientes e Custos funcionam na hora, sem redeploy.
+
+Trocar o token: o mesmo caminho, com o token novo. Remover: na mesma tela, com a senha. Nos dois casos a tela
+avisa que o token antigo **continua valido no Railway** ate ser revogado em `railway.com/account/tokens`.
+Trocar ou remover nao revoga nada no Railway.
 
 ### Onde ele pode existir
 
-- **Somente** na `api` do ambiente `production` do projeto `ada-technology`.
-- Vazio em `staging`, `dev`, `test` e no CI. Por isso a Infra do painel de staging responde
+- **Somente** na `api` do ambiente `production` do projeto `ada-technology`. Fora de producao o painel
+  recusa a gravacao (`403 INFRA_INTEGRATION_PRODUCTION_ONLY`), a tabela nem e lida e a Infra responde
   `503 INFRA_NOT_CONFIGURED`, o que e o esperado.
-- Nunca em arquivo `.env`, em arquivo versionado, em comando, no historico do shell ou num chat.
+- No banco, so cifrado (AES-256-GCM, chave fora do banco). Detalhes em `docs/SECURITY.md`.
+- Nunca em arquivo `.env`, em arquivo versionado, em comando, no historico do shell ou num chat. O caminho
+  previsto e colar o token na tela Infra › Integração, como descrito acima.
 
 ### Variaveis da `api`
 
 | Variavel | Obrigatoria quando | Default | Nota |
 |---|---|---|---|
-| `RAILWAY_API_TOKEN` | opcional | vazio | o token; vazio desliga o modulo; recusado fora de `ENV=production` (a api sobe com erro de configuracao) |
-| `RAILWAY_WORKSPACE_ID` | com `RAILWAY_API_TOKEN` | vazio | id do workspace, copiado das configuracoes do workspace |
-| `RAILWAY_ENVIRONMENT_ID` | com `RAILWAY_API_TOKEN` | vazio | **nao configurar a mao**: o Railway injeta o id do proprio ambiente |
+| `INFRA_SECRET_ENCRYPTION_KEY` | para salvar o token pelo painel | vazio | base64 de exatamente 32 bytes (`openssl rand -base64 32`); so com `ENV=production`; diferente de `PANEL_JWT_SECRET`; sem ela o `PUT` responde `503 INFRA_SECRET_KEY_MISSING` |
+| `RAILWAY_WORKSPACE_ID` | com `INFRA_SECRET_ENCRYPTION_KEY` ou `RAILWAY_API_TOKEN` | vazio | id do workspace, copiado das configuracoes do workspace; o token salvo precisa enxergar exatamente este id |
+| `RAILWAY_API_TOKEN` | nunca (opcional) | vazio | alternativa ao painel: se existir, vale e trava o painel (`409`); recusado fora de `ENV=production` (a api sobe com erro de configuracao) |
+| `RAILWAY_ENVIRONMENT_ID` | com `INFRA_SECRET_ENCRYPTION_KEY` ou `RAILWAY_API_TOKEN` | vazio | **nao configurar a mao**: o Railway injeta o id do proprio ambiente |
 | `RAILWAY_MANAGED_ENVIRONMENT_PATTERN` | nunca | `staging` | regex dos ambientes que o painel pode ligar e desligar; producao fica protegida mesmo que case |
 | `RAILWAY_DATABASE_WAIT_SECONDS` | nunca | `120` | espera pelo banco ao ligar, de 10 a 600 s |
 
@@ -415,13 +437,18 @@ escrita; isso so se confirma no teste manual do roteiro de validacao da spec 001
 
 ### Ordem do rollout
 
-1. Subir a versao com a migration `apps/api-ada/drizzle/0004_dark_mercury.sql`. Ela e aditiva e
-   roda no `preDeployCommand`, como as demais. Sem token, a Infra responde `503` e o `GET
-   /health/ready` continua `200`.
-2. So depois configurar `RAILWAY_API_TOKEN` e `RAILWAY_WORKSPACE_ID` na `api` de producao, e
-   esperar o deploy da `api` terminar. A migration vem antes para que a agenda e o registro de
-   operacoes ja existam quando o modulo comecar a usa-los.
-3. Conferir no painel, na area Infra: a lista de projetos carrega, e o custo do ciclo aparece.
+1. Subir a versao com as migrations `apps/api-ada/drizzle/0004_dark_mercury.sql` e
+   `apps/api-ada/drizzle/0005_condemned_inhumans.sql`. Sao aditivas (a `0005` so cria a tabela
+   `infra_integration_secrets`) e rodam no `preDeployCommand`, como as demais. Sem chave e sem token, a
+   Infra responde `503` e o `GET /health/ready` continua `200`.
+2. So depois definir `INFRA_SECRET_ENCRYPTION_KEY` e `RAILWAY_WORKSPACE_ID` na `api` de producao, e esperar
+   o deploy da `api` terminar. Nao definir `RAILWAY_API_TOKEN`: o token entra pelo painel.
+3. Abrir Infra › Integração, colar o token e salvar, com a senha do admin. Conferir na area Infra que a lista
+   de projetos carrega e que o custo do ciclo aparece, sem redeploy.
+
+Se `RAILWAY_API_TOKEN` ja estiver configurada (rollout da spec 001), a migracao para o painel e: remover a
+variavel na `api` de producao, fazer um redeploy e salvar o mesmo token pelo painel. Enquanto a variavel
+existir, ela vale e trava o painel (ADR 0005, D6).
 
 A `api` de producao precisa continuar com **uma unica replica**: o scheduler da agenda roda dentro
 dela (ADR 0004, D3).
