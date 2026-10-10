@@ -393,6 +393,10 @@ Sufixo de papel no arquivo (`*.use-case.ts`, `*.controller.ts`, `*.constant.ts`,
 try/catch (o filtro global do router responde, e `MetaWhatsAppError` tem ramo próprio lá); cabeçalho
 de copyright em todo arquivo-fonte; nenhuma PII em log.
 
+Fronteira de origem e IP (`infra/http`): CORS com `Allow-Credentials` só para `CORS_ALLOWED_ORIGINS`
+(origem só do widget recebe CORS sem credenciais); `POST /v1/auth/refresh` exige `Origin` do painel; o IP do
+cliente vem de `X-Real-IP` (Railway), nunca de `X-Forwarded-For`, com o socket como reserva.
+
 ## Comandos
 
 ```bash

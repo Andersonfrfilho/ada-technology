@@ -159,3 +159,13 @@ ser atendido dentro do prazo que a propria politica anuncia.
 um caso de uso de exclusao por titular que apague lead, conversa e mensagens numa transacao,
 deixando so o registro de que a exclusao ocorreu. Enquanto nao existir, todo pedido de exclusao
 precisa virar tarefa rastreada — nao pode morrer numa conversa de WhatsApp.
+
+## 2026-10-09 — CORS com credenciais, refresh e IP do cliente (RF14)
+
+**Corrigido no código; verificação em navegador real e na Railway pendente.** `Access-Control-Allow-Credentials`
+só sai para origens de `CORS_ALLOWED_ORIGINS` (painel); origens só do widget recebem o CORS sem credenciais.
+`POST /v1/auth/refresh` responde 401 `AGENT_NOT_AUTHENTICATED` se `Origin` não for do painel. O IP de rate limit e
+auditoria vem de `X-Real-IP` (que a Railway documenta como o cliente remoto), com `X-Forwarded-For` ignorado.
+
+**Risco residual:** origem listada nas DUAS variáveis continua com credenciais (escolha do operador); em
+`ENV=production` o boot loga um `warn` com as origens em comum. Fora do painel não deve haver origem repetida.

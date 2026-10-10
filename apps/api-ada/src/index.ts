@@ -8,6 +8,7 @@
 
 import { closeRedis } from '@/infra/cache/redisClient';
 import { environment } from '@/infra/config/environment';
+import { buildOriginOverlapWarning } from '@/infra/config/originOverlap';
 import { closeDatabase } from '@/infra/database/client';
 import { createRouter, type Route } from '@/infra/http/router';
 import { startScheduler } from '@/infra/scheduler/scheduler';
@@ -144,6 +145,15 @@ if (railwayGateway) {
   } catch (error) {
     logger.error({ message: 'Falha ao recuperar operacoes de infra interrompidas', source: SOURCE, meta: { error: String(error) } });
   }
+}
+
+const originOverlap = buildOriginOverlapWarning({
+  env: environment.ENV,
+  panelOrigins: environment.CORS_ALLOWED_ORIGINS,
+  widgetOrigins: environment.WIDGET_ALLOWED_ORIGINS,
+});
+if (originOverlap) {
+  logger.warn({ message: originOverlap.message, source: SOURCE, meta: { origins: originOverlap.origins } });
 }
 
 logger.info({

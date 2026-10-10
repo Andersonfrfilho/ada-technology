@@ -145,5 +145,5 @@ Credenciais de CORS só para o painel; `refresh` recusa `Origin` que não seja d
 2. Se o Railway responde igual a workspace alheio e inexistente, um código só.
 3. Aviso por e-mail aos admins quando a integração muda (módulo de notificação já existe).
 4. Pedir a mesma confirmação por senha na criação e na promoção de admin, para a D2 proteger de fato contra sessão roubada.
-5. IP confiável para rate limit e auditoria (hoje o primeiro valor de `X-Forwarded-For`): trocar só depois de confirmar o cabeçalho do proxy do Railway.
+5. IP confiável para rate limit e auditoria: a documentação do Railway diz que `X-Real-IP` identifica o IP do cliente e a API passou a usá-lo (T2.1); **falta conferir no ambiente real que o proxy sobrescreve um `X-Real-IP` enviado pelo cliente** (um `curl` com `X-Real-IP` falso).
 6. 13 achados `high` do `bun audit` (fora do caminho do token).

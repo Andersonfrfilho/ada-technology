@@ -49,7 +49,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
 ## Fase 2 — Pré-requisitos de segurança (achados da revisão)
 > 🤖 Modelo: `sonnet`
 
-- [ ] **T2.1 RF14: CORS e refresh.** Primeiro um **teste de não regressão do widget** (as rotas do widget com a origem do
+- [x] **T2.1 RF14: CORS e refresh.** Primeiro um **teste de não regressão do widget** (as rotas do widget com a origem do
   widget funcionam, antes de mudar nada). Depois: CORS com credenciais só para `CORS_ALLOWED_ORIGINS`; `POST /auth/refresh`
   recusa `Origin` fora do painel. Conferir na **documentação do Railway** qual cabeçalho do proxy é confiável para o IP;
   só mudar a origem do IP se confirmado, senão registrar como risco. Aceite: testes + API real (origem do widget sem
