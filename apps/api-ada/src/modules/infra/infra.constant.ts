@@ -128,3 +128,8 @@ export const INFRA_SCHEDULE_ACTION = {
   POWER_OFF: 'power_off',
   NONE: 'none',
 } as const;
+
+export const INFRA_INTEGRATION_PROVIDER = {
+  RAILWAY: 'railway',
+} as const;
+export type InfraIntegrationProvider = (typeof INFRA_INTEGRATION_PROVIDER)[keyof typeof INFRA_INTEGRATION_PROVIDER];

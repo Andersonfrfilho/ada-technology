@@ -39,7 +39,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
 - [x] **T1.2 Variáveis de ambiente.** `INFRA_SECRET_ENCRYPTION_KEY` com as regras do RF4 (base64 de 32 bytes; recusada fora
   de `ENV=production`; diferente de `PANEL_JWT_SECRET`; exige `RAILWAY_WORKSPACE_ID` e `RAILWAY_ENVIRONMENT_ID`). Aceite:
   testes de cada regra e nenhum valor de chave em mensagem de erro.
-- [ ] **T1.3 Tabela e repositório.** `infra_integration_secrets` (plan §2.2), migration `0005` **só aditiva** (parar e
+- [x] **T1.3 Tabela e repositório.** `infra_integration_secrets` (plan §2.2), migration `0005` **só aditiva** (parar e
   perguntar se o gerador produzir `DROP`/`ALTER`), `DrizzleInfraIntegrationRepository` com `SELECT … FOR UPDATE`. Aceite:
   teste temporário contra Postgres 17 **descartável** (migration do zero, `provider` único, `ciphertext` sem a isca,
   adulterar 1 byte e abrir falha, corrida de dois `upsert`), removido ao fim.
