@@ -366,7 +366,7 @@ export const recordAuditLog = new RecordAuditLogUseCase();
 const INFRA_SOURCE = 'modules.infra';
 
 /** Só ids, códigos e contagens chegam aqui; o logger da Ada ainda redige o que for sensível. */
-const infraLogger: InfraLogger = {
+export const infraLogger: InfraLogger = {
   info: (message, meta) => logger.info({ message, source: INFRA_SOURCE, meta: { ...meta } }),
   error: (message, meta) => logger.error({ message, source: INFRA_SOURCE, meta: { ...meta } }),
 };

@@ -66,6 +66,8 @@ export type Route = {
   readonly rateLimit?: RateLimitRule;
   /** Sem `auth` a rota e publica — o painel declara `agent`, e o que so o dono configura, `admin`. */
   readonly auth?: AuthRequirement;
+  /** Resposta com segredo ou estado sensivel: `Cache-Control: no-store` em sucesso e em erro. */
+  readonly isNoStore?: boolean;
 };
 
 type CompiledRoute = Route & {
@@ -129,12 +131,19 @@ export function createRouter({ routes, authenticate }: CreateRouterParams) {
         params[name] = decodeURIComponent(match[index + 1] ?? '');
       });
 
+      // O `no-store` entra aqui, e nao no handler, para cobrir tambem 401, 403, 429 e erro lancado.
+      const finalize = (response: Response): Response => {
+        const finalized = withHeaders(response, corsHeaders, traceId);
+        if (route.isNoStore) finalized.headers.set('Cache-Control', 'no-store');
+        return finalized;
+      };
+
       try {
         const denial = await denyByRateLimit({ route, identity: clientAddress });
-        if (denial) return withHeaders(denial, corsHeaders, traceId);
+        if (denial) return finalize(denial);
 
         const authorization = await authorizeRoute({ request, route, authenticate });
-        if (authorization.denial) return withHeaders(authorization.denial, corsHeaders, traceId);
+        if (authorization.denial) return finalize(authorization.denial);
 
         const agent = authorization.agent;
         const response = await route.handler({
@@ -145,10 +154,10 @@ export function createRouter({ routes, authenticate }: CreateRouterParams) {
           clientAddress,
           ...(agent ? { agent } : {}),
         });
-        return withHeaders(response, corsHeaders, traceId);
+        return finalize(response);
       } catch (error) {
         // Use case nao faz try/catch: todo erro chega aqui, e so aqui vira resposta.
-        return withHeaders(handleUncaughtError({ error, traceId, path: url.pathname }), corsHeaders, traceId);
+        return finalize(handleUncaughtError({ error, traceId, path: url.pathname }));
       }
     }
 

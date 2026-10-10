@@ -46,6 +46,12 @@ export const RATE_LIMIT = {
   PANEL_INFRA_POWER: { limit: 3, windowSeconds: ONE_MINUTE },
   PANEL_INFRA_POWER_PER_AGENT: { limit: 6, windowSeconds: ONE_MINUTE },
 
+  // Trocar o token do Railway e confirmar a senha sao raros e caros (probe externo, bcrypt): cinco
+  // por minuto cobrem corrigir um erro de digitacao, e a confirmacao ja tem trava propria por agente.
+  PANEL_INFRA_INTEGRATION_WRITE: { limit: 5, windowSeconds: ONE_MINUTE },
+  // Verificar gasta a cota horaria do token no Railway, entao e mais apertado que escrever.
+  PANEL_INFRA_INTEGRATION_VERIFY: { limit: 3, windowSeconds: ONE_MINUTE },
+
   // Anexo sobe ate 25MB por chamada: mais apertado que o `PANEL_WRITE` porque o custo aqui e banda
   // e disco, nao uma linha no banco. Vinte por minuto cobrem um lote de notas sem virar dreno.
   NOTIFICATION_ATTACHMENT_UPLOAD: { limit: 20, windowSeconds: ONE_MINUTE },

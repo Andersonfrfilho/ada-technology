@@ -86,7 +86,7 @@ e do usuário (T6.4). Se um arquivo do usuário contiver um token, **pare e avis
   `FOR UPDATE`; auditoria tipada; limpeza das quatro chaves Redis e `invalidate()`. Aceite: com fakes, **cada falha antes
   de gravar grava zero**, `configured` × `replaced` correto, token da variável de ambiente não se remove, linha
   ilegível = fail closed.
-- [ ] **T4.2 Rotas e limites.** `buildInfraIntegrationRoutes` + zod, `Cache-Control: no-store`, limites (5/min `PUT`/`DELETE`
+- [x] **T4.2 Rotas e limites.** `buildInfraIntegrationRoutes` + zod, `Cache-Control: no-store`, limites (5/min `PUT`/`DELETE`
   por agente e IP; 3/min `verify`, cache de 30 s). Aceite: 401/403/503/403 produção/403 senha/423/422/409/429/200 e
   varredura com isca de respostas, logs e `audit_logs`.
 

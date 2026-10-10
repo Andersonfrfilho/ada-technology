@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { DrizzleQueryError } from 'drizzle-orm';
 
 import { handleUncaughtError } from '@/infra/http/exceptionFilter';
+import { InfraIntegrationLockedError } from '@/modules/infra/infraIntegration.error';
 
 const DECOY = 'ISCA-TOKEN-0123456789';
 const CIPHERTEXT = 'v1.AAAA.BBBB.CCCC-ciphertext';
@@ -85,5 +86,14 @@ describe('handleUncaughtError com erro desconhecido comum', () => {
 
     expect(entry.meta.errorMessage).toBe('falha comum de teste');
     expect(String(entry.meta.stack)).toContain('falha comum de teste');
+  });
+});
+
+describe('handleUncaughtError com Retry-After', () => {
+  it('erro de dominio com retryAfterSeconds numerico ganha o header Retry-After', () => {
+    const response = handleUncaughtError({ error: new InfraIntegrationLockedError(90), traceId: TRACE_ID, path: PATH });
+
+    expect(response.status).toBe(423);
+    expect(response.headers.get('Retry-After')).toBe('90');
   });
 });
