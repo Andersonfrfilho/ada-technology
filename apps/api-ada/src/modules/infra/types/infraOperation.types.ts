@@ -14,6 +14,7 @@ import type {
   InfraPowerDirection,
   InfraServiceOutcome,
 } from '@/modules/infra/infra.constant';
+import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 import type { RailwayServiceInstance } from '@/modules/infra/types/railwayInventory.types';
 
 export type InfraServiceResultOutcome = InfraServiceOutcome;
@@ -70,6 +71,8 @@ export type PowerEnvironmentResult = { readonly operationId: string };
 
 /** Tudo que o runner em segundo plano precisa, já resolvido pelo `execute`. */
 export type RunOperationParams = {
+  /** O gateway que admitiu a operacao: trocar o token depois do 202 nao muda o que ela usa. */
+  readonly gateway: RailwayGatewayInterface;
   readonly operationId: string;
   readonly projectId: string;
   readonly projectName: string;

@@ -9,6 +9,7 @@
 import {
   UserPlus,
   Bell,
+  KeyRound,
   CalendarClock,
   CircleDollarSign,
   FileText,
@@ -41,6 +42,7 @@ export const PANEL_SECTION = {
   AGENTS: 'usuarios',
   INFRA_ENVIRONMENTS: 'ambientes',
   INFRA_COSTS: 'custos',
+  INFRA_INTEGRATION: 'integracao',
 } as const;
 
 export type PanelSection = (typeof PANEL_SECTION)[keyof typeof PANEL_SECTION];
@@ -135,6 +137,7 @@ export const PANEL_SECTION_GROUPS: readonly PanelSectionGroup[] = [
     items: [
       { section: PANEL_SECTION.INFRA_ENVIRONMENTS, icon: Server, requiresAdmin: true },
       { section: PANEL_SECTION.INFRA_COSTS, icon: CircleDollarSign, requiresAdmin: true },
+      { section: PANEL_SECTION.INFRA_INTEGRATION, icon: KeyRound, requiresAdmin: true },
     ],
   },
 ];

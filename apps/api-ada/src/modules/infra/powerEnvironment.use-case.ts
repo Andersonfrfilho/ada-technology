@@ -35,6 +35,7 @@ import type { InfraOperationRepositoryInterface } from '@/modules/infra/types/in
 import type { InfraLogger, InfraSleep } from '@/modules/infra/types/infraRuntime.types';
 import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
+import type { ResolveGateway } from '@/modules/infra/types/resolveGateway.types';
 import type {
   Admission,
   AdmitParams,
@@ -43,7 +44,7 @@ import type {
 } from '@/modules/infra/types/powerAdmission.types';
 
 export type PowerEnvironmentDependencies = {
-  readonly railwayGateway?: RailwayGatewayInterface;
+  readonly resolveGateway: ResolveGateway;
   readonly cache: InfraCacheInterface;
   readonly operationRepository: InfraOperationRepositoryInterface;
   readonly scheduleRepository: InfraScheduleRepositoryInterface;
@@ -75,11 +76,11 @@ export class PowerEnvironmentUseCase {
   }
 
   async execute(params: PowerEnvironmentParams): Promise<PowerEnvironmentResult> {
-    const railwayGateway = this.requireGateway();
+    const railwayGateway = await this.requireGateway();
     const admission = await this.admitOrAuditDenial({ params, railwayGateway });
     const operation = await this.registerOperation({ params, ...admission });
     await this.outcomeRecorder.invalidateInventory();
-    await this.dispatch({ params, admission, operation });
+    await this.dispatch({ params, admission, operation, gateway: railwayGateway });
 
     return { operationId: operation.id };
   }
@@ -87,7 +88,7 @@ export class PowerEnvironmentUseCase {
   /** Nunca rejeita: qualquer falha marca a operacao como `failed`, e a trava e sempre liberada. */
   async runOperation(params: RunOperationParams): Promise<void> {
     try {
-      const serviceResults = await this.buildRunner().execute({
+      const serviceResults = await this.buildRunner(params.gateway).execute({
         direction: this.dependencies.direction,
         environmentId: params.environmentId,
         services: params.services,
@@ -102,7 +103,7 @@ export class PowerEnvironmentUseCase {
   }
 
   private async dispatch(options: DispatchParams): Promise<void> {
-    const { params, admission, operation } = options;
+    const { params, admission, operation, gateway } = options;
     const { project, environment, lockOwner } = admission;
     const { direction, logger, recordAudit } = this.dependencies;
     await recordInfraAudit({
@@ -117,7 +118,7 @@ export class PowerEnvironmentUseCase {
       }),
     });
 
-    const runParams = buildRunOperationParams({ operationId: operation.id, params, project, environment, lockOwner });
+    const runParams = buildRunOperationParams({ operationId: operation.id, params, project, environment, lockOwner, gateway });
     void this.runOperation(runParams).catch((error: unknown) => {
       logger.error('Falha inesperada no runner de infra', {
         operationId: operation.id,
@@ -167,15 +168,15 @@ export class PowerEnvironmentUseCase {
     return { project, environment, keepOnUntilChange, lockOwner };
   }
 
-  private requireGateway(): RailwayGatewayInterface {
-    const { railwayGateway } = this.dependencies;
+  private async requireGateway(): Promise<RailwayGatewayInterface> {
+    const railwayGateway = await this.dependencies.resolveGateway();
     if (!railwayGateway) throw new InfraNotConfiguredError();
     return railwayGateway;
   }
 
-  private buildRunner(): RunPowerOperation {
+  private buildRunner(railwayGateway: RailwayGatewayInterface): RunPowerOperation {
     const { sleep, databaseWaitSeconds } = this.dependencies;
-    return new RunPowerOperation({ railwayGateway: this.requireGateway(), sleep, databaseWaitSeconds });
+    return new RunPowerOperation({ railwayGateway, sleep, databaseWaitSeconds });
   }
 
   private registerOperation(options: RegisterParams): Promise<InfraOperationRecord> {

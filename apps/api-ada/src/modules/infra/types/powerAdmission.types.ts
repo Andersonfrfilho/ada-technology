@@ -33,4 +33,5 @@ export type DispatchParams = {
   readonly params: PowerEnvironmentParams;
   readonly admission: Admission;
   readonly operation: InfraOperationRecord;
+  readonly gateway: RailwayGatewayInterface;
 };

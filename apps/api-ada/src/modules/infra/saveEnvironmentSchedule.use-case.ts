@@ -18,9 +18,10 @@ import type {
 } from '@/modules/infra/types/infraSchedule.types';
 import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
+import type { ResolveGateway } from '@/modules/infra/types/resolveGateway.types';
 
 export type SaveEnvironmentScheduleDependencies = {
-  readonly railwayGateway?: RailwayGatewayInterface;
+  readonly resolveGateway: ResolveGateway;
   readonly scheduleRepository: InfraScheduleRepositoryInterface;
   readonly recordAudit: Pick<RecordAuditLogUseCase, 'execute'>;
   readonly managedPattern: string;
@@ -33,7 +34,8 @@ export class SaveEnvironmentScheduleUseCase {
   constructor(private readonly dependencies: SaveEnvironmentScheduleDependencies) {}
 
   async execute(params: SaveEnvironmentScheduleParams): Promise<SaveEnvironmentScheduleResult> {
-    const { railwayGateway, scheduleRepository, managedPattern, selfEnvironmentId } = this.dependencies;
+    const { resolveGateway, scheduleRepository, managedPattern, selfEnvironmentId } = this.dependencies;
+    const railwayGateway = await resolveGateway();
     if (!railwayGateway) throw new InfraNotConfiguredError();
 
     const issues = validateScheduleWindow(params);

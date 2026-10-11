@@ -48,6 +48,43 @@ const SENSITIVE_KEYS = buildKeySet([
   'transcript',
 ]);
 
+// Nome que contenha um destes fragmentos e segredo, mesmo sem constar na lista exata (`railwayToken`, `newPassword`).
+const SENSITIVE_KEY_FRAGMENTS: readonly string[] = [
+  'token',
+  'password',
+  'secret',
+  'ciphertext',
+  'encryptionkey',
+  'credential',
+  'bearer',
+  'authorization',
+  'cookie',
+  'jwt',
+  'apikey',
+  'privatekey',
+  'signature',
+  'passwd',
+  'pwd',
+];
+
+// Segredo no VALOR de uma chave inocua (mensagem de erro, URL com credencial): cada padrao troca so o trecho secreto.
+const SECRET_VALUE_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\bBearer\s+\S+/gi, `Bearer ${REDACTED}`],
+  [/(:\/\/)[^\s:@/]+:[^\s@/]+@/g, `$1${REDACTED}@`],
+  [/\b(token|password|secret)=\S+/gi, `$1=${REDACTED}`],
+  [/\beyJ[\w-]+\.[\w-]+\.[\w-]+/g, REDACTED],
+];
+
+export function scrubSecretValues(text: string): string {
+  return SECRET_VALUE_PATTERNS.reduce((scrubbed, [pattern, replacement]) => scrubbed.replace(pattern, replacement), text);
+}
+
+// Excecoes ao fragmento: so o que comprovadamente nao e segredo, uma por linha com o motivo.
+const NON_SECRET_KEYS = buildKeySet([
+  // Ultimos 4 caracteres do token (coluna varchar(4)): serve so para a pessoa reconhecer qual token e.
+  'token-hint',
+]);
+
 const PHONE_KEYS = buildKeySet([
   'phone',
   'phone-number',
@@ -66,6 +103,12 @@ export function maskPhoneNumber(value: string): string {
   return `****${digits.slice(-4)}`;
 }
 
+function isSensitiveKey(normalized: string): boolean {
+  if (SENSITIVE_KEYS.has(normalized)) return true;
+  if (NON_SECRET_KEYS.has(normalized)) return false;
+  return SENSITIVE_KEY_FRAGMENTS.some((fragment) => normalized.includes(fragment));
+}
+
 function redactValue(key: string, value: unknown, depth: number): unknown {
   const normalized = normalizeKey(key);
 
@@ -73,7 +116,7 @@ function redactValue(key: string, value: unknown, depth: number): unknown {
     return typeof value === 'string' ? maskPhoneNumber(value) : REDACTED;
   }
 
-  if (SENSITIVE_KEYS.has(normalized)) {
+  if (isSensitiveKey(normalized)) {
     return REDACTED;
   }
 
@@ -82,6 +125,7 @@ function redactValue(key: string, value: unknown, depth: number): unknown {
 
 function redactUnknown(value: unknown, depth: number): unknown {
   if (depth > MAX_REDACTION_DEPTH) return REDACTED;
+  if (typeof value === 'string') return scrubSecretValues(value);
   if (value === null || typeof value !== 'object') return value;
 
   if (Array.isArray(value)) {
@@ -95,6 +139,7 @@ function redactUnknown(value: unknown, depth: number): unknown {
   return result;
 }
 
+// Limite: o valor so e limpo nos padroes conhecidos (Bearer, user:senha@, token=, JWT); segredo sem forma reconhecivel passa.
 export function redactLogMeta(meta: Record<string, unknown>): Record<string, unknown> {
   return redactUnknown(meta, 0) as Record<string, unknown>;
 }

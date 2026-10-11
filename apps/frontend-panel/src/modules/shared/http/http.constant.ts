@@ -22,6 +22,8 @@ export const PANEL_PATH = {
   INFRA_ENVIRONMENTS: '/v1/panel/infra/environments',
   INFRA_OPERATIONS: '/v1/panel/infra/operations',
   INFRA_COSTS: '/v1/panel/infra/costs',
+  INFRA_INTEGRATION: '/v1/panel/infra/integration',
+  INFRA_INTEGRATION_VERIFY: '/v1/panel/infra/integration/verify',
 } as const;
 
 export const HTTP_METHOD = {

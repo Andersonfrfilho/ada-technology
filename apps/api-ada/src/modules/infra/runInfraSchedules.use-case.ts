@@ -16,9 +16,10 @@ import type { InfraLogger } from '@/modules/infra/types/infraRuntime.types';
 import type { ResolveScheduleActionResult } from '@/modules/infra/types/infraSchedule.types';
 import type { InfraScheduleRepositoryInterface } from '@/modules/infra/types/infraScheduleRepository.interface';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
+import type { ResolveGateway } from '@/modules/infra/types/resolveGateway.types';
 
 type Dependencies = {
-  readonly railwayGateway?: RailwayGatewayInterface;
+  readonly resolveGateway: ResolveGateway;
   readonly scheduleRepository: InfraScheduleRepositoryInterface;
   readonly powerOnEnvironment: PowerUseCase;
   readonly powerOffEnvironment: PowerUseCase;
@@ -40,7 +41,8 @@ export class RunInfraSchedulesUseCase {
   }
 
   async execute(): Promise<void> {
-    const { railwayGateway, scheduleRepository, logger } = this.dependencies;
+    const { resolveGateway, scheduleRepository, logger } = this.dependencies;
+    const railwayGateway = await resolveGateway();
     if (!railwayGateway) return;
 
     await this.recoverInterruptedOperations();

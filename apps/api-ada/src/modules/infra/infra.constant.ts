@@ -86,6 +86,8 @@ export type InfraCostsWindowSource = (typeof INFRA_COSTS_WINDOW_SOURCE)[keyof ty
 
 export const INFRA_INVENTORY_CACHE_KEY = 'infra:inventory';
 export const INFRA_ACCESS_CACHE_KEY = 'infra:access';
+export const INFRA_INTEGRATION_VERIFY_CACHE_KEY = 'infra:integration:verify';
+export const INFRA_INTEGRATION_VERIFY_CACHE_TTL_SECONDS = 30;
 
 export const INFRA_ENVIRONMENT_POWER_STATE = {
   RUNNING: 'running',
@@ -128,3 +130,8 @@ export const INFRA_SCHEDULE_ACTION = {
   POWER_OFF: 'power_off',
   NONE: 'none',
 } as const;
+
+export const INFRA_INTEGRATION_PROVIDER = {
+  RAILWAY: 'railway',
+} as const;
+export type InfraIntegrationProvider = (typeof INFRA_INTEGRATION_PROVIDER)[keyof typeof INFRA_INTEGRATION_PROVIDER];

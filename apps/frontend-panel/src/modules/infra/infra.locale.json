@@ -153,6 +153,124 @@
       "DISK_USAGE_GB": "Disco"
     }
   },
+  "integration": {
+    "title": "Integração",
+    "subtitle": "Token do Railway que o painel usa para listar, ligar e desligar ambientes e ler custos.",
+    "loading": "Carregando integração...",
+    "loadFailed": "Não foi possível carregar a integração.",
+    "retry": "Tentar de novo",
+    "status": {
+      "title": "Situação atual",
+      "source": "Origem do token",
+      "state": "Estado",
+      "token": "Token",
+      "tokenHint": "terminado em ••••{hint}",
+      "workspace": "Workspace",
+      "workspaceNone": "Não informado",
+      "lastChange": "Última alteração",
+      "updated": "Alterado por {name} em {moment} (horário de Brasília)",
+      "updatedAnonymous": "Alterado em {moment} (horário de Brasília)",
+      "access": "Acesso ao Railway",
+      "accessUnknown": "Ainda não verificado",
+      "verify": "Verificar acesso",
+      "verifying": "Verificando...",
+      "verifyCooldown": "Muitas verificações seguidas. Aguarde um pouco antes de tentar de novo."
+    },
+    "sources": {
+      "panel": "Painel",
+      "environment": "Variável de ambiente do servidor",
+      "none": "Nenhuma"
+    },
+    "states": {
+      "not_configured": {
+        "title": "Nenhum token configurado",
+        "action": "Informe um token de workspace do Railway para ativar o módulo de infraestrutura."
+      },
+      "configured": {
+        "title": "Token configurado",
+        "action": "Use Verificar acesso para confirmar que o Railway ainda o aceita."
+      },
+      "key_missing": {
+        "title": "Chave de cifra ausente",
+        "action": "A chave de cifra não está configurada no servidor. Peça a quem administra o servidor para defini-la; até lá o token salvo não pode ser usado."
+      },
+      "key_mismatch": {
+        "title": "A chave de cifra mudou",
+        "action": "A chave de cifra mudou depois que o token foi salvo. Informe o token de novo."
+      },
+      "secret_unreadable": {
+        "title": "Token salvo ilegível",
+        "action": "O token salvo não pôde ser lido (dado corrompido ou alterado). Informe o token de novo."
+      },
+      "workspace_mismatch": {
+        "title": "Workspace diferente",
+        "action": "O token salvo pertence a outro workspace que o configurado no servidor. Informe o token do workspace correto."
+      },
+      "store_unavailable": {
+        "title": "Armazenamento indisponível",
+        "action": "Não foi possível ler o token salvo agora. Tente de novo em instantes; se persistir, avise quem administra o servidor."
+      }
+    },
+    "access": {
+      "ok": "Acesso confirmado",
+      "token_invalid": "Token inválido",
+      "billing_unavailable": "Cobrança ilegível",
+      "unavailable": "Railway indisponível"
+    },
+    "notices": {
+      "revokePrefix": "Trocar ou remover o token aqui não revoga o token no Railway. Revogue o antigo em",
+      "revokeSuffix": ".",
+      "externalLink": "(abre em outra aba)",
+      "environmentManaged": "O token vem de uma variável de ambiente do servidor, que tem prioridade; o painel não pode alterá-lo.",
+      "environmentAlsoPresent": "Há também um token salvo no painel que está sendo ignorado."
+    },
+    "form": {
+      "titleNew": "Informar token",
+      "titleReplace": "Trocar token",
+      "description": "Use um token de workspace do Railway. Tokens de conta são recusados. O token só é salvo depois que o Railway o aceitar.",
+      "workspaceLabel": "Workspace",
+      "workspaceHint": "Definido na configuração do servidor; não pode ser alterado aqui.",
+      "tokenLabel": "Token do Railway",
+      "tokenHint": "De 16 a 128 caracteres: letras, números, hífen e sublinhado.",
+      "showToken": "Mostrar token",
+      "hideToken": "Ocultar token",
+      "passwordLabel": "Sua senha do painel",
+      "passwordHint": "Confirma que é você. Erros seguidos bloqueiam esta função por 15 minutos.",
+      "submit": "Testar e salvar",
+      "submitting": "Testando e salvando...",
+      "saved": "Token testado e salvo. Os campos foram limpos.",
+      "tokenIssues": {
+        "empty": "Informe o token.",
+        "tooShort": "O token é curto demais.",
+        "tooLong": "O token é longo demais.",
+        "invalidCharacters": "O token tem caracteres ou espaços que não são aceitos."
+      }
+    },
+    "remove": {
+      "open": "Remover token",
+      "title": "Remover o token do painel",
+      "description": "O módulo de infraestrutura volta a ficar sem credencial e as agendas deixam de agir. Remover aqui não revoga o token no Railway: revogue-o em",
+      "descriptionSuffix": ".",
+      "passwordLabel": "Sua senha do painel",
+      "confirm": "Remover token",
+      "confirming": "Removendo...",
+      "cancel": "Cancelar",
+      "removed": "Token removido."
+    },
+    "errors": {
+      "INFRA_SECRET_KEY_MISSING": "A chave de cifra não está configurada no servidor, então o token não pode ser salvo. Peça a quem administra o servidor para configurá-la.",
+      "INFRA_INTEGRATION_PRODUCTION_ONLY": "A configuração do token pelo painel só existe em produção. Neste ambiente, o token vem da configuração do servidor.",
+      "INFRA_INTEGRATION_PASSWORD_INVALID": "Senha incorreta. Confira e tente de novo; erros seguidos bloqueiam esta função por 15 minutos.",
+      "INFRA_INTEGRATION_LOCKED": "Esta função foi bloqueada por 15 minutos depois de senhas incorretas. Por segurança, suas sessões foram encerradas: você precisará entrar de novo.",
+      "INFRA_INTEGRATION_TOKEN_REJECTED": "O Railway recusou este token. Confira se ele foi copiado inteiro e se não foi revogado.",
+      "INFRA_INTEGRATION_TOKEN_TOO_BROAD": "Este é um token de conta, com acesso amplo demais. Crie um token de workspace e informe-o aqui.",
+      "INFRA_INTEGRATION_WORKSPACE_NOT_FOUND": "O token não alcança o workspace configurado no servidor. Use um token criado nesse workspace.",
+      "INFRA_INTEGRATION_ENVIRONMENT_MANAGED": "O token vem de uma variável de ambiente do servidor e não pode ser alterado pelo painel.",
+      "INFRA_NOT_CONFIGURED": "O módulo de infraestrutura ainda não tem token configurado.",
+      "VALIDATION_FAILED": "Os dados enviados não foram aceitos. Confira o token e a senha.",
+      "NETWORK_UNREACHABLE": "Sem conexão com o servidor. Verifique sua internet e tente de novo."
+    }
+  },
   "errors": {
     "INFRA_NOT_CONFIGURED": "A integração com o Railway não está configurada neste servidor.",
     "INFRA_ENVIRONMENT_PROTECTED": "Este ambiente é protegido e não pode ser ligado ou desligado pelo painel.",

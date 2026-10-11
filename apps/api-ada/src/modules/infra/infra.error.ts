@@ -81,12 +81,14 @@ export class RailwayRequestFailedError extends DomainError {
 
 /** O Railway respondeu, mas recusou: `isAuthFailure` separa token invalido de qualquer outra recusa. */
 export class RailwayRejectedError extends RailwayRequestFailedError {
-  constructor(params: { readonly operation: string; readonly isAuthFailure: boolean }) {
+  constructor(params: { readonly operation: string; readonly isAuthFailure: boolean; readonly isNotFound?: boolean }) {
     super(params.operation);
     this.isAuthFailure = params.isAuthFailure;
+    this.isNotFound = params.isNotFound ?? false;
   }
 
   readonly isAuthFailure: boolean;
+  readonly isNotFound: boolean;
 }
 
 export class RailwayRateLimitedError extends DomainError {

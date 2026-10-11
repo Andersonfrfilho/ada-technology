@@ -43,7 +43,7 @@ function buildHarness(params: { readonly environmentName?: string; readonly isCo
     },
   });
   const useCase = new SaveEnvironmentScheduleUseCase({
-    ...(params.isConfigured === false ? {} : { railwayGateway: harness.gateway }),
+    resolveGateway: async () => (params.isConfigured === false ? undefined : harness.gateway),
     scheduleRepository: harness.scheduleRepository,
     recordAudit: harness.dependencies.recordAudit,
     managedPattern: 'staging',

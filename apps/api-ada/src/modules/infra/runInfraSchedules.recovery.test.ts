@@ -32,7 +32,7 @@ function buildSetup(params: { readonly clock: { now: Date } }) {
     now: () => params.clock.now,
   });
   const useCase = new RunInfraSchedulesUseCase({
-    railwayGateway: harness.gateway,
+    resolveGateway: async () => harness.gateway,
     scheduleRepository: harness.scheduleRepository,
     powerOnEnvironment: { execute: async () => ({ operationId: 'unused' }) },
     powerOffEnvironment: { execute: async () => ({ operationId: 'unused' }) },

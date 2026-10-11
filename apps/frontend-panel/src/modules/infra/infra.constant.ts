@@ -75,6 +75,7 @@ export const INFRA_ERROR_CODE = {
 export const INFRA_QUERY_KEY = {
   ENVIRONMENTS: 'infra-environments',
   COSTS: 'infra-costs',
+  INTEGRATION: 'infra-integration',
 } as const;
 
 export const INFRA_POLL_INTERVAL_MS = 15_000;

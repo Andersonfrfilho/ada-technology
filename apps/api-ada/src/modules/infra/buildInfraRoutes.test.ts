@@ -109,7 +109,7 @@ function buildSetup(params: {
   const routes = buildInfraRoutes({
     consumeRateLimit: params.consumeRateLimit ?? (async () => ({ isAllowed: true })),
     listInfraEnvironments: new ListInfraEnvironmentsUseCase({
-      ...(params.isConfigured === false ? {} : { railwayGateway: harness.gateway }),
+      resolveGateway: async () => (params.isConfigured === false ? undefined : harness.gateway),
       cache: harness.cache,
       operationRepository: harness.repository,
       scheduleRepository: harness.scheduleRepository,
@@ -121,13 +121,13 @@ function buildSetup(params: {
     powerOnEnvironment: new PowerOnEnvironmentUseCase(harness.dependencies),
     getInfraOperation: new GetInfraOperationUseCase({ operationRepository: harness.repository }),
     getInfraCosts: new GetInfraCostsUseCase({
-      ...(params.isConfigured === false ? {} : { railwayGateway: harness.gateway }),
+      resolveGateway: async () => (params.isConfigured === false ? undefined : harness.gateway),
       cache: harness.cache,
       sleep: async () => {},
       now: () => new Date('2026-10-09T12:00:00Z'),
     }),
     saveEnvironmentSchedule: new SaveEnvironmentScheduleUseCase({
-      ...(params.isConfigured === false ? {} : { railwayGateway: harness.gateway }),
+      resolveGateway: async () => (params.isConfigured === false ? undefined : harness.gateway),
       scheduleRepository: harness.scheduleRepository,
       recordAudit: harness.dependencies.recordAudit,
       managedPattern: 'staging',
