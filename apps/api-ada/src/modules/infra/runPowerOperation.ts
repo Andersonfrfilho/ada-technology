@@ -20,6 +20,7 @@ import type { InfraSleep } from '@/modules/infra/types/infraRuntime.types';
 import type { RailwayServiceInstance } from '@/modules/infra/types/railwayInventory.types';
 import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
 import { waitForDatabases } from '@/modules/infra/waitForDatabases';
+import { waitForServicesStopped } from '@/modules/infra/waitForServicesStopped';
 import { ERROR_CODES } from '@/shared/errors/codes';
 
 type Dependencies = {
@@ -41,6 +42,8 @@ type RunGroupParams = {
   readonly handler: ServiceHandler;
   readonly onProgress: () => Promise<void>;
 };
+
+type StopGroupParams = RunGroupParams & { readonly environmentId: string };
 
 type StartServiceParams = {
   readonly service: RailwayServiceInstance;
@@ -81,9 +84,34 @@ export class RunPowerOperation {
   private async powerOff(context: PowerContext): Promise<readonly InfraServiceResult[]> {
     const { databases, applications, params } = context;
     const handler: ServiceHandler = (service) => this.stopService(service);
-    const applicationResults = await this.runGroup({ services: applications, handler, onProgress: params.onProgress });
-    const databaseResults = await this.runGroup({ services: databases, handler, onProgress: params.onProgress });
+    // Verifica cada grupo antes do proximo: banco so cai depois de confirmada a parada das aplicacoes.
+    const { environmentId, onProgress } = params;
+    const applicationResults = await this.stopGroup({ services: applications, handler, onProgress, environmentId });
+    const databaseResults = await this.stopGroup({ services: databases, handler, onProgress, environmentId });
     return [...applicationResults, ...databaseResults];
+  }
+
+  private async stopGroup(params: StopGroupParams): Promise<InfraServiceResult[]> {
+    const { environmentId, onProgress } = params;
+    const accepted = await this.runGroup(params);
+    const stillRunningNames = await waitForServicesStopped({
+      ...this.dependencies,
+      environmentId,
+      serviceNames: accepted
+        .filter((result) => result.outcome === INFRA_SERVICE_OUTCOME.OK)
+        .map((result) => result.serviceName),
+      onProgress,
+    });
+
+    return accepted.map((result) =>
+      stillRunningNames.has(result.serviceName)
+        ? {
+            serviceName: result.serviceName,
+            outcome: INFRA_SERVICE_OUTCOME.FAILED,
+            errorCode: ERROR_CODES.infra.INFRA_SERVICE_NOT_STOPPED,
+          }
+        : result,
+    );
   }
 
   private async powerOn(context: PowerContext): Promise<readonly InfraServiceResult[]> {

@@ -29,7 +29,7 @@ export const INVENTORY_QUERY = `query ListInventory($workspaceId: String!) {
           serviceId serviceName
           source { image repo }
           latestDeployment { id status deploymentStopped instances { status } }
-          activeDeployments { id deploymentStopped }
+          activeDeployments { id deploymentStopped instances { status } }
         } } }
       } } }
     } }
@@ -42,7 +42,7 @@ export const ENVIRONMENT_SERVICES_QUERY = `query EnvironmentServices($id: String
       serviceId serviceName
       source { image repo }
       latestDeployment { id status deploymentStopped instances { status } }
-      activeDeployments { id deploymentStopped }
+      activeDeployments { id deploymentStopped instances { status } }
     } } }
   }
 }`;

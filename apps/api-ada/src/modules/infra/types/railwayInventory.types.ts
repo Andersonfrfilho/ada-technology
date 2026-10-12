@@ -20,6 +20,8 @@ export type RailwayServiceInstance = {
   readonly hasDeployment: boolean;
   readonly isStopped: boolean;
   readonly instanceStatus?: string;
+  /** Marcado como parado, mas alguma instância do deployment ativo ou do último ainda executa. */
+  readonly hasRunningInstance?: boolean;
 };
 
 export type RailwayEnvironment = {
