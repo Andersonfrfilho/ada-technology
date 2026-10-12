@@ -19,8 +19,10 @@ import {
   INFRA_COSTS_STALE_TIME_MS,
   INFRA_ENVIRONMENT_POWER_STATE,
   INFRA_POLL_INTERVAL_MS,
+  INFRA_POWER_POLL_INTERVAL_MS,
   INFRA_QUERY_KEY,
 } from '@/modules/infra/infra.constant';
+import { hasPendingPowerExpectation, registerPowerExpectation } from '@/modules/infra/powerExpectation.util';
 import type {
   InfraCosts,
   ListInfraEnvironmentsResult,
@@ -47,7 +49,10 @@ export function useInfraEnvironments(): UseQueryResult<ListInfraEnvironmentsResu
   return useQuery({
     queryKey: [INFRA_QUERY_KEY.ENVIRONMENTS],
     queryFn: listEnvironments,
-    refetchInterval: (query) => (shouldPollEnvironments(query.state.data) ? INFRA_POLL_INTERVAL_MS : false),
+    refetchInterval: (query) => {
+      if (hasPendingPowerExpectation({ data: query.state.data, now: Date.now() })) return INFRA_POWER_POLL_INTERVAL_MS;
+      return shouldPollEnvironments(query.state.data) ? INFRA_POLL_INTERVAL_MS : false;
+    },
   });
 }
 
@@ -56,6 +61,8 @@ export function usePowerOffEnvironment(): UseMutationResult<PowerEnvironmentResu
 
   return useMutation({
     mutationFn: powerOffEnvironment,
+    onSuccess: (_result, { environmentId }) =>
+      registerPowerExpectation({ environmentId, direction: 'off', now: Date.now() }),
     onSettled: () => queryClient.invalidateQueries({ queryKey: [INFRA_QUERY_KEY.ENVIRONMENTS] }),
   });
 }
@@ -65,6 +72,8 @@ export function usePowerOnEnvironment(): UseMutationResult<PowerEnvironmentResul
 
   return useMutation({
     mutationFn: powerOnEnvironment,
+    onSuccess: (_result, { environmentId }) =>
+      registerPowerExpectation({ environmentId, direction: 'on', now: Date.now() }),
     onSettled: () => queryClient.invalidateQueries({ queryKey: [INFRA_QUERY_KEY.ENVIRONMENTS] }),
   });
 }
