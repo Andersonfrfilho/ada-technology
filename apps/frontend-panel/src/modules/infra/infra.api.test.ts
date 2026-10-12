@@ -75,6 +75,15 @@ describe('infra.api', () => {
     expect(calls[0]?.body).toEqual({ keepOnUntil: '2026-10-09T20:00:00-03:00' });
   });
 
+  it('powerOffEnvironment envia serviceIds quando só alguns serviços são parados', async () => {
+    captureFetch({ operationId: OPERATION_ID });
+
+    await infraApi.powerOffEnvironment({ environmentId: ENVIRONMENT_ID, serviceIds: ['svc-1'] });
+
+    expect(calls[0]?.url.pathname).toBe(`/v1/panel/infra/environments/${ENVIRONMENT_ID}/power-off`);
+    expect(calls[0]?.body).toEqual({ serviceIds: ['svc-1'] });
+  });
+
   it('powerOnEnvironment envia corpo vazio sem keepOnUntil', async () => {
     captureFetch({ operationId: OPERATION_ID });
     await infraApi.powerOnEnvironment({ environmentId: ENVIRONMENT_ID });

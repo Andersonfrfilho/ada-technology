@@ -24,21 +24,26 @@ export async function listEnvironments(): Promise<ListInfraEnvironmentsResult> {
   return panelRequest<ListInfraEnvironmentsResult>({ path: PANEL_PATH.INFRA_ENVIRONMENTS });
 }
 
-export async function powerOffEnvironment({ environmentId }: PowerOffEnvironmentParams): Promise<PowerEnvironmentResult> {
+export async function powerOffEnvironment({
+  environmentId,
+  serviceIds,
+}: PowerOffEnvironmentParams): Promise<PowerEnvironmentResult> {
   return panelRequest<PowerEnvironmentResult>({
     path: `${PANEL_PATH.INFRA_ENVIRONMENTS}/${environmentId}/power-off`,
     method: HTTP_METHOD.POST,
+    ...(serviceIds ? { body: { serviceIds } } : {}),
   });
 }
 
 export async function powerOnEnvironment({
   environmentId,
   keepOnUntil,
+  serviceIds,
 }: PowerOnEnvironmentParams): Promise<PowerEnvironmentResult> {
   return panelRequest<PowerEnvironmentResult>({
     path: `${PANEL_PATH.INFRA_ENVIRONMENTS}/${environmentId}/power-on`,
     method: HTTP_METHOD.POST,
-    body: keepOnUntil ? { keepOnUntil } : {},
+    body: { ...(keepOnUntil ? { keepOnUntil } : {}), ...(serviceIds ? { serviceIds } : {}) },
   });
 }
 
