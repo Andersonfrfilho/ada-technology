@@ -99,18 +99,6 @@ import { notificationAuthResolver } from '@/modules/notification/notificationAut
 import { notificationRecipientResolver } from '@/modules/notification/notificationRecipientResolver';
 import { createPasswordResetNotifier } from '@/modules/notification/passwordResetNotifier';
 import { SendAgentPasswordResetUseCase } from '@/modules/agent/sendAgentPasswordReset.use-case';
-import { DefaultInfraGatewayProvider } from '@adatechnology/infra-module';
-import { DrizzleInfraIntegrationRepository } from '@/modules/infra/DrizzleInfraIntegrationRepository';
-import { DrizzleInfraOperationRepository } from '@/modules/infra/DrizzleInfraOperationRepository';
-import { DrizzleInfraScheduleRepository } from '@/modules/infra/DrizzleInfraScheduleRepository';
-import { GetInfraCostsUseCase } from '@adatechnology/infra-module';
-import { GetInfraOperationUseCase } from '@adatechnology/infra-module';
-import { ListInfraEnvironmentsUseCase } from '@adatechnology/infra-module';
-import { PowerOffEnvironmentUseCase } from '@adatechnology/infra-module';
-import { PowerOnEnvironmentUseCase } from '@adatechnology/infra-module';
-import { SaveEnvironmentScheduleUseCase } from '@adatechnology/infra-module';
-import { RunInfraSchedulesUseCase } from '@adatechnology/infra-module';
-import { RecoverInterruptedInfraOperationsUseCase } from '@adatechnology/infra-module';
 import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
 import { SeedNotificationTemplatesUseCase } from '@/modules/notification/seedNotificationTemplates.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
@@ -131,10 +119,11 @@ import { DrizzleTranscriptRepository } from '@/modules/shared/DrizzleTranscriptR
 import { SimulateInboundMessageUseCase } from '@/modules/simulation/simulateInboundMessage.use-case';
 import { WhatsAppInboundSimulator } from '@/modules/simulation/WhatsAppInboundSimulator';
 import { RedisUserRefreshTokenStore } from '@/modules/user/RedisUserRefreshTokenStore';
-import type { PowerEnvironmentDependencies } from '@adatechnology/infra-module';
-import type { InfraGatewayInterface } from '@adatechnology/infra-contracts';
-import type { ResolveGateway } from '@adatechnology/infra-contracts';
 import type { InfraGatewayProviderLogger } from '@adatechnology/infra-contracts';
+import { createInfraModule } from '@adatechnology/infra-module';
+import { VerifyAgentPasswordUseCase } from '@/modules/agent/verifyAgentPassword.use-case';
+import { RedisFailureCounter } from '@/modules/infra/RedisFailureCounter';
+import { buildInfraRateLimiter } from '@/modules/infra/buildInfraRateLimiter';
 import { logger } from '@/shared/logger';
 
 // Estado inicial de sessao nova. O modulo nao conhece a maquina de estados do produto.
@@ -373,94 +362,42 @@ export const infraLogger: InfraGatewayProviderLogger = {
   warn: (message, meta) => logger.warn({ message, source: INFRA_SOURCE, meta: { ...meta } }),
 };
 
-export const railwayGatewayProvider = new DefaultInfraGatewayProvider({
+export const agentRepository = new DrizzleAgentRepository();
+export const refreshTokens = new RedisRefreshTokenStore();
+
+/**
+ * Infraestrutura de nuvem: o módulo é do SDK (`@adatechnology/infra-module`) e o produto entrega as
+ * portas — conexão, cache, auditoria e conferência de senha do administrador. Vem depois do
+ * `agentRepository` porque a conferência de senha precisa dele.
+ */
+export const infraModule = createInfraModule({
+  db: database as never,
   config: {
     env: environment.ENV,
     environmentToken: environment.RAILWAY_API_TOKEN,
     workspaceId: environment.RAILWAY_WORKSPACE_ID,
     environmentId: environment.RAILWAY_ENVIRONMENT_ID,
     encryptionKeyBase64: environment.INFRA_SECRET_ENCRYPTION_KEY,
+    managedPattern: environment.RAILWAY_MANAGED_ENVIRONMENT_PATTERN,
+    databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
   },
-  integrationRepository: new DrizzleInfraIntegrationRepository(),
-  now: Date.now,
-  logger: infraLogger,
-});
-
-export const resolveGateway: ResolveGateway = () => railwayGatewayProvider.resolve();
-const isGatewayCurrent = (gateway: InfraGatewayInterface): boolean => railwayGatewayProvider.isCurrent(gateway);
-
-const infraCache = new RedisCache();
-const infraOperationRepository = new DrizzleInfraOperationRepository();
-const infraScheduleRepository = new DrizzleInfraScheduleRepository();
-
-export const listInfraEnvironments = new ListInfraEnvironmentsUseCase({
-  resolveGateway,
-  isGatewayCurrent,
-  cache: infraCache,
-  operationRepository: infraOperationRepository,
-  scheduleRepository: infraScheduleRepository,
-  managedPattern: environment.RAILWAY_MANAGED_ENVIRONMENT_PATTERN,
-  selfEnvironmentId: environment.RAILWAY_ENVIRONMENT_ID,
-  databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
-});
-
-const infraPowerDependencies: PowerEnvironmentDependencies = {
-  resolveGateway,
-  cache: infraCache,
-  operationRepository: infraOperationRepository,
-  scheduleRepository: infraScheduleRepository,
-  recordAudit: recordAuditLog,
-  logger: infraLogger,
-  sleep: (milliseconds) => Bun.sleep(milliseconds),
-  managedPattern: environment.RAILWAY_MANAGED_ENVIRONMENT_PATTERN,
-  selfEnvironmentId: environment.RAILWAY_ENVIRONMENT_ID,
-  databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
-  now: () => new Date(),
-};
-
-export const saveEnvironmentSchedule = new SaveEnvironmentScheduleUseCase({
-  resolveGateway,
-  scheduleRepository: infraScheduleRepository,
-  recordAudit: recordAuditLog,
-  managedPattern: environment.RAILWAY_MANAGED_ENVIRONMENT_PATTERN,
-  selfEnvironmentId: environment.RAILWAY_ENVIRONMENT_ID,
-});
-
-export const getInfraCosts = new GetInfraCostsUseCase({
-  resolveGateway,
-  isGatewayCurrent,
-  cache: infraCache,
-  sleep: (milliseconds) => Bun.sleep(milliseconds),
-  now: () => new Date(),
-});
-
-export const getInfraOperation = new GetInfraOperationUseCase({ operationRepository: infraOperationRepository });
-
-export const powerOffEnvironment = new PowerOffEnvironmentUseCase(infraPowerDependencies);
-export const powerOnEnvironment = new PowerOnEnvironmentUseCase(infraPowerDependencies);
-
-export const recoverInterruptedInfraOperations = new RecoverInterruptedInfraOperationsUseCase({
-  operationRepository: infraOperationRepository,
-  recordAudit: recordAuditLog,
-  logger: infraLogger,
-  databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
-  now: () => new Date(),
-});
-
-export const infraSchedules = buildInfraSchedulesTask(
-  new RunInfraSchedulesUseCase({
-    resolveGateway,
-    scheduleRepository: infraScheduleRepository,
-    powerOnEnvironment,
-    powerOffEnvironment,
-    recoverInterruptedOperations: recoverInterruptedInfraOperations,
+  providers: {
+    cache: new RedisCache(),
+    audit: recordAuditLog,
+    passwordVerifier: new VerifyAgentPasswordUseCase({
+      agents: agentRepository,
+      failureCounter: new RedisFailureCounter(),
+      refreshTokens,
+    }),
     logger: infraLogger,
-    now: () => new Date(),
-  }),
-);
+    findAgentName: async (agentId) => (await agentRepository.findById(agentId))?.name,
+    rateLimiter: buildInfraRateLimiter(),
+    sleep: (milliseconds) => Bun.sleep(milliseconds),
+  },
+});
 
-export const agentRepository = new DrizzleAgentRepository();
-export const refreshTokens = new RedisRefreshTokenStore();
+export const infraSchedules = buildInfraSchedulesTask(infraModule.useCases.runInfraSchedules);
+export const recoverInterruptedInfraOperations = infraModule.useCases.recoverInterruptedOperations;
 
 export const authenticateAgent = new AuthenticateAgentUseCase({
   agents: agentRepository,

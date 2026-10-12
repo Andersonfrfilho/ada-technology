@@ -7,30 +7,19 @@
  */
 
 import type { ConsumeRateLimitParams, RateLimitVerdict } from '@/infra/http/rateLimit';
-import type { CostsResult } from '@adatechnology/infra-contracts';
-import type { ListInfraEnvironmentsResult } from '@adatechnology/infra-contracts';
-import type {
-  GetInfraOperationParams,
-  GetInfraOperationResult,
-  PowerEnvironmentParams,
-  PowerEnvironmentResult,
-} from '@adatechnology/infra-contracts';
-import type {
-  SaveEnvironmentScheduleParams,
-  SaveEnvironmentScheduleResult,
-} from '@adatechnology/infra-contracts';
+import type { InfraRoutesDependencies as ModuleRoutesDependencies } from '@adatechnology/infra-contracts';
 
 export type ConsumeRateLimit = (params: ConsumeRateLimitParams) => Promise<RateLimitVerdict>;
 
-export type InfraRoutesDependencies = {
-  readonly listInfraEnvironments: { execute(): Promise<ListInfraEnvironmentsResult> };
-  readonly powerOffEnvironment: { execute(params: PowerEnvironmentParams): Promise<PowerEnvironmentResult> };
-  readonly powerOnEnvironment: { execute(params: PowerEnvironmentParams): Promise<PowerEnvironmentResult> };
-  readonly getInfraOperation: { execute(params: GetInfraOperationParams): Promise<GetInfraOperationResult> };
-  readonly getInfraCosts: { execute(): Promise<CostsResult> };
-  readonly saveEnvironmentSchedule: {
-    execute(params: SaveEnvironmentScheduleParams): Promise<SaveEnvironmentScheduleResult>;
-  };
+export type InfraRoutesDependencies = Pick<
+  ModuleRoutesDependencies,
+  | 'listInfraEnvironments'
+  | 'powerOffEnvironment'
+  | 'powerOnEnvironment'
+  | 'getInfraOperation'
+  | 'getInfraCosts'
+  | 'saveEnvironmentSchedule'
+> & {
   /** Padrão = Redis real; o teste injeta um contador em memória. */
   readonly consumeRateLimit?: ConsumeRateLimit;
 };

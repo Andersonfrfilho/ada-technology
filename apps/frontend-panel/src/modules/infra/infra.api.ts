@@ -18,7 +18,7 @@ import type {
   PowerOnEnvironmentParams,
   SaveEnvironmentScheduleParams,
   SaveEnvironmentScheduleResult,
-} from '@/modules/infra/types/infra.types';
+} from '@adatechnology/infra-ui';
 
 export async function listEnvironments(): Promise<ListInfraEnvironmentsResult> {
   return panelRequest<ListInfraEnvironmentsResult>({ path: PANEL_PATH.INFRA_ENVIRONMENTS });
