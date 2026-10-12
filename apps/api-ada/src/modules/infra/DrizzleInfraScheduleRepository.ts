@@ -10,13 +10,13 @@ import { eq } from 'drizzle-orm';
 
 import { database } from '@/infra/database/client';
 import { infraEnvironmentSchedules } from '@/infra/database/schema';
-import type { InfraScheduleRepositoryInterface } from '@adatechnology/railway-infra-contracts';
+import type { InfraScheduleRepositoryInterface } from '@adatechnology/infra-contracts';
 import type {
   InfraScheduleRecord,
   RecordScheduleEvaluationParams,
   SetKeepOnUntilParams,
   UpsertInfraScheduleParams,
-} from '@adatechnology/railway-infra-contracts';
+} from '@adatechnology/infra-contracts';
 
 export class DrizzleInfraScheduleRepository implements InfraScheduleRepositoryInterface {
   async findByEnvironmentId(environmentId: string): Promise<InfraScheduleRecord | undefined> {

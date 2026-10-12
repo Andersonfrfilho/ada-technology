@@ -277,8 +277,8 @@
     "INFRA_OPERATION_IN_PROGRESS": "Já existe uma operação em andamento neste ambiente. Aguarde terminar.",
     "INFRA_KEEP_ON_UNTIL_REQUIRED": "Fora do horário da agenda, informe até quando manter o ambiente ligado (máximo 24 h).",
     "INFRA_INVALID_SCHEDULE": "Agenda inválida. Confira os dias e os horários (a janela não pode cruzar a meia-noite).",
-    "RAILWAY_REQUEST_FAILED": "O Railway não respondeu como esperado. Tente de novo em instantes.",
-    "RAILWAY_RATE_LIMITED": "O Railway limitou as chamadas. Aguarde um pouco e tente de novo.",
+    "INFRA_PROVIDER_REQUEST_FAILED": "O provedor de infraestrutura não respondeu como esperado. Tente de novo em instantes.",
+    "INFRA_PROVIDER_RATE_LIMITED": "O provedor de infraestrutura limitou as chamadas. Aguarde um pouco e tente de novo.",
     "RATE_LIMITED": "Muitas tentativas seguidas. Aguarde um pouco e tente de novo.",
     "UNKNOWN": "Algo deu errado. Tente de novo."
   }

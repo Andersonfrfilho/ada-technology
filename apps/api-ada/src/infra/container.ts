@@ -99,18 +99,18 @@ import { notificationAuthResolver } from '@/modules/notification/notificationAut
 import { notificationRecipientResolver } from '@/modules/notification/notificationRecipientResolver';
 import { createPasswordResetNotifier } from '@/modules/notification/passwordResetNotifier';
 import { SendAgentPasswordResetUseCase } from '@/modules/agent/sendAgentPasswordReset.use-case';
-import { DefaultRailwayGatewayProvider } from '@adatechnology/railway-infra-module';
+import { DefaultInfraGatewayProvider } from '@adatechnology/infra-module';
 import { DrizzleInfraIntegrationRepository } from '@/modules/infra/DrizzleInfraIntegrationRepository';
 import { DrizzleInfraOperationRepository } from '@/modules/infra/DrizzleInfraOperationRepository';
 import { DrizzleInfraScheduleRepository } from '@/modules/infra/DrizzleInfraScheduleRepository';
-import { GetInfraCostsUseCase } from '@adatechnology/railway-infra-module';
-import { GetInfraOperationUseCase } from '@adatechnology/railway-infra-module';
-import { ListInfraEnvironmentsUseCase } from '@adatechnology/railway-infra-module';
-import { PowerOffEnvironmentUseCase } from '@adatechnology/railway-infra-module';
-import { PowerOnEnvironmentUseCase } from '@adatechnology/railway-infra-module';
-import { SaveEnvironmentScheduleUseCase } from '@adatechnology/railway-infra-module';
-import { RunInfraSchedulesUseCase } from '@adatechnology/railway-infra-module';
-import { RecoverInterruptedInfraOperationsUseCase } from '@adatechnology/railway-infra-module';
+import { GetInfraCostsUseCase } from '@adatechnology/infra-module';
+import { GetInfraOperationUseCase } from '@adatechnology/infra-module';
+import { ListInfraEnvironmentsUseCase } from '@adatechnology/infra-module';
+import { PowerOffEnvironmentUseCase } from '@adatechnology/infra-module';
+import { PowerOnEnvironmentUseCase } from '@adatechnology/infra-module';
+import { SaveEnvironmentScheduleUseCase } from '@adatechnology/infra-module';
+import { RunInfraSchedulesUseCase } from '@adatechnology/infra-module';
+import { RecoverInterruptedInfraOperationsUseCase } from '@adatechnology/infra-module';
 import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
 import { SeedNotificationTemplatesUseCase } from '@/modules/notification/seedNotificationTemplates.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
@@ -131,10 +131,10 @@ import { DrizzleTranscriptRepository } from '@/modules/shared/DrizzleTranscriptR
 import { SimulateInboundMessageUseCase } from '@/modules/simulation/simulateInboundMessage.use-case';
 import { WhatsAppInboundSimulator } from '@/modules/simulation/WhatsAppInboundSimulator';
 import { RedisUserRefreshTokenStore } from '@/modules/user/RedisUserRefreshTokenStore';
-import type { PowerEnvironmentDependencies } from '@adatechnology/railway-infra-module';
-import type { RailwayGatewayInterface } from '@adatechnology/railway-infra-contracts';
-import type { ResolveGateway } from '@adatechnology/railway-infra-contracts';
-import type { RailwayGatewayProviderLogger } from '@adatechnology/railway-infra-contracts';
+import type { PowerEnvironmentDependencies } from '@adatechnology/infra-module';
+import type { InfraGatewayInterface } from '@adatechnology/infra-contracts';
+import type { ResolveGateway } from '@adatechnology/infra-contracts';
+import type { InfraGatewayProviderLogger } from '@adatechnology/infra-contracts';
 import { logger } from '@/shared/logger';
 
 // Estado inicial de sessao nova. O modulo nao conhece a maquina de estados do produto.
@@ -367,13 +367,13 @@ export const recordAuditLog = new RecordAuditLogUseCase();
 const INFRA_SOURCE = 'modules.infra';
 
 /** Só ids, códigos e contagens chegam aqui; o logger da Ada ainda redige o que for sensível. */
-export const infraLogger: RailwayGatewayProviderLogger = {
+export const infraLogger: InfraGatewayProviderLogger = {
   info: (message, meta) => logger.info({ message, source: INFRA_SOURCE, meta: { ...meta } }),
   error: (message, meta) => logger.error({ message, source: INFRA_SOURCE, meta: { ...meta } }),
   warn: (message, meta) => logger.warn({ message, source: INFRA_SOURCE, meta: { ...meta } }),
 };
 
-export const railwayGatewayProvider = new DefaultRailwayGatewayProvider({
+export const railwayGatewayProvider = new DefaultInfraGatewayProvider({
   config: {
     env: environment.ENV,
     environmentToken: environment.RAILWAY_API_TOKEN,
@@ -387,7 +387,7 @@ export const railwayGatewayProvider = new DefaultRailwayGatewayProvider({
 });
 
 export const resolveGateway: ResolveGateway = () => railwayGatewayProvider.resolve();
-const isGatewayCurrent = (gateway: RailwayGatewayInterface): boolean => railwayGatewayProvider.isCurrent(gateway);
+const isGatewayCurrent = (gateway: InfraGatewayInterface): boolean => railwayGatewayProvider.isCurrent(gateway);
 
 const infraCache = new RedisCache();
 const infraOperationRepository = new DrizzleInfraOperationRepository();

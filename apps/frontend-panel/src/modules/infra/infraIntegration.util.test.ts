@@ -105,8 +105,8 @@ describe('resolveIntegrationErrorMessage', () => {
 
   it('usa a mensagem generica para limite de taxa e falha do Railway', () => {
     expect(resolveIntegrationErrorMessage(apiError(INFRA_ERROR_CODE.RATE_LIMITED))).toBe(infraLocale.errors.RATE_LIMITED);
-    expect(resolveIntegrationErrorMessage(apiError(INFRA_ERROR_CODE.RAILWAY_REQUEST_FAILED))).toBe(
-      infraLocale.errors.RAILWAY_REQUEST_FAILED,
+    expect(resolveIntegrationErrorMessage(apiError(INFRA_ERROR_CODE.INFRA_PROVIDER_REQUEST_FAILED))).toBe(
+      infraLocale.errors.INFRA_PROVIDER_REQUEST_FAILED,
     );
   });
 

@@ -8,19 +8,19 @@
 
 import { createRouter, type AuthenticateRequest } from '@/infra/http/router';
 import { buildInfraIntegrationRoutes } from '@/modules/infra/buildInfraIntegrationRoutes';
-import { GetInfraIntegrationUseCase } from '@adatechnology/railway-infra-module';
-import { INFRA_ACCESS_STATUS } from '@adatechnology/railway-infra-contracts';
+import { GetInfraIntegrationUseCase } from '@adatechnology/infra-module';
+import { INFRA_ACCESS_STATUS } from '@adatechnology/infra-contracts';
 import {
   buildCountingGateway,
   buildIntegrationHarness,
   INTEGRATION_AGENT_ID,
   type IntegrationHarnessOptions,
-} from '@adatechnology/railway-infra-module/testing';
-import { expectNoIntegrationLeak } from '@adatechnology/railway-infra-module/testing';
-import { RemoveInfraIntegrationUseCase } from '@adatechnology/railway-infra-module';
-import { SaveInfraIntegrationUseCase } from '@adatechnology/railway-infra-module';
+} from '@adatechnology/infra-module/testing';
+import { expectNoIntegrationLeak } from '@adatechnology/infra-module/testing';
+import { RemoveInfraIntegrationUseCase } from '@adatechnology/infra-module';
+import { SaveInfraIntegrationUseCase } from '@adatechnology/infra-module';
 import type { ConsumeRateLimit } from '@/modules/infra/types/infraRoutes.types';
-import { VerifyInfraIntegrationUseCase } from '@adatechnology/railway-infra-module';
+import { VerifyInfraIntegrationUseCase } from '@adatechnology/infra-module';
 import { AGENT_ROLE } from '@/shared/constants/domain.constant';
 
 export const ROUTES_BASE = 'https://api.ada.test/v1/panel/infra/integration';

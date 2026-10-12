@@ -28,7 +28,7 @@ import {
 import {
   infraIntegrationRemoveBodySchema,
   infraIntegrationSaveBodySchema,
-} from '@adatechnology/railway-infra-contracts';
+} from '@adatechnology/infra-contracts';
 import type { InfraIntegrationRoutesDependencies } from '@/modules/infra/types/infraIntegrationRoutes.types';
 import type { ConsumeRateLimit } from '@/modules/infra/types/infraRoutes.types';
 import { ERROR_CODES } from '@/shared/errors/codes';

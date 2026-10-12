@@ -8,12 +8,12 @@
 
 import type { CacheInterface } from '@adatechnology/meta-whatsapp-contracts';
 
-import type { InfraCacheInterface } from '@adatechnology/railway-infra-contracts';
+import type { InfraCacheInterface } from '@adatechnology/infra-contracts';
 import type {
   ReleaseIfOwnerParams,
   RenewIfOwnerParams,
   SetIfAbsentParams,
-} from '@adatechnology/railway-infra-contracts';
+} from '@adatechnology/infra-contracts';
 import { redis } from '@/infra/cache/redisClient';
 
 const RENEW_IF_OWNER_SCRIPT =

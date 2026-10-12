@@ -10,15 +10,15 @@ import { eq } from 'drizzle-orm';
 
 import { database } from '@/infra/database/client';
 import { infraIntegrationSecrets } from '@/infra/database/schema';
-import { upsertIntegrationRow } from '@adatechnology/railway-infra-module';
-import type { InfraIntegrationProvider } from '@adatechnology/railway-infra-contracts';
+import { upsertIntegrationRow } from '@adatechnology/infra-module';
+import type { InfraIntegrationProvider } from '@adatechnology/infra-contracts';
 import type {
   InfraIntegrationRecord,
   UpsertLockedIntegrationParams,
   UpsertLockedIntegrationResult,
-} from '@adatechnology/railway-infra-contracts';
-import type { InfraIntegrationRepositoryInterface } from '@adatechnology/railway-infra-contracts';
-import type { IntegrationRowOperations } from '@adatechnology/railway-infra-contracts';
+} from '@adatechnology/infra-contracts';
+import type { InfraIntegrationRepositoryInterface } from '@adatechnology/infra-contracts';
+import type { IntegrationRowOperations } from '@adatechnology/infra-contracts';
 
 type Transaction = Parameters<Parameters<typeof database.transaction>[0]>[0];
 

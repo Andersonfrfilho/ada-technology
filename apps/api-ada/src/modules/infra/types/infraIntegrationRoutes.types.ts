@@ -15,7 +15,7 @@ import type {
   SaveInfraIntegrationResult,
   VerifyInfraIntegrationParams,
   VerifyInfraIntegrationResult,
-} from '@adatechnology/railway-infra-contracts';
+} from '@adatechnology/infra-contracts';
 
 export type InfraIntegrationRoutesDependencies = {
   readonly getInfraIntegration: { execute(): Promise<GetInfraIntegrationResult> };

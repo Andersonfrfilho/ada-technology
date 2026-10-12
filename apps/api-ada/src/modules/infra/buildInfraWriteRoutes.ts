@@ -11,7 +11,7 @@ import { jsonData } from '@/infra/http/responses';
 import { AUTH_REQUIREMENT, HTTP_METHOD, requireAgent, type Route } from '@/infra/http/router';
 import { ACTOR_TYPE } from '@/modules/audit/audit.constant';
 import { buildInfraPowerHandler } from '@/modules/infra/buildInfraPowerHandler';
-import { infraEnvironmentParamsSchema, infraScheduleBodySchema } from '@adatechnology/railway-infra-contracts';
+import { infraEnvironmentParamsSchema, infraScheduleBodySchema } from '@adatechnology/infra-contracts';
 import {
   INFRA_ENVIRONMENT_PATH,
   INFRA_POWER_OFF_AGENT_BUCKET,

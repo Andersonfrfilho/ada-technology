@@ -27,7 +27,7 @@ const locale = infraLocale.integration.status;
 function isRateLimited(error: unknown): boolean {
   return (
     error instanceof PanelApiError &&
-    (error.code === INFRA_ERROR_CODE.RATE_LIMITED || error.code === INFRA_ERROR_CODE.RAILWAY_RATE_LIMITED)
+    (error.code === INFRA_ERROR_CODE.RATE_LIMITED || error.code === INFRA_ERROR_CODE.INFRA_PROVIDER_RATE_LIMITED)
   );
 }
 
