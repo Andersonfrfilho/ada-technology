@@ -8,7 +8,7 @@
 
 
 import type { ScheduledTask } from '@/infra/scheduler/scheduler';
-import type { RunInfraSchedulesUseCase } from '@/modules/infra/runInfraSchedules.use-case';
+import type { RunInfraSchedulesUseCase } from '@adatechnology/infra-module';
 
 export const INFRA_SCHEDULES_TASK_NAME = 'infra-schedules';
 export const INFRA_SCHEDULES_CRON_EXPRESSION = '* * * * *';

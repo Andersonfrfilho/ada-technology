@@ -11,7 +11,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   INTEGRATION_PASSWORD,
   type IntegrationHarness,
-} from '@/modules/infra/infraFakes/buildIntegrationHarness';
+} from '@adatechnology/infra-module/testing';
 import {
   ADMIN_IDENTITY,
   OTHER_ADMIN_IDENTITY,
@@ -19,8 +19,8 @@ import {
   buildIntegrationRoutesSetup,
   expectResponseWithoutLeak,
 } from '@/modules/infra/infraFakes/buildIntegrationRoutesSetup';
-import { DECOY_TOKEN } from '@/modules/infra/infraFakes/buildProviderHarness';
-import { PROBE_WORKSPACE_OUTCOME } from '@/modules/infra/probeWorkspace.constant';
+import { DECOY_TOKEN } from '@adatechnology/infra-module/testing';
+import { PROBE_WORKSPACE_OUTCOME } from '@adatechnology/infra-contracts';
 
 const SAVE_BODY = { token: DECOY_TOKEN, password: INTEGRATION_PASSWORD };
 
@@ -104,7 +104,7 @@ describe('rotas de integracao: recusas do dominio', () => {
       setup.harness.state.probeResult = probeResult;
       const response = await setup.handle(put());
 
-      await expectRefusal({ response, status: 503, code: 'RAILWAY_RATE_LIMITED', harness: setup.harness, setup });
+      await expectRefusal({ response, status: 503, code: 'INFRA_PROVIDER_RATE_LIMITED', harness: setup.harness, setup });
       const retryAfter = response.headers.get('Retry-After');
       expect(retryAfter === null || Number(retryAfter) >= 1).toBe(true);
     }

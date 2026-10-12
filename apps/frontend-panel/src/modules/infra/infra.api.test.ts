@@ -8,7 +8,7 @@
 
 import { afterEach, beforeAll, describe, expect, it } from 'bun:test';
 
-import type { InfraEnvironment, ListInfraEnvironmentsResult } from '@/modules/infra/types/infra.types';
+import type { InfraEnvironment, ListInfraEnvironmentsResult } from '@adatechnology/infra-ui';
 
 process.env.VITE_API_BASE_URL = 'http://localhost:3000';
 
@@ -19,12 +19,12 @@ const originalFetch = globalThis.fetch;
 type CapturedCall = { readonly url: URL; readonly method: string | undefined; readonly body: unknown };
 
 let infraApi: typeof import('@/modules/infra/infra.api');
-let shouldPollEnvironments: typeof import('@/modules/infra/infra.hook').shouldPollEnvironments;
+let shouldPollEnvironments: typeof import('@adatechnology/infra-ui').shouldPollEnvironments;
 let calls: CapturedCall[] = [];
 
 beforeAll(async () => {
   infraApi = await import('@/modules/infra/infra.api');
-  ({ shouldPollEnvironments } = await import('@/modules/infra/infra.hook'));
+  ({ shouldPollEnvironments } = await import('@adatechnology/infra-ui'));
 });
 
 afterEach(() => {

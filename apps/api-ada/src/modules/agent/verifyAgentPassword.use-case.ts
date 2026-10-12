@@ -17,7 +17,7 @@ import {
   INFRA_PASSWORD_FAILURE_LIMIT,
   INFRA_PASSWORD_FAILURE_WINDOW_SECONDS,
   INFRA_PASSWORD_LOCK_SECONDS,
-} from '@/modules/infra/infraPasswordLock.constant';
+} from '@adatechnology/infra-contracts';
 import { AGENT_ROLE } from '@/shared/constants/domain.constant';
 
 // Conferido quando o agente não é elegível, para a resposta não revelar o motivo pelo tempo.

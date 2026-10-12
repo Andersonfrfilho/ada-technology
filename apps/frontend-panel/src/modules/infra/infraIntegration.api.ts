@@ -11,7 +11,7 @@ import type {
   RemoveInfraIntegrationParams,
   SaveInfraIntegrationParams,
   VerifyInfraIntegrationResult,
-} from '@/modules/infra/types/infraIntegration.types';
+} from '@adatechnology/infra-ui';
 import { HTTP_METHOD, PANEL_PATH } from '@/modules/shared/http/http.constant';
 import { panelRequest } from '@/modules/shared/http/panelHttpClient';
 

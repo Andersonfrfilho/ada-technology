@@ -6,37 +6,8 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
-import {
-  getInfraCosts,
-  getInfraOperation,
-  listInfraEnvironments,
-  powerOffEnvironment,
-  powerOnEnvironment,
-  saveEnvironmentSchedule,
-} from '@/infra/container';
-import {
-  getInfraIntegration,
-  removeInfraIntegration,
-  saveInfraIntegration,
-  verifyInfraIntegration,
-} from '@/infra/integrationContainer';
+import { infraModule } from '@/infra/container';
 import type { Route } from '@/infra/http/router';
-import { buildInfraIntegrationRoutes } from '@/modules/infra/buildInfraIntegrationRoutes';
-import { buildInfraRoutes } from '@/modules/infra/buildInfraRoutes';
+import { adaptInfraRoutes } from '@/modules/infra/adaptInfraRoutes';
 
-export const infraRoutes: readonly Route[] = [
-  ...buildInfraRoutes({
-    listInfraEnvironments,
-    powerOffEnvironment,
-    powerOnEnvironment,
-    getInfraOperation,
-    getInfraCosts,
-    saveEnvironmentSchedule,
-  }),
-  ...buildInfraIntegrationRoutes({
-    getInfraIntegration,
-    saveInfraIntegration,
-    removeInfraIntegration,
-    verifyInfraIntegration,
-  }),
-];
+export const infraRoutes: readonly Route[] = adaptInfraRoutes(infraModule.routes);

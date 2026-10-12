@@ -44,7 +44,7 @@ describe('redactLogMeta com novos fragmentos de chave', () => {
       state: 'configured',
       source: 'panel',
       keyId: 'abc123',
-      errorName: 'RailwayRateLimitedError',
+      errorName: 'InfraProviderRateLimitedError',
       causeCode: '23505',
       actorAgentId: 'agent-1',
       ipAddress: '10.0.0.1',

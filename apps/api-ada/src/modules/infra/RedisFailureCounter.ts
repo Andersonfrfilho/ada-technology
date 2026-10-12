@@ -7,9 +7,9 @@
  */
 
 import { redis } from '@/infra/cache/redisClient';
-import { INFRA_FAILURES_KEY_PREFIX, INFRA_LOCK_KEY_PREFIX } from '@/modules/infra/infraPasswordLock.constant';
-import type { InfraFailureCounterInterface } from '@/modules/infra/types/infraFailureCounter.interface';
-import type { LockAgentParams, RecordFailureParams } from '@/modules/infra/types/infraFailureCounter.types';
+import { INFRA_FAILURES_KEY_PREFIX, INFRA_LOCK_KEY_PREFIX } from '@adatechnology/infra-contracts';
+import type { InfraFailureCounterInterface } from '@adatechnology/infra-contracts';
+import type { LockAgentParams, RecordFailureParams } from '@adatechnology/infra-contracts';
 
 const RECORD_FAILURE_SCRIPT =
   "local count = redis.call('incr', KEYS[1]) if count == 1 then redis.call('expire', KEYS[1], ARGV[1]) end return count";

@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'bun:test';
 
 import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
-import { INTEGRATION_PASSWORD } from '@/modules/infra/infraFakes/buildIntegrationHarness';
+import { INTEGRATION_PASSWORD } from '@adatechnology/infra-module/testing';
 import {
   ADMIN_IDENTITY,
   COMMON_AGENT_IDENTITY,
@@ -17,7 +17,7 @@ import {
   buildIntegrationRoutesSetup,
   expectResponseWithoutLeak,
 } from '@/modules/infra/infraFakes/buildIntegrationRoutesSetup';
-import { DECOY_TOKEN } from '@/modules/infra/infraFakes/buildProviderHarness';
+import { DECOY_TOKEN } from '@adatechnology/infra-module/testing';
 
 const SAVE_BODY = { token: DECOY_TOKEN, password: INTEGRATION_PASSWORD };
 

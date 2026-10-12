@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { DrizzleQueryError } from 'drizzle-orm';
 
 import { handleUncaughtError } from '@/infra/http/exceptionFilter';
-import { InfraIntegrationLockedError } from '@/modules/infra/infraIntegration.error';
+import { InfraIntegrationLockedError } from '@adatechnology/infra-contracts';
 
 const DECOY = 'ISCA-TOKEN-0123456789';
 const CIPHERTEXT = 'v1.AAAA.BBBB.CCCC-ciphertext';

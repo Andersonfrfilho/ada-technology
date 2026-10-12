@@ -10,11 +10,11 @@ import { beforeAll, describe, expect, it } from 'bun:test';
 
 import { VerifyAgentPasswordUseCase } from '@/modules/agent/verifyAgentPassword.use-case';
 import type { AgentCredentials } from '@/modules/agent/types/agent.types';
-import { FakeFailureCounter } from '@/modules/infra/infraFakes/FakeFailureCounter';
+import { FakeFailureCounter } from '@adatechnology/infra-module/testing';
 import {
   INFRA_PASSWORD_FAILURE_WINDOW_SECONDS,
   INFRA_PASSWORD_LOCK_SECONDS,
-} from '@/modules/infra/infraPasswordLock.constant';
+} from '@adatechnology/infra-contracts';
 
 const AGENT_ID = 'agent-1';
 const RIGHT_PASSWORD = 'senha-de-teste-correta-1';

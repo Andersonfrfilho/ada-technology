@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 
-import { loadInfraSecretKey } from '@/modules/infra/infraSecretKey';
+import { loadInfraSecretKey } from '@adatechnology/infra-module';
 
 type InfraSecretKeyEnvironment = {
   readonly ENV: string;

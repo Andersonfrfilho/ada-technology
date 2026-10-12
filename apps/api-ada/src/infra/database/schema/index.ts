@@ -8,11 +8,9 @@
 
 export { agents } from '@/infra/database/schema/agent.schema';
 export { auditLogs } from '@/infra/database/schema/audit.schema';
-export { infraEnvironmentSchedules, infraPowerOperations } from '@/infra/database/schema/infra.schema';
 export {
   knowledgeCategories,
   knowledgeFaqs,
   knowledgeItems,
 } from '@/infra/database/schema/knowledge.schema';
 export { leads } from '@/infra/database/schema/lead.schema';
-export { infraIntegrationSecrets } from '@/infra/database/schema/infraIntegration.schema';

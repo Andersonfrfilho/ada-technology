@@ -43,6 +43,13 @@
       "when": 1791591248292,
       "tag": "0005_condemned_inhumans",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791837143576,
+      "tag": "0006_demonic_deathstrike",
+      "breakpoints": true
     }
   ]
 }
