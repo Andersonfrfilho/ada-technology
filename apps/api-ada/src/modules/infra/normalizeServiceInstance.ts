@@ -7,6 +7,7 @@
  */
 
 
+import { INFRA_EXECUTING_INSTANCE_STATUSES } from '@/modules/infra/infra.constant';
 import type { ServiceInstanceNode } from '@/modules/infra/railwayGateway.schema';
 import type { RailwayServiceInstance } from '@/modules/infra/types/railwayInventory.types';
 
@@ -19,6 +20,13 @@ export function normalizeServiceInstance(node: ServiceInstanceNode): RailwayServ
   const sourceImage = node.source?.image;
   // O deployment ativo e o que de fato roda: o ultimo pode estar em build ou ter falhado.
   const isDeploymentStopped = (activeDeployment ?? deployment)?.deploymentStopped === true;
+  const isStopped = isDeploymentStopped || instanceStatus === EXITED_INSTANCE_STATUS;
+  // Só interessa quando o Railway diz "parado" e ainda há instância executando: o resto já sai do estado de energia.
+  const hasRunningInstance =
+    isStopped &&
+    [...(deployment?.instances ?? []), ...(activeDeployment?.instances ?? [])].some((instance) =>
+      INFRA_EXECUTING_INSTANCE_STATUSES.includes(instance.status),
+    );
 
   return {
     serviceId: node.serviceId,
@@ -27,7 +35,8 @@ export function normalizeServiceInstance(node: ServiceInstanceNode): RailwayServ
     ...(deployment ? { latestDeploymentId: deployment.id } : {}),
     ...(activeDeployment ? { activeDeploymentId: activeDeployment.id } : {}),
     hasDeployment: Boolean(deployment),
-    isStopped: isDeploymentStopped || instanceStatus === EXITED_INSTANCE_STATUS,
+    isStopped,
     ...(instanceStatus ? { instanceStatus } : {}),
+    ...(hasRunningInstance ? { hasRunningInstance } : {}),
   };
 }

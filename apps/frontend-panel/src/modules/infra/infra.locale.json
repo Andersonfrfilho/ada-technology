@@ -279,6 +279,7 @@
     "INFRA_INVALID_SCHEDULE": "Agenda inválida. Confira os dias e os horários (a janela não pode cruzar a meia-noite).",
     "RAILWAY_REQUEST_FAILED": "O Railway não respondeu como esperado. Tente de novo em instantes.",
     "RAILWAY_RATE_LIMITED": "O Railway limitou as chamadas. Aguarde um pouco e tente de novo.",
+    "INFRA_SERVICE_NOT_STOPPED": "Não parou: o Railway aceitou o comando, mas o serviço continua rodando.",
     "RATE_LIMITED": "Muitas tentativas seguidas. Aguarde um pouco e tente de novo.",
     "UNKNOWN": "Algo deu errado. Tente de novo."
   }

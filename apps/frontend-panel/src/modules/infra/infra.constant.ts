@@ -79,4 +79,5 @@ export const INFRA_QUERY_KEY = {
 } as const;
 
 export const INFRA_POLL_INTERVAL_MS = 15_000;
+export const INFRA_POWER_POLL_INTERVAL_MS = 5_000;
 export const INFRA_COSTS_STALE_TIME_MS = 5 * 60_000;

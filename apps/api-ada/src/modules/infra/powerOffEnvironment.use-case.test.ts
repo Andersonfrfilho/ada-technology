@@ -235,7 +235,7 @@ describe('PowerOffEnvironmentUseCase.runOperation', () => {
 
     await useCase.runOperation(await startOperation(harness));
 
-    const stops = harness.gateway.events;
+    const stops = harness.gateway.events.filter((event) => event !== 'read');
     expect(stops.slice(0, 2).sort()).toEqual(['stop:dep-web', 'stop:dep-worker']);
     expect(stops.slice(2).sort()).toEqual(['stop:dep-Postgres', 'stop:dep-Redis']);
     const operation = harness.repository.operations[0];
@@ -259,7 +259,7 @@ describe('PowerOffEnvironmentUseCase.runOperation', () => {
 
     await useCase.runOperation(await startOperation(harness, { services }));
 
-    expect(harness.gateway.events).toEqual(['stop:dep-cron']);
+    expect(harness.gateway.events.filter((event) => event !== 'read')).toEqual(['stop:dep-cron']);
     const outcomes = Object.fromEntries(
       (harness.repository.operations[0]?.serviceResults ?? []).map((result) => [result.serviceName, result.outcome]),
     );
@@ -274,7 +274,7 @@ describe('PowerOffEnvironmentUseCase.runOperation', () => {
 
     await useCase.runOperation(await startOperation(harness));
 
-    expect(harness.gateway.events.sort()).toEqual([
+    expect(harness.gateway.events.filter((event) => event !== 'read').sort()).toEqual([
       'stop:dep-Postgres',
       'stop:dep-Redis',
       'stop:dep-web',

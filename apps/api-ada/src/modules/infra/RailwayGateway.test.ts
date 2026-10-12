@@ -186,8 +186,32 @@ describe('RailwayGateway', () => {
 
       for (const { calls } of [first, second]) {
         const { query } = JSON.parse(String(calls[0]?.init.body)) as { query: string };
-        expect(query).toContain('activeDeployments { id deploymentStopped }');
+        expect(query).toContain('activeDeployments { id deploymentStopped instances { status } }');
       }
+    });
+
+    it('hasRunningInstance marca parado com instancia do deployment ativo ainda executando', async () => {
+      const zombie = serviceNode({
+        latestDeployment: { id: DEPLOYMENT_ID, status: 'SUCCESS', deploymentStopped: true, instances: [] },
+        activeDeployments: [{ id: DEPLOYMENT_ID, deploymentStopped: true, instances: [{ status: 'RUNNING' }] }],
+      });
+      const { gateway } = buildGateway(() => ok(inventoryBody([zombie])));
+
+      const [project] = await gateway.listInventory();
+
+      expect(project?.environments[0]?.services[0]?.hasRunningInstance).toBe(true);
+    });
+
+    it('hasRunningInstance some quando a instancia saiu (EXITED)', async () => {
+      const stopped = serviceNode({
+        latestDeployment: { id: DEPLOYMENT_ID, status: 'SUCCESS', deploymentStopped: true, instances: [{ status: 'EXITED' }] },
+        activeDeployments: [{ id: DEPLOYMENT_ID, deploymentStopped: true, instances: [{ status: 'EXITED' }] }],
+      });
+      const { gateway } = buildGateway(() => ok(inventoryBody([stopped])));
+
+      const [project] = await gateway.listInventory();
+
+      expect(project?.environments[0]?.services[0]?.hasRunningInstance).toBeUndefined();
     });
 
     it('hasDeployment e falso quando latestDeployment e nulo', async () => {

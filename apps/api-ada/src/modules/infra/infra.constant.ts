@@ -102,6 +102,10 @@ export const INFRA_OPERATION_LOCK_KEY_PREFIX = 'infra:operation-lock:';
 /** Folga da trava sobre a espera dos bancos: cobre o build de um serviço de repositório. */
 export const INFRA_OPERATION_LOCK_GRACE_SECONDS = 600;
 export const INFRA_DATABASE_POLL_INTERVAL_SECONDS = 5;
+/** Prazo para o Railway efetivar a parada depois de aceitar `deploymentStop`; volume de banco demora a soltar. */
+export const INFRA_STOP_VERIFY_WAIT_SECONDS = 30;
+/** Status de instância do Railway que ainda consomem recurso; EXITED/REMOVED/CRASHED não entram. */
+export const INFRA_EXECUTING_INSTANCE_STATUSES: readonly string[] = ['RUNNING', 'DEPLOYING', 'INITIALIZING'];
 
 export const INFRA_SERVICE_OUTCOME = {
   OK: 'ok',
