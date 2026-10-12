@@ -7,18 +7,18 @@
  */
 
 import type { ConsumeRateLimitParams, RateLimitVerdict } from '@/infra/http/rateLimit';
-import type { CostsResult } from '@/modules/infra/types/infraCosts.types';
-import type { ListInfraEnvironmentsResult } from '@/modules/infra/types/infraListing.types';
+import type { CostsResult } from '@adatechnology/railway-infra-contracts';
+import type { ListInfraEnvironmentsResult } from '@adatechnology/railway-infra-contracts';
 import type {
   GetInfraOperationParams,
   GetInfraOperationResult,
   PowerEnvironmentParams,
   PowerEnvironmentResult,
-} from '@/modules/infra/types/infraOperation.types';
+} from '@adatechnology/railway-infra-contracts';
 import type {
   SaveEnvironmentScheduleParams,
   SaveEnvironmentScheduleResult,
-} from '@/modules/infra/types/infraSchedule.types';
+} from '@adatechnology/railway-infra-contracts';
 
 export type ConsumeRateLimit = (params: ConsumeRateLimitParams) => Promise<RateLimitVerdict>;
 

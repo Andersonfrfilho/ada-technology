@@ -17,11 +17,11 @@ import {
 } from '@/infra/container';
 import { VerifyAgentPasswordUseCase } from '@/modules/agent/verifyAgentPassword.use-case';
 import { DrizzleInfraIntegrationRepository } from '@/modules/infra/DrizzleInfraIntegrationRepository';
-import { GetInfraIntegrationUseCase } from '@/modules/infra/getInfraIntegration.use-case';
+import { GetInfraIntegrationUseCase } from '@adatechnology/railway-infra-module';
 import { RedisFailureCounter } from '@/modules/infra/RedisFailureCounter';
-import { RemoveInfraIntegrationUseCase } from '@/modules/infra/removeInfraIntegration.use-case';
-import { SaveInfraIntegrationUseCase } from '@/modules/infra/saveInfraIntegration.use-case';
-import { VerifyInfraIntegrationUseCase } from '@/modules/infra/verifyInfraIntegration.use-case';
+import { RemoveInfraIntegrationUseCase } from '@adatechnology/railway-infra-module';
+import { SaveInfraIntegrationUseCase } from '@adatechnology/railway-infra-module';
+import { VerifyInfraIntegrationUseCase } from '@adatechnology/railway-infra-module';
 
 /** Montagem a parte do `container.ts`, que ja passa de mil linhas; so existe a partir do que ele exporta. */
 const infraCache = new RedisCache();

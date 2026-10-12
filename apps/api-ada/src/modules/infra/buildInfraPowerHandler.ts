@@ -10,8 +10,8 @@ import { RATE_LIMIT } from '@/infra/http/rateLimit.constant';
 import { jsonData, jsonError } from '@/infra/http/responses';
 import { requireAgent, type RequestContext } from '@/infra/http/router';
 import { ACTOR_TYPE } from '@/modules/audit/audit.constant';
-import { INFRA_OPERATION_TRIGGER } from '@/modules/infra/infra.constant';
-import { infraEnvironmentParamsSchema, infraPowerOnBodySchema } from '@/modules/infra/infra.schema';
+import { INFRA_OPERATION_TRIGGER } from '@adatechnology/railway-infra-contracts';
+import { infraEnvironmentParamsSchema, infraPowerOnBodySchema } from '@adatechnology/railway-infra-contracts';
 import type { ConsumeRateLimit, InfraPowerUseCase } from '@/modules/infra/types/infraRoutes.types';
 import { ERROR_CODES } from '@/shared/errors/codes';
 

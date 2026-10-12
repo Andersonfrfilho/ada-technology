@@ -8,7 +8,7 @@
 
 import type { UserProfile, UserSession } from '@ada/user-sdk';
 
-import type { InfraFailureCounterInterface } from '@/modules/infra/types/infraFailureCounter.interface';
+import type { InfraFailureCounterInterface } from '@adatechnology/railway-infra-contracts';
 import type { RecordAuditLogParams } from '@/modules/audit/types/audit.types';
 import type { AgentRole } from '@/shared/constants/domain.constant';
 

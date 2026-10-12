@@ -11,7 +11,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   INTEGRATION_PASSWORD,
   type IntegrationHarness,
-} from '@/modules/infra/infraFakes/buildIntegrationHarness';
+} from '@adatechnology/railway-infra-module/testing';
 import {
   ADMIN_IDENTITY,
   OTHER_ADMIN_IDENTITY,
@@ -19,8 +19,8 @@ import {
   buildIntegrationRoutesSetup,
   expectResponseWithoutLeak,
 } from '@/modules/infra/infraFakes/buildIntegrationRoutesSetup';
-import { DECOY_TOKEN } from '@/modules/infra/infraFakes/buildProviderHarness';
-import { PROBE_WORKSPACE_OUTCOME } from '@/modules/infra/probeWorkspace.constant';
+import { DECOY_TOKEN } from '@adatechnology/railway-infra-module/testing';
+import { PROBE_WORKSPACE_OUTCOME } from '@adatechnology/railway-infra-contracts';
 
 const SAVE_BODY = { token: DECOY_TOKEN, password: INTEGRATION_PASSWORD };
 

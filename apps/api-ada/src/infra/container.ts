@@ -99,18 +99,18 @@ import { notificationAuthResolver } from '@/modules/notification/notificationAut
 import { notificationRecipientResolver } from '@/modules/notification/notificationRecipientResolver';
 import { createPasswordResetNotifier } from '@/modules/notification/passwordResetNotifier';
 import { SendAgentPasswordResetUseCase } from '@/modules/agent/sendAgentPasswordReset.use-case';
-import { DefaultRailwayGatewayProvider } from '@/modules/infra/RailwayGatewayProvider';
+import { DefaultRailwayGatewayProvider } from '@adatechnology/railway-infra-module';
 import { DrizzleInfraIntegrationRepository } from '@/modules/infra/DrizzleInfraIntegrationRepository';
 import { DrizzleInfraOperationRepository } from '@/modules/infra/DrizzleInfraOperationRepository';
 import { DrizzleInfraScheduleRepository } from '@/modules/infra/DrizzleInfraScheduleRepository';
-import { GetInfraCostsUseCase } from '@/modules/infra/getInfraCosts.use-case';
-import { GetInfraOperationUseCase } from '@/modules/infra/getInfraOperation.use-case';
-import { ListInfraEnvironmentsUseCase } from '@/modules/infra/listInfraEnvironments.use-case';
-import { PowerOffEnvironmentUseCase } from '@/modules/infra/powerOffEnvironment.use-case';
-import { PowerOnEnvironmentUseCase } from '@/modules/infra/powerOnEnvironment.use-case';
-import { SaveEnvironmentScheduleUseCase } from '@/modules/infra/saveEnvironmentSchedule.use-case';
-import { RunInfraSchedulesUseCase } from '@/modules/infra/runInfraSchedules.use-case';
-import { RecoverInterruptedInfraOperationsUseCase } from '@/modules/infra/recoverInterruptedInfraOperations.use-case';
+import { GetInfraCostsUseCase } from '@adatechnology/railway-infra-module';
+import { GetInfraOperationUseCase } from '@adatechnology/railway-infra-module';
+import { ListInfraEnvironmentsUseCase } from '@adatechnology/railway-infra-module';
+import { PowerOffEnvironmentUseCase } from '@adatechnology/railway-infra-module';
+import { PowerOnEnvironmentUseCase } from '@adatechnology/railway-infra-module';
+import { SaveEnvironmentScheduleUseCase } from '@adatechnology/railway-infra-module';
+import { RunInfraSchedulesUseCase } from '@adatechnology/railway-infra-module';
+import { RecoverInterruptedInfraOperationsUseCase } from '@adatechnology/railway-infra-module';
 import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
 import { SeedNotificationTemplatesUseCase } from '@/modules/notification/seedNotificationTemplates.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
@@ -131,10 +131,10 @@ import { DrizzleTranscriptRepository } from '@/modules/shared/DrizzleTranscriptR
 import { SimulateInboundMessageUseCase } from '@/modules/simulation/simulateInboundMessage.use-case';
 import { WhatsAppInboundSimulator } from '@/modules/simulation/WhatsAppInboundSimulator';
 import { RedisUserRefreshTokenStore } from '@/modules/user/RedisUserRefreshTokenStore';
-import type { PowerEnvironmentDependencies } from '@/modules/infra/powerEnvironment.use-case';
-import type { RailwayGatewayInterface } from '@/modules/infra/types/railwayGateway.interface';
-import type { ResolveGateway } from '@/modules/infra/types/resolveGateway.types';
-import type { RailwayGatewayProviderLogger } from '@/modules/infra/types/railwayGatewayProvider.types';
+import type { PowerEnvironmentDependencies } from '@adatechnology/railway-infra-module';
+import type { RailwayGatewayInterface } from '@adatechnology/railway-infra-contracts';
+import type { ResolveGateway } from '@adatechnology/railway-infra-contracts';
+import type { RailwayGatewayProviderLogger } from '@adatechnology/railway-infra-contracts';
 import { logger } from '@/shared/logger';
 
 // Estado inicial de sessao nova. O modulo nao conhece a maquina de estados do produto.

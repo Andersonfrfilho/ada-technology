@@ -7,6 +7,7 @@
  */
 
 import { MetaWhatsAppError } from '@adatechnology/meta-whatsapp-contracts';
+import { isRailwayInfraError } from '@adatechnology/railway-infra-contracts';
 import { ZodError } from 'zod';
 
 import { isAppError } from '@/shared/errors/AppError';
@@ -46,7 +47,8 @@ export function handleUncaughtError({ error, traceId, path }: HandleUncaughtErro
     });
   }
 
-  if (isAppError(error)) {
+  // Os erros do módulo de infra não estendem AppError (pacote publicado), mas têm o mesmo shape.
+  if (isAppError(error) || isRailwayInfraError(error)) {
     logger.warn({
       message: error.message,
       source: SOURCE,

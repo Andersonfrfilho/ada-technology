@@ -10,9 +10,9 @@ import { and, eq, gt, lt } from 'drizzle-orm';
 
 import { database } from '@/infra/database/client';
 import { infraPowerOperations } from '@/infra/database/schema';
-import { INFRA_OPERATION_STATUS } from '@/modules/infra/infra.constant';
-import { infraServiceResultsSchema } from '@/modules/infra/infraOperation.schema';
-import type { InfraOperationRepositoryInterface } from '@/modules/infra/types/infraOperationRepository.interface';
+import { INFRA_OPERATION_STATUS } from '@adatechnology/railway-infra-contracts';
+import { infraServiceResultsSchema } from '@adatechnology/railway-infra-module';
+import type { InfraOperationRepositoryInterface } from '@adatechnology/railway-infra-contracts';
 import type {
   CreateInfraOperationParams,
   FindRunningOperationParams,
@@ -21,7 +21,7 @@ import type {
   InfraOperationRow,
   ListRunningOperationsParams,
   MarkStaleRunningAsInterruptedParams,
-} from '@/modules/infra/types/infraOperation.types';
+} from '@adatechnology/railway-infra-contracts';
 
 function toRecord(row: InfraOperationRow): InfraOperationRecord {
   return { ...row, serviceResults: infraServiceResultsSchema.parse(row.serviceResults) };
