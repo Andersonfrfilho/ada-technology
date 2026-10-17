@@ -7,12 +7,17 @@
  */
 
 import {
+  UserPlus,
+  Bell,
+  KeyRound,
   CalendarClock,
+  CircleDollarSign,
   FileText,
   Package,
   LayoutTemplate,
   MessageSquare,
   Send,
+  Server,
   Users,
   Workflow,
   type LucideIcon,
@@ -33,6 +38,11 @@ export const PANEL_SECTION = {
   DOCUMENTS: 'documentos',
   LEADS: 'clientes',
   SCHEDULE: 'agenda',
+  NOTIFICATIONS: 'notificacoes',
+  AGENTS: 'usuarios',
+  INFRA_ENVIRONMENTS: 'ambientes',
+  INFRA_COSTS: 'custos',
+  INFRA_INTEGRATION: 'integracao',
 } as const;
 
 export type PanelSection = (typeof PANEL_SECTION)[keyof typeof PANEL_SECTION];
@@ -42,12 +52,23 @@ export const DEFAULT_PANEL_SECTION: PanelSection = PANEL_SECTION.CONVERSATIONS;
 export type PanelSectionItem = {
   readonly section: PanelSection;
   readonly icon: LucideIcon;
+  /**
+   * Papel minimo para VER o item. Ausente, todo usuario autenticado ve.
+   *
+   * Isto e conveniencia de tela, NAO barreira: quem decide o acesso e o `auth` da rota na API, e ele
+   * continua valendo mesmo que alguem digite a URL. Esconder um menu que a API deixaria passar seria
+   * seguranca de mentira; mostrar um que ela recusa e o que temos hoje — o usuario preenche o
+   * formulario inteiro e toma 403 no submit.
+   */
+  readonly requiresAdmin?: boolean;
 };
 
 export const PANEL_GROUP = {
   SERVICE: 'atendimento',
+  NOTIFICATIONS: 'avisos',
   CONTENT: 'conteudo',
   REGISTRY: 'cadastros',
+  INFRA: 'infra',
 } as const;
 
 export type PanelGroup = (typeof PANEL_GROUP)[keyof typeof PANEL_GROUP];
@@ -77,6 +98,24 @@ export const PANEL_SECTION_GROUPS: readonly PanelSectionGroup[] = [
       { section: PANEL_SECTION.TEMPLATES, icon: LayoutTemplate },
     ],
   },
+  /**
+   * Bloco proprio, e nao junto de atendimento.
+   *
+   * Conversas, Fluxos, Mensagens e Templates sao todos a mesma coisa vista de angulos diferentes:
+   * o WhatsApp do `meta-whatsapp-module`, onde o cliente fala e o time responde. Notificacoes e
+   * outro produto (`notification-module`) e outro publico — e o aviso que o SISTEMA manda, por
+   * e-mail, sem ninguem do outro lado digitando. Misturar os dois fazia "Templates" e
+   * "Notificacoes" parecerem a mesma tela com nomes diferentes.
+   *
+   * Um item so por enquanto: e aqui que entram historico de entrega e supressoes quando existirem.
+   */
+  {
+    group: PANEL_GROUP.NOTIFICATIONS,
+    // As rotas de template e de politica de categoria exigem o escopo `notification:admin`, que o
+    // `notificationAuthResolver` so concede a quem e admin. Sem isto, o usuario comum abre a tela e
+    // descobre no primeiro salvamento.
+    items: [{ section: PANEL_SECTION.NOTIFICATIONS, icon: Bell, requiresAdmin: true }],
+  },
   {
     group: PANEL_GROUP.CONTENT,
     items: [
@@ -86,7 +125,20 @@ export const PANEL_SECTION_GROUPS: readonly PanelSectionGroup[] = [
   },
   {
     group: PANEL_GROUP.REGISTRY,
-    items: [{ section: PANEL_SECTION.LEADS, icon: Users }],
+    items: [
+      { section: PANEL_SECTION.LEADS, icon: Users },
+      // `POST /v1/panel/agents` e `auth: ADMIN`, e a listagem so devolve e-mail para admin.
+      { section: PANEL_SECTION.AGENTS, icon: UserPlus, requiresAdmin: true },
+    ],
+  },
+  {
+    group: PANEL_GROUP.INFRA,
+    // As rotas /v1/panel/infra/* sao `auth: ADMIN`; custo e liga/desliga de ambiente nao sao para o atendente.
+    items: [
+      { section: PANEL_SECTION.INFRA_ENVIRONMENTS, icon: Server, requiresAdmin: true },
+      { section: PANEL_SECTION.INFRA_COSTS, icon: CircleDollarSign, requiresAdmin: true },
+      { section: PANEL_SECTION.INFRA_INTEGRATION, icon: KeyRound, requiresAdmin: true },
+    ],
   },
 ];
 
@@ -102,4 +154,23 @@ const SECTIONS: readonly string[] = Object.values(PANEL_SECTION);
 
 export function isPanelSection(value: string): value is PanelSection {
   return SECTIONS.includes(value);
+}
+
+/**
+ * As secoes que este papel enxerga.
+ *
+ * Grupo que fica sem item algum some inteiro — um titulo de grupo vazio e ruido que so aparece para
+ * quem tem menos acesso, ou seja, exatamente para quem menos entende por que esta ali.
+ */
+export function visibleSectionGroups(isAdmin: boolean): readonly PanelSectionGroup[] {
+  return PANEL_SECTION_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.requiresAdmin || isAdmin),
+  })).filter((group) => group.items.length > 0);
+}
+
+/** `false` quando o papel nao alcanca a secao — usado para nao renderizar a tela por URL direta. */
+export function canSeeSection(section: PanelSection, isAdmin: boolean): boolean {
+  const item = PANEL_SECTION_ITEMS.find((candidate) => candidate.section === section);
+  return !item?.requiresAdmin || isAdmin;
 }

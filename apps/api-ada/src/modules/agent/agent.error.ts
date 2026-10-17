@@ -71,3 +71,89 @@ export class AgentNotFoundError extends DomainError {
     });
   }
 }
+
+/**
+ * Ninguem se desativa.
+ *
+ * Sem isto, um admin sozinho tira o proprio acesso com um clique e a unica saida vira `railway ssh`
+ * no conteiner — exatamente o gargalo que a tela de usuarios existe para eliminar.
+ */
+export class AgentCannotDeactivateSelfError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.CANNOT_DEACTIVATE_SELF,
+      message: 'Voce nao pode desativar a propria conta',
+      statusCode: 409,
+    });
+  }
+}
+
+/** Sem bucket configurado nao ha onde guardar — 503, e nao 500: e configuracao, nao defeito. */
+export class AgentAvatarUnavailableError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.AVATAR_UNAVAILABLE,
+      message: 'Foto de perfil indisponivel neste ambiente',
+      statusCode: 503,
+    });
+  }
+}
+
+export class AgentAvatarForbiddenError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.AVATAR_FORBIDDEN,
+      message: 'Voce so pode trocar a propria foto',
+      statusCode: 403,
+    });
+  }
+}
+
+/**
+ * O motivo vai no contexto, e nao na frase.
+ *
+ * "Grande demais" e "tipo nao suportado" pedem correcoes diferentes, e a tela precisa distinguir os
+ * dois sem casar texto traduzido.
+ */
+export class AgentAvatarRejectedError extends DomainError {
+  constructor(reason: string) {
+    super({
+      code: ERROR_CODES.agent.AVATAR_REJECTED,
+      message: 'Foto recusada',
+      statusCode: 400,
+      context: { reason },
+    });
+  }
+}
+
+/**
+ * Ninguem se rebaixa.
+ *
+ * Irmao do `AgentCannotDeactivateSelfError`, e pelo mesmo motivo: o unico admin virando usuario
+ * comum perde a tela de usuarios, e a saida volta a ser SSH no conteiner.
+ */
+export class AgentCannotDemoteSelfError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.CANNOT_DEMOTE_SELF,
+      message: 'Voce nao pode rebaixar o proprio papel',
+      statusCode: 409,
+    });
+  }
+}
+
+/**
+ * Uma resposta so para token inexistente, vencido e ja usado.
+ *
+ * Distinguir os tres diria a quem adivinha que chegou perto — "vencido" confirma que o token
+ * existiu, e isso e informacao que so serve para quem nao deveria te-la.
+ */
+export class AgentResetTokenInvalidError extends DomainError {
+  constructor() {
+    super({
+      code: ERROR_CODES.agent.RESET_TOKEN_INVALID,
+      message: 'Link de redefinicao invalido ou expirado',
+      statusCode: 400,
+    });
+  }
+}

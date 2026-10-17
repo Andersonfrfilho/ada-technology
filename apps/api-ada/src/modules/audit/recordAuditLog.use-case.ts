@@ -9,6 +9,7 @@
 import { database } from '@/infra/database/client';
 import { auditLogs } from '@/infra/database/schema';
 import type { RecordAuditLogParams } from '@/modules/audit/types/audit.types';
+import { redactLogMeta } from '@/shared/redaction';
 
 /**
  * Trilha de auditoria das acoes sensiveis: quem, o que, sobre quem, de onde e quando.
@@ -33,7 +34,8 @@ export class RecordAuditLogUseCase {
       targetType,
       targetId: targetId ?? null,
       ipAddress: ipAddress ?? null,
-      metadata: metadata ?? {},
+      // Defesa em profundidade: a trilha e consultavel por mais gente que o log, entao segredo por chave nunca entra.
+      metadata: redactLogMeta({ ...metadata }),
     });
   }
 }

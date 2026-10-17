@@ -10,6 +10,7 @@ import type { FlowNodeData } from '@adatechnology/meta-whatsapp-contracts';
 
 import { ACTOR_TYPE, AUDIT_ACTION, AUDIT_TARGET } from '@/modules/audit/audit.constant';
 import { closeRedis } from '@/infra/cache/redisClient';
+import { closeNotificationQueue } from '@/infra/container';
 import { environment } from '@/infra/config/environment';
 import { flowGraphs, recordAuditLog } from '@/infra/container';
 import { closeDatabase } from '@/infra/database/client';
@@ -118,10 +119,11 @@ function recordChange(params: { flowKey: string; version: number }): Promise<unk
   });
 }
 
-// Mesmo motivo do seed: o container inteiro sobe para alcancar o motor de fluxo, e o subscriber do
-// SseHub segura o event loop aberto — sem fechar Redis o comando publica e nunca sai.
+// Mesmo motivo do seed: o container inteiro sobe para alcancar o motor de fluxo, e tanto o subscriber
+// do SseHub quanto a fila do BullMQ seguram o event loop aberto — sem fechar os dois, o comando
+// publica e nunca sai, e o `deploy:pre` pendura o deploy inteiro sem erro no log.
 try {
   await republishFlow();
 } finally {
-  await Promise.all([closeDatabase(), closeRedis()]);
+  await Promise.all([closeDatabase(), closeRedis(), closeNotificationQueue()]);
 }

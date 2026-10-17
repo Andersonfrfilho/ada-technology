@@ -20,7 +20,38 @@ export const REFRESH_TOKEN_TTL_SECONDS = REFRESH_TOKEN_DAYS * SECONDS_PER_DAY;
 export const REFRESH_COOKIE_NAME = 'ada_refresh';
 export const REFRESH_COOKIE_PATH = '/v1/auth';
 
+/**
+ * Companheiro do refresh que diz APENAS se o lembrar-me estava marcado.
+ *
+ * Sem ele, a rota de renovacao nao teria como saber que politica reemitir: o navegador manda o
+ * valor do cookie, nunca o `Max-Age` dele — e reemitir persistente por padrao promoveria em
+ * silencio um login de maquina emprestada a sessao de sete dias.
+ *
+ * Nao e `HttpOnly` de proposito: nao guarda segredo nenhum, so um booleano, e ele acompanha a vida
+ * do refresh. Adulterar esse cookie nao da acesso a nada — no maximo muda quando a PROPRIA sessao
+ * de quem adulterou expira.
+ */
+export const REMEMBER_COOKIE_NAME = 'ada_remember';
+
 export const AUTH_SCHEME = 'Bearer';
 
 export const ACCESS_TOKEN_ISSUER = 'ada-api';
 export const ACCESS_TOKEN_AUDIENCE = 'ada-panel';
+
+export const AGENT_AVATAR_KEY_PREFIX = 'agent-avatar';
+
+/**
+ * Cinco minutos: a URL viaja na resposta da listagem e vai parar em cache de navegador.
+ *
+ * Longa o bastante para a página inteira renderizar e a pessoa rolar até o fim da tabela; curta o
+ * bastante para uma resposta vazada num log não virar leitura permanente do bucket.
+ */
+export const AGENT_AVATAR_SIGNED_URL_SECONDS = 300;
+
+export const AGENT_RESET_TOKEN_BYTES = 32;
+
+/**
+ * Uma hora. Curto porque o link e credencial de troca de senha e viaja por e-mail, que fica no
+ * histórico da caixa de entrada; longo porque quem pede às vezes só abre o e-mail depois do almoço.
+ */
+export const AGENT_RESET_TOKEN_TTL_SECONDS = 3600;

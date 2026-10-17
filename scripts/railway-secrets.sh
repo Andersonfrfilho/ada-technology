@@ -45,7 +45,7 @@ ENVIRONMENT_NAME="${1:-}"
 SECRET_NAME="${2:-panel-jwt}"
 
 if [[ "$ENVIRONMENT_NAME" != "production" && "$ENVIRONMENT_NAME" != "staging" ]]; then
-  echo "uso: $0 <production|staging> [panel-jwt|whatsapp|groq|resend|mailpit-ui]" >&2
+  echo "uso: $0 <production|staging> [panel-jwt|whatsapp|groq|resend|mailpit-ui|notification-suppression]" >&2
   exit 1
 fi
 
@@ -55,6 +55,10 @@ GENERATED="true"
 case "$SECRET_NAME" in
   panel-jwt) VARIABLE_NAME="PANEL_JWT_SECRET" ;;
   whatsapp) VARIABLE_NAME="WHATSAPP_WEBHOOK_VERIFY_TOKEN" ;;
+  # Chave do HMAC da lista de supressao: ela guarda o digest do endereco, nunca o endereco em claro.
+  # Trocar a chave ZERA as supressoes existentes — os digests antigos deixam de casar, e enderecos
+  # que tinham dado bounce voltam a receber. Rotacionar so com isso em mente.
+  notification-suppression) VARIABLE_NAME="NOTIFICATION_SUPPRESSION_KEY" ;;
   # Segredo de terceiro nao se gera: ele chega pelo pipe, e o mesmo cuidado vale — nunca argumento.
   groq) VARIABLE_NAME="GROQ_API_KEY"; GENERATED="false" ;;
   resend) VARIABLE_NAME="EMAIL_RESEND_API_KEY"; GENERATED="false" ;;
@@ -62,7 +66,7 @@ case "$SECRET_NAME" in
   # lida de volta com `railway variables --service mailpit` quando alguem precisar abrir.
   mailpit-ui) VARIABLE_NAME="MP_UI_AUTH"; SERVICE_NAME="mailpit" ;;
   *)
-    echo "uso: $0 <production|staging> [panel-jwt|whatsapp|groq|resend|mailpit-ui]" >&2
+    echo "uso: $0 <production|staging> [panel-jwt|whatsapp|groq|resend|mailpit-ui|notification-suppression]" >&2
     exit 1
     ;;
 esac

@@ -19,18 +19,25 @@ export const PANEL_PATH = {
   TEMPLATES: '/v1/panel/templates',
   FLOWS: '/v1/panel/flows',
   SIMULATION: '/v1/panel/simulation',
+  INFRA_ENVIRONMENTS: '/v1/panel/infra/environments',
+  INFRA_OPERATIONS: '/v1/panel/infra/operations',
+  INFRA_COSTS: '/v1/panel/infra/costs',
+  INFRA_INTEGRATION: '/v1/panel/infra/integration',
+  INFRA_INTEGRATION_VERIFY: '/v1/panel/infra/integration/verify',
 } as const;
 
 export const HTTP_METHOD = {
   GET: 'GET',
   POST: 'POST',
   PUT: 'PUT',
+  PATCH: 'PATCH',
   DELETE: 'DELETE',
 } as const;
 
 export type HttpMethod = (typeof HTTP_METHOD)[keyof typeof HTTP_METHOD];
 
 export const HTTP_STATUS = {
+  ACCEPTED: 202,
   NO_CONTENT: 204,
   UNAUTHORIZED: 401,
 } as const;

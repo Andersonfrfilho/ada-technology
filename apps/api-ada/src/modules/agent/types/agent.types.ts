@@ -8,6 +8,7 @@
 
 import type { UserProfile, UserSession } from '@ada/user-sdk';
 
+import type { InfraFailureCounterInterface } from '@adatechnology/infra-contracts';
 import type { RecordAuditLogParams } from '@/modules/audit/types/audit.types';
 import type { AgentRole } from '@/shared/constants/domain.constant';
 
@@ -37,10 +38,25 @@ export type CreateAgentRecord = {
   readonly passwordHash: string;
 };
 
+/** O perfil como a ADMINISTRACAO ve: com a situacao, que a agenda nao precisa saber. */
+export type AgentAdminProfile = AgentProfile & {
+  readonly isActive: boolean;
+  /** Chave no bucket. A URL assinada e derivada na resposta, nunca guardada. */
+  readonly avatarKey?: string | undefined;
+};
+
 export type AgentRepositoryInterface = {
   findByEmail(email: string): Promise<AgentCredentials | undefined>;
   findById(agentId: string): Promise<AgentProfile | undefined>;
+  /** Com `passwordHash`, `isActive` e `role` lidos agora; devolve também conta inativa. */
+  findCredentialsById(agentId: string): Promise<AgentCredentials | undefined>;
   listActive(): Promise<readonly AgentProfile[]>;
+  listAll(): Promise<readonly AgentAdminProfile[]>;
+  setActive(agentId: string, isActive: boolean): Promise<AgentAdminProfile | undefined>;
+  setAvatarKey(agentId: string, avatarKey: string): Promise<AgentAdminProfile | undefined>;
+  update(agentId: string, changes: AgentUpdateChanges): Promise<AgentAdminProfile | undefined>;
+  setPasswordHash(agentId: string, passwordHash: string): Promise<boolean>;
+  findAvatarKey(agentId: string): Promise<string | undefined>;
   touchLastSeen(agentId: string): Promise<void>;
   create(record: CreateAgentRecord): Promise<AgentProfile>;
 };
@@ -75,6 +91,8 @@ export type RefreshTokenStoreInterface = {
   issue(agentId: string): Promise<IssuedRefreshToken>;
   rotate(token: string): Promise<RotatedRefreshToken | undefined>;
   revoke(token: string): Promise<void>;
+  /** Derruba todas as sessões do agente; devolve quantas existiam. */
+  revokeAllFor(agentId: string): Promise<number>;
 };
 
 export type AuthenticateAgentParams = {
@@ -118,4 +136,28 @@ export type RefreshAgentSessionDependencies = {
 
 export type RecordAuditLogInterface = {
   execute(params: RecordAuditLogParams): Promise<void>;
+};
+
+/** `| undefined` explicito: com `exactOptionalPropertyTypes`, campo ausente e campo indefinido diferem. */
+export type AgentUpdateChanges = {
+  readonly email?: string | undefined;
+  readonly name?: string | undefined;
+  readonly role?: string | undefined;
+  readonly isActive?: boolean | undefined;
+};
+
+export type VerifyAgentPasswordParams = {
+  readonly agentId: string;
+  readonly password: string;
+};
+
+export type VerifyAgentPasswordResult =
+  | { readonly outcome: 'confirmed' }
+  | { readonly outcome: 'invalid' }
+  | { readonly outcome: 'locked'; readonly retryAfterSeconds: number; readonly isNewLock: boolean };
+
+export type VerifyAgentPasswordDependencies = {
+  readonly agents: Pick<AgentRepositoryInterface, 'findCredentialsById'>;
+  readonly refreshTokens: Pick<RefreshTokenStoreInterface, 'revokeAllFor'>;
+  readonly failureCounter: InfraFailureCounterInterface;
 };

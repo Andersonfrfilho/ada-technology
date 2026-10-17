@@ -6,15 +6,24 @@
  * strictly prohibited without prior written permission from Ada Technology.
  */
 
+import { USER_ROLE } from '@ada/user-sdk';
+
 import { CatalogPage } from '@/modules/catalog/Catalog.page';
 import { DocumentsPage } from '@/modules/documents/Documents.page';
 import { FlowsPage } from '@/modules/flows/Flows.page';
 import { InboxPage } from '@/modules/inbox/Inbox.page';
+import { InfraCostsPage } from '@/modules/infra/InfraCosts.page';
+import { InfraEnvironmentsPage } from '@/modules/infra/InfraEnvironments.page';
+import { InfraIntegrationPage } from '@/modules/infra/InfraIntegration.page';
+import { AgentsPage } from '@/modules/agents/Agents.page';
 import { LeadsPage } from '@/modules/leads/Leads.page';
+import { NotificationPage } from '@/modules/notification/Notification.page';
 import { SchedulingPage } from '@/modules/scheduling/Scheduling.page';
+import { useSessionStore } from '@/modules/shared/session/session.store';
+import sharedLocale from '@/modules/shared/shared.locale.json';
 import { MessagesPage } from '@/modules/settings/Messages.page';
 import { TemplatesPage } from '@/modules/settings/Templates.page';
-import { PANEL_SECTION, type PanelSection } from '@/modules/shared/navigation/panelSection.constant';
+import { canSeeSection, PANEL_SECTION, type PanelSection } from '@/modules/shared/navigation/panelSection.constant';
 
 type PanelSectionViewProps = {
   readonly section: PanelSection;
@@ -27,6 +36,15 @@ type PanelSectionViewProps = {
  * "em breve" de chegar ao operador.
  */
 export function PanelSectionView({ section }: PanelSectionViewProps) {
+  const isAdmin = useSessionStore((state) => state.agent?.role === USER_ROLE.ADMIN);
+
+  /**
+   * Esconder o item do menu nao impede ninguem de digitar a URL. Isto tambem NAO e a barreira — a
+   * API recusa de qualquer forma —, mas evita a tela abrir, carregar e so entao falhar em cada
+   * chamada, que e pior de entender do que nao abrir.
+   */
+  if (!canSeeSection(section, isAdmin)) return <SectionNotAllowed />;
+
   switch (section) {
     case PANEL_SECTION.CONVERSATIONS:
       return <InboxPage />;
@@ -44,5 +62,24 @@ export function PanelSectionView({ section }: PanelSectionViewProps) {
       return <DocumentsPage />;
     case PANEL_SECTION.LEADS:
       return <LeadsPage />;
+    case PANEL_SECTION.NOTIFICATIONS:
+      return <NotificationPage />;
+    case PANEL_SECTION.AGENTS:
+      return <AgentsPage />;
+    case PANEL_SECTION.INFRA_ENVIRONMENTS:
+      return <InfraEnvironmentsPage />;
+    case PANEL_SECTION.INFRA_COSTS:
+      return <InfraCostsPage />;
+    case PANEL_SECTION.INFRA_INTEGRATION:
+      return <InfraIntegrationPage />;
   }
+}
+
+/** Nao diz "voce nao tem permissao para USUARIOS": nomear a secao confirma que ela existe. */
+function SectionNotAllowed() {
+  return (
+    <section className="flex h-full items-center justify-center p-6">
+      <p className="text-sm text-ink-500">{sharedLocale.nav.sectionNotAllowed}</p>
+    </section>
+  );
 }

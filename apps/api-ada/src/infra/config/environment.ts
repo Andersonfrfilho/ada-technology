@@ -8,6 +8,8 @@
 
 import { z } from 'zod';
 
+import { validateInfraSecretKeyEnvironment } from '@/infra/config/infraSecretKeyEnvironment';
+
 const commaSeparatedList = z
   .string()
   .transform((value) => value.split(',').map((item) => item.trim()).filter(Boolean));
@@ -16,7 +18,7 @@ const booleanFromString = z
   .string()
   .transform((value) => value.toLowerCase() === 'true');
 
-const environmentSchema = z
+export const environmentSchema = z
   .object({
     PROJECT_NAME: z.string().min(1),
     ENV: z.enum(['dev', 'test', 'staging', 'production']),
@@ -42,6 +44,14 @@ const environmentSchema = z
     // Template da URL de redefinicao de senha enviada por e-mail. Precisa conter o literal
     // `{token}` — o `user-module` substitui antes de disparar o hook `onPasswordResetRequested`.
     PANEL_RESET_URL_TEMPLATE: z.string().min(1),
+
+    /**
+     * Para onde o aviso de acesso manda quem NAO reconhece o login.
+     *
+     * Vazia desliga o aviso por ausencia — como o `EMAIL_DRIVER`. Sem essa URL o texto terminaria
+     * em "troque a senha" sem dizer onde, e um aviso de seguranca sem saida e pior que nenhum.
+     */
+    PANEL_PASSWORD_CHANGE_URL: z.string().default(''),
 
     WHATSAPP_ENABLED: booleanFromString,
     WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),
@@ -70,6 +80,44 @@ const environmentSchema = z
     // O bucket do Railway serve por subdominio; o MinIO do compose, por caminho.
     OBJECT_STORAGE_FORCE_PATH_STYLE: booleanFromString.default('true'),
 
+    /**
+     * Bucket PRIVADO dos anexos de notificacao, separado do de imagem de produto.
+     *
+     * O `OBJECT_STORAGE_BUCKET` e servido com leitura anonima porque a Meta precisa buscar imagem de
+     * produto por URL estavel. Anexo e dado pessoal e sai por URL assinada de vida curta — dividir o
+     * bucket seria vazamento por descuido (ver ADR 0002). Vazio desliga a rota de upload, e o painel
+     * nao desenha o campo: capacidade por ausencia, como o `EMAIL_DRIVER`.
+     *
+     * Reusa endpoint, regiao e credencial do mesmo provedor; so o bucket muda.
+     */
+    OBJECT_STORAGE_ATTACHMENT_BUCKET: z.string().default(''),
+
+    /**
+     * Credencial PROPRIA do bucket de anexo, quando o provedor emite uma por bucket.
+     *
+     * O MinIO do compose usa uma credencial para todos os buckets, e ai estas ficam vazias e valem
+     * as de cima. O Railway emite um par por bucket — descoberto criando o bucket de staging, com
+     * `accessKeyId` diferente do de imagem de produto. Sem esta separacao, a chave do bucket publico
+     * assinaria o bucket privado, e o `403` so apareceria no primeiro anexo.
+     */
+    OBJECT_STORAGE_ATTACHMENT_ENDPOINT: z.string().default(''),
+    OBJECT_STORAGE_ATTACHMENT_ACCESS_KEY_ID: z.string().default(''),
+    OBJECT_STORAGE_ATTACHMENT_SECRET_ACCESS_KEY: z.string().default(''),
+
+    /**
+     * Painel operacional da fila (Bull Board).
+     *
+     * Vazio o usuario, o painel NAO EXISTE — nem rota, nem asset. Capacidade por ausencia, como o
+     * `EMAIL_DRIVER`: um painel de fila exposto e a lista de tudo que o produto processa, com
+     * botao de repetir e de apagar job.
+     *
+     * Com usuario e sem senha, o boot FALHA (ver o refine abaixo). E a exigencia do `security.md`
+     * §2 para painel operacional: nunca com credencial default, nunca com fallback para string
+     * vazia — porque o modo de falhar de um painel meio configurado e ficar aberto.
+     */
+    BULL_BOARD_USER: z.string().default(''),
+    BULL_BOARD_PASSWORD: z.string().default(''),
+
     // Vazio desliga o envio por ausencia: o modulo de usuario nao recebe `providers.email` e o
     // pedido de redefinicao de senha so dispara o hook, sem mensagem.
     EMAIL_DRIVER: z.enum(['', 'smtp', 'resend', 'ses']).default(''),
@@ -77,11 +125,33 @@ const environmentSchema = z
     EMAIL_SMTP_URL: z.string().default(''),
     EMAIL_RESEND_API_KEY: z.string().default(''),
     EMAIL_SES_REGION: z.string().default('us-east-1'),
+    /**
+     * URL PUBLICA e absoluta do logo no cabecalho do e-mail. Vazia, o cabecalho cai na marca
+     * tipografica — capacidade por ausencia, como o `EMAIL_DRIVER`. Data URI nao serve: Gmail e
+     * Outlook descartam `src="data:"`, e o cabecalho sairia quebrado justamente nos dois clientes
+     * que mais aparecem.
+     */
+    EMAIL_LOGO_URL: z.string().default(''),
+
+    // Chave do HMAC que o notification-module usa para a lista de supressao: ela guarda o digest do
+    // endereco, nunca o endereco em claro. Trocar a chave zera as supressoes existentes, entao ela
+    // e de ambiente e nao rotaciona junto com segredo de sessao.
+    NOTIFICATION_SUPPRESSION_KEY: z.string().min(32),
 
     INTENT_CLASSIFIER_ENABLED: booleanFromString,
     GROQ_API_KEY: z.string().default(''),
     GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
     GROQ_TRANSCRIPTION_MODEL: z.string().default('whisper-large-v3-turbo'),
+
+    // Token vazio desliga o modulo Infra. Sem ele a API nao chama o Railway.
+    RAILWAY_API_TOKEN: z.string().default(''),
+    RAILWAY_WORKSPACE_ID: z.string().default(''),
+    // Injetada pelo proprio Railway; sem ela a autoprotecao do ambiente de producao nao funciona.
+    RAILWAY_ENVIRONMENT_ID: z.string().default(''),
+    RAILWAY_MANAGED_ENVIRONMENT_PATTERN: z.string().default('staging'),
+    RAILWAY_DATABASE_WAIT_SECONDS: z.coerce.number().int().min(10).max(600).default(120),
+
+    INFRA_SECRET_ENCRYPTION_KEY: z.string().default(''),
   })
   // Fail-closed: canal habilitado sem segredo nao sobe, em vez de aceitar
   // webhook sem assinatura verificavel.
@@ -139,6 +209,42 @@ const environmentSchema = z
       }
     }
   })
+  // Bucket de anexo sem o resto do storage e rota que sobe e falha so no primeiro upload — o mesmo
+  // caso que a regra do bucket de imagem evita, e pelo mesmo motivo.
+  .superRefine((value, context) => {
+    if (value.OBJECT_STORAGE_ATTACHMENT_BUCKET.length === 0) return;
+
+    // Cada peca vem da credencial propria do anexo OU da compartilhada. Faltando nas duas, a rota
+    // subiria e falharia so no primeiro upload — o caso que a regra do bucket de imagem evita.
+    const resolved = {
+      endpoint: value.OBJECT_STORAGE_ATTACHMENT_ENDPOINT || value.OBJECT_STORAGE_ENDPOINT,
+      accessKeyId: value.OBJECT_STORAGE_ATTACHMENT_ACCESS_KEY_ID || value.OBJECT_STORAGE_ACCESS_KEY_ID,
+      secretAccessKey:
+        value.OBJECT_STORAGE_ATTACHMENT_SECRET_ACCESS_KEY || value.OBJECT_STORAGE_SECRET_ACCESS_KEY,
+    } as const;
+
+    for (const [field, resolvedValue] of Object.entries(resolved)) {
+      if (resolvedValue.length === 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['OBJECT_STORAGE_ATTACHMENT_BUCKET'],
+          message: `sem ${field} do anexo nem o compartilhado, e OBJECT_STORAGE_ATTACHMENT_BUCKET esta configurado`,
+        });
+      }
+    }
+  })
+  // Painel de fila meio configurado e painel aberto. Ou os dois, ou nenhum.
+  .superRefine((value, context) => {
+    if (value.BULL_BOARD_USER.length === 0) return;
+
+    if (value.BULL_BOARD_PASSWORD.length < 16) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['BULL_BOARD_PASSWORD'],
+        message: 'BULL_BOARD_PASSWORD precisa de ao menos 16 caracteres quando BULL_BOARD_USER esta definido',
+      });
+    }
+  })
   .superRefine((value, context) => {
     if (value.EMAIL_DRIVER === '') return;
 
@@ -164,6 +270,42 @@ const environmentSchema = z
         code: z.ZodIssueCode.custom,
         path: ['GROQ_API_KEY'],
         message: 'GROQ_API_KEY e obrigatorio quando INTENT_CLASSIFIER_ENABLED=true',
+      });
+    }
+  })
+  // Staging e dev nao devem poder desligar nada no Railway: o token so existe na api de producao.
+  .superRefine((value, context) => {
+    if (value.RAILWAY_API_TOKEN.length === 0 || value.ENV === 'production') return;
+
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['RAILWAY_API_TOKEN'],
+      message: 'RAILWAY_API_TOKEN so e aceito com ENV=production',
+    });
+  })
+  // Token sem workspace ou sem ambiente faria o modulo subir e errar so na primeira chamada.
+  .superRefine((value, context) => {
+    if (value.RAILWAY_API_TOKEN.length === 0) return;
+
+    for (const key of ['RAILWAY_WORKSPACE_ID', 'RAILWAY_ENVIRONMENT_ID'] as const) {
+      if (value[key].length === 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `${key} e obrigatorio quando RAILWAY_API_TOKEN esta definido`,
+        });
+      }
+    }
+  })
+  .superRefine(validateInfraSecretKeyEnvironment)
+  .superRefine((value, context) => {
+    try {
+      new RegExp(value.RAILWAY_MANAGED_ENVIRONMENT_PATTERN);
+    } catch {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['RAILWAY_MANAGED_ENVIRONMENT_PATTERN'],
+        message: 'RAILWAY_MANAGED_ENVIRONMENT_PATTERN precisa ser uma expressao regular valida',
       });
     }
   });

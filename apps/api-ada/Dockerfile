@@ -13,8 +13,11 @@ COPY package.json bun.lock ./
 COPY apps/api-ada/package.json apps/api-ada/
 COPY apps/frontend-panel/package.json apps/frontend-panel/
 COPY apps/frontend-site/package.json apps/frontend-site/
-# O `@ada/user-sdk` e workspace: sem o manifest dele aqui, o `bun install` recusa a resolver.
+# Workspaces: sem o manifest de CADA um aqui, o `bun install` recusa a resolver — mesmo que o
+# Dockerfile copie `packages/` inteiro depois, porque o install roda antes dessa copia. Pacote novo
+# em `packages/` entra nesta lista, nos tres Dockerfiles.
 COPY packages/user-sdk/package.json packages/user-sdk/
+COPY packages/email-layout/package.json packages/email-layout/
 
 # `--frozen-lockfile`: a build falha se o lock divergir do manifest, em vez de resolver uma versao
 # nova sem ninguem ver (security.md §4).

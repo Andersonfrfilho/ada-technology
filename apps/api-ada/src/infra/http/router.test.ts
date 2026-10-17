@@ -81,3 +81,32 @@ describe('createRouter com rota protegida', () => {
     expect(() => createRouter({ routes: ROUTES })).toThrow();
   });
 });
+
+describe('rota com isNoStore', () => {
+  const noStoreRoute: Route = {
+    method: HTTP_METHOD.GET,
+    path: '/v1/test/sensivel',
+    auth: AUTH_REQUIREMENT.ADMIN,
+    isNoStore: true,
+    handler: () => {
+      throw new Error('falha qualquer');
+    },
+  };
+
+  it('poe no-store em sucesso, em erro lancado, em 401 e em 403', async () => {
+    const request = () => new Request('https://api.ada.test/v1/test/sensivel');
+    const router = (identity: typeof AGENT | typeof ADMIN | undefined) =>
+      createRouter({ routes: [noStoreRoute], authenticate: async () => identity });
+
+    expect((await router(ADMIN)(request())).status).toBe(500);
+    expect((await router(ADMIN)(request())).headers.get('Cache-Control')).toBe('no-store');
+    expect((await router(undefined)(request())).headers.get('Cache-Control')).toBe('no-store');
+    expect((await router(AGENT)(request())).headers.get('Cache-Control')).toBe('no-store');
+  });
+
+  it('nao toca no Cache-Control de rota sem a marca', async () => {
+    const response = await buildRouter(ADMIN)(get(ADMIN_PATH));
+
+    expect(response.headers.get('Cache-Control')).toBeNull();
+  });
+});

@@ -78,6 +78,9 @@ services:
         mc alias set local http://minio:9000 ada ada-local-dev
         mc mb --ignore-existing local/ada-products
         mc anonymous set download local/ada-products
+        # Anexo de notificacao e dado pessoal: bucket proprio e SEM leitura anonima, entregue por URL
+        # assinada de vida curta (ADR 0002). Nao repetir o `mc anonymous set download` aqui.
+        mc mb --ignore-existing local/ada-notification-attachments
 
   # Caixa de entrada local: captura tudo que a API envia por SMTP e serve numa UI em :8026.
   # Nenhum e-mail sai da maquina em dev — e o link de redefinicao de senha fica clicavel ali.

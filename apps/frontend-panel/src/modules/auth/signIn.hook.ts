@@ -18,6 +18,7 @@ import { useSessionStore } from '@/modules/shared/session/session.store';
 
 const EMAIL_FIELD = 'email';
 const PASSWORD_FIELD = 'password';
+const REMEMBER_ME_FIELD = 'rememberMe';
 
 export type UseSignInResult = {
   readonly isSubmitting: boolean;
@@ -36,6 +37,8 @@ export function useSignIn(): UseSignInResult {
     const form = new FormData(event.currentTarget);
     const rawEmail = String(form.get(EMAIL_FIELD) ?? '');
     const rawPassword = String(form.get(PASSWORD_FIELD) ?? '');
+    // Checkbox desmarcado nao vai no FormData: ausencia E o `false`, sem estado paralelo em React.
+    const rememberMe = form.get(REMEMBER_ME_FIELD) !== null;
 
     setErrorMessage(undefined);
 
@@ -47,7 +50,7 @@ export function useSignIn(): UseSignInResult {
 
     setIsSubmitting(true);
 
-    signInAgent(parsed.data)
+    signInAgent({ ...parsed.data, rememberMe })
       .then(signIn)
       .catch((error: unknown) => setErrorMessage(messageOf(error)))
       .finally(() => setIsSubmitting(false));

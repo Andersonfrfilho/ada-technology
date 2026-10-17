@@ -47,6 +47,16 @@ export function noContent(extraHeaders?: Record<string, string>): Response {
   return new Response(null, { status: 204, headers: baseHeaders(extraHeaders) });
 }
 
+/**
+ * Aceito, ainda nao feito.
+ *
+ * Para efeito assincrono — enfileirar um e-mail, por exemplo. Responder 204 prometeria conclusao, e
+ * `202` e o unico codigo que diz "recebi e vou tratar" sem mentir sobre a entrega.
+ */
+export function accepted(extraHeaders?: Record<string, string>): Response {
+  return new Response(null, { status: 202, headers: baseHeaders(extraHeaders) });
+}
+
 export type JsonErrorParams = {
   readonly code: string;
   readonly message: string;

@@ -22,6 +22,34 @@
       "when": 1787361279611,
       "tag": "0002_ancient_captain_cross",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787709918603,
+      "tag": "0003_mysterious_loki",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791577353984,
+      "tag": "0004_dark_mercury",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791591248292,
+      "tag": "0005_condemned_inhumans",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791837143576,
+      "tag": "0006_demonic_deathstrike",
+      "breakpoints": true
     }
   ]
 }

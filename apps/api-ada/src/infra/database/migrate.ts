@@ -8,6 +8,8 @@
 
 import { runCatalogMigrations } from '@adatechnology/catalog-module';
 import { runMetaWhatsAppMigrations } from '@adatechnology/meta-whatsapp-module';
+import { runInfraMigrations } from '@adatechnology/infra-module';
+import { runNotificationMigrations } from '@adatechnology/notification-module';
 import { runSchedulingMigrations } from '@adatechnology/scheduling-module';
 import { runUserMigrations } from '@adatechnology/user-module';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
@@ -42,6 +44,15 @@ async function runMigrations(): Promise<void> {
   logger.info({ message: 'Aplicando migrations do modulo de usuario', source: SOURCE });
 
   await runUserMigrations({ db: database as never, migrate: migrate as never });
+
+  logger.info({ message: 'Aplicando migrations do modulo de notificacao', source: SOURCE });
+
+  await runNotificationMigrations({ db: database as never, migrate: migrate as never });
+
+  // Antes das migrations da Ada: a 0006 copia as tabelas de infra de public para o schema infra.
+  logger.info({ message: 'Aplicando migrations do modulo de infraestrutura', source: SOURCE });
+
+  await runInfraMigrations({ db: database as never, migrate: migrate as never });
 
   logger.info({ message: 'Aplicando migrations da Ada', source: SOURCE });
 

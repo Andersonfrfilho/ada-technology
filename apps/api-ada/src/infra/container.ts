@@ -18,12 +18,33 @@ import { createCatalogModule } from '@adatechnology/catalog-module';
 import { MetaCatalogProvider } from '@adatechnology/meta-catalog-provider';
 import type { LoggerPort as SchedulingLoggerPort } from '@adatechnology/scheduling-contracts';
 import { createSchedulingModule } from '@adatechnology/scheduling-module';
+import { EMAIL_ATTACHMENT_MAX_BYTES } from '@adatechnology/notification-contracts';
 import { createObjectStorageProvider } from '@adatechnology/object-storage-provider';
+
+import { createAgentAvatarStorage } from '@/modules/agent/agentAvatarStorage';
 import { createMetaWhatsAppModule, SseHub } from '@adatechnology/meta-whatsapp-module';
+import type {
+  LoggerPort as NotificationLoggerPort,
+  NotificationHooks,
+} from '@adatechnology/notification-contracts';
+import { createLoginAlertNotifier } from '@/modules/notification/loginAlertNotifier';
+import { UploadNotificationAttachmentUseCase } from '@/modules/notification/uploadNotificationAttachment.use-case';
+import {
+  createNotificationModule,
+  createNotificationWorker,
+} from '@adatechnology/notification-module';
 import { WhatsAppTemplateProvider } from '@adatechnology/meta-whatsapp-provider';
-import type { LoggerPort as UserLoggerPort } from '@adatechnology/user-contracts';
+import type {
+  LoggerPort as UserLoggerPort,
+  PasswordResetRequestedEvent,
+} from '@adatechnology/user-contracts';
 import { createUserModule } from '@adatechnology/user-module';
 
+import { createBullMqQueue } from '@adatechnology/notification-module/queue/bullmq';
+import { Queue, Worker } from 'bullmq';
+
+import { redis } from '@/infra/cache/redisClient';
+import { buildInfraSchedulesTask } from '@/infra/scheduler/infraSchedules';
 import { RedisCache } from '@/infra/cache/RedisCache';
 import { RedisNonceStore } from '@/infra/cache/RedisNonceStore';
 import { createGroqTranscriber, GROQ_BASE_URL } from '@adatechnology/audio-transcription-provider';
@@ -35,6 +56,7 @@ import { RedisRelay } from '@/infra/realtime/RedisRelay';
 import { ACCESS_TOKEN_AUDIENCE, ACCESS_TOKEN_ISSUER } from '@/modules/agent/agent.constant';
 import { AuthenticateAgentUseCase } from '@/modules/agent/authenticateAgent.use-case';
 import { DrizzleAgentRepository } from '@/modules/agent/DrizzleAgentRepository';
+import { CreateAgentUseCase } from '@/modules/agent/createAgent.use-case';
 import { createLocalAgentAuthProvider } from '@/modules/agent/localAuthProvider';
 import { RedisRefreshTokenStore } from '@/modules/agent/RedisRefreshTokenStore';
 import { RefreshAgentSessionUseCase } from '@/modules/agent/refreshAgentSession.use-case';
@@ -68,6 +90,17 @@ import { SaveFlowGraphUseCase } from '@/modules/flow/saveFlowGraph.use-case';
 import type { FlowGraphPort } from '@/modules/flow/types/flow.types';
 import { DrizzlePanelConversationRepository } from '@/modules/panel/DrizzlePanelConversationRepository';
 import { DrizzlePanelLeadRepository } from '@/modules/panel/DrizzlePanelLeadRepository';
+import {
+  NOTIFICATION_DEFAULT_LOCALE,
+  NOTIFICATION_DEFAULT_TIMEZONE,
+  NOTIFICATION_QUEUE_NAME,
+} from '@/modules/notification/notification.constant';
+import { notificationAuthResolver } from '@/modules/notification/notificationAuthResolver';
+import { notificationRecipientResolver } from '@/modules/notification/notificationRecipientResolver';
+import { createPasswordResetNotifier } from '@/modules/notification/passwordResetNotifier';
+import { SendAgentPasswordResetUseCase } from '@/modules/agent/sendAgentPasswordReset.use-case';
+import { NOTIFICATION_TEMPLATE_VARIABLES } from '@/modules/notification/passwordResetTemplate.constant';
+import { SeedNotificationTemplatesUseCase } from '@/modules/notification/seedNotificationTemplates.use-case';
 import { registerSchedulingFlowActions } from '@/modules/scheduling/registerSchedulingFlowActions';
 import { SchedulingAgenda } from '@/modules/scheduling/SchedulingAgenda';
 import { ProvisionSchedulingResourcesUseCase } from '@/modules/scheduling/provisionSchedulingResources.use-case';
@@ -86,6 +119,11 @@ import { DrizzleTranscriptRepository } from '@/modules/shared/DrizzleTranscriptR
 import { SimulateInboundMessageUseCase } from '@/modules/simulation/simulateInboundMessage.use-case';
 import { WhatsAppInboundSimulator } from '@/modules/simulation/WhatsAppInboundSimulator';
 import { RedisUserRefreshTokenStore } from '@/modules/user/RedisUserRefreshTokenStore';
+import type { InfraGatewayProviderLogger } from '@adatechnology/infra-contracts';
+import { createInfraModule } from '@adatechnology/infra-module';
+import { VerifyAgentPasswordUseCase } from '@/modules/agent/verifyAgentPassword.use-case';
+import { RedisFailureCounter } from '@/modules/infra/RedisFailureCounter';
+import { buildInfraRateLimiter } from '@/modules/infra/buildInfraRateLimiter';
 import { logger } from '@/shared/logger';
 
 // Estado inicial de sessao nova. O modulo nao conhece a maquina de estados do produto.
@@ -94,6 +132,8 @@ export const START_STATE = 'start';
 const CATALOG_SOURCE = 'modules.catalog';
 const SCHEDULING_SOURCE = 'modules.scheduling';
 const USER_SOURCE = 'modules.user';
+const NOTIFICATION_SOURCE = 'modules.notification';
+const WHATSAPP_SOURCE = 'modules.channel.whatsapp';
 
 /** O modulo loga por assinatura propria; a mascara e o nivel continuam sendo os da Ada. */
 const catalogLogger: CatalogLoggerPort = {
@@ -117,6 +157,14 @@ const userLogger: UserLoggerPort = {
   info: (message, meta) => logger.info({ message, source: USER_SOURCE, ...(meta ? { meta } : {}) }),
   warn: (message, meta) => logger.warn({ message, source: USER_SOURCE, ...(meta ? { meta } : {}) }),
   error: (message, meta) => logger.error({ message, source: USER_SOURCE, ...(meta ? { meta } : {}) }),
+};
+
+/** Mesma razao do logger do catalogo: assinatura do pacote, mascara e nivel da Ada. */
+const notificationLogger: NotificationLoggerPort = {
+  debug: (message, meta) => logger.debug({ message, source: NOTIFICATION_SOURCE, ...(meta ? { meta } : {}) }),
+  info: (message, meta) => logger.info({ message, source: NOTIFICATION_SOURCE, ...(meta ? { meta } : {}) }),
+  warn: (message, meta) => logger.warn({ message, source: NOTIFICATION_SOURCE, ...(meta ? { meta } : {}) }),
+  error: (message, meta) => logger.error({ message, source: NOTIFICATION_SOURCE, ...(meta ? { meta } : {}) }),
 };
 
 export const realtime = new SseHub(new RedisRelay());
@@ -178,6 +226,27 @@ export const metaWhatsApp = createMetaWhatsAppModule({
         return whatsappMessageHandlers;
       },
     }),
+    /**
+     * A Meta recusou um envio que o modulo tentou fazer reagindo a este webhook, e a recusa e
+     * deterministica: token sem escopo, conta barrada de mandar para o pais, payload invalido.
+     *
+     * Chega como hook, e nao como excecao, porque excecao aqui viraria resposta nao-2xx e a Meta
+     * reentregaria o evento — numa recusa destas a reentrega falha identica, e webhook que falha
+     * com frequencia a Meta desativa, derrubando o canal inteiro. A mensagem do cliente ja esta
+     * gravada: o que se perdeu foi a resposta a ela, e sem este log ninguem fica sabendo na hora.
+     */
+    onInboundEffectRejected: (details) => {
+      logger.error({
+        message: 'Meta recusou a resposta ao cliente',
+        source: WHATSAPP_SOURCE,
+        meta: {
+          companyId: details.companyId,
+          kind: details.kind,
+          whatsappNumber: details.whatsappNumber,
+          code: details.code,
+        },
+      });
+    },
     // Vitrine que nao saiu deixa o cliente sem resposta num no automatico, e o modulo segue a
     // conversa de proposito. Quem tem de gritar e o host.
     onFlowProductListError: (error, details) => {
@@ -283,8 +352,52 @@ export const postWidgetAudio = new PostWidgetAudioUseCase({
 });
 
 export const recordAuditLog = new RecordAuditLogUseCase();
+
+const INFRA_SOURCE = 'modules.infra';
+
+/** Só ids, códigos e contagens chegam aqui; o logger da Ada ainda redige o que for sensível. */
+export const infraLogger: InfraGatewayProviderLogger = {
+  info: (message, meta) => logger.info({ message, source: INFRA_SOURCE, meta: { ...meta } }),
+  error: (message, meta) => logger.error({ message, source: INFRA_SOURCE, meta: { ...meta } }),
+  warn: (message, meta) => logger.warn({ message, source: INFRA_SOURCE, meta: { ...meta } }),
+};
+
 export const agentRepository = new DrizzleAgentRepository();
-const refreshTokens = new RedisRefreshTokenStore();
+export const refreshTokens = new RedisRefreshTokenStore();
+
+/**
+ * Infraestrutura de nuvem: o módulo é do SDK (`@adatechnology/infra-module`) e o produto entrega as
+ * portas — conexão, cache, auditoria e conferência de senha do administrador. Vem depois do
+ * `agentRepository` porque a conferência de senha precisa dele.
+ */
+export const infraModule = createInfraModule({
+  db: database as never,
+  config: {
+    env: environment.ENV,
+    environmentToken: environment.RAILWAY_API_TOKEN,
+    workspaceId: environment.RAILWAY_WORKSPACE_ID,
+    environmentId: environment.RAILWAY_ENVIRONMENT_ID,
+    encryptionKeyBase64: environment.INFRA_SECRET_ENCRYPTION_KEY,
+    managedPattern: environment.RAILWAY_MANAGED_ENVIRONMENT_PATTERN,
+    databaseWaitSeconds: environment.RAILWAY_DATABASE_WAIT_SECONDS,
+  },
+  providers: {
+    cache: new RedisCache(),
+    audit: recordAuditLog,
+    passwordVerifier: new VerifyAgentPasswordUseCase({
+      agents: agentRepository,
+      failureCounter: new RedisFailureCounter(),
+      refreshTokens,
+    }),
+    logger: infraLogger,
+    findAgentName: async (agentId) => (await agentRepository.findById(agentId))?.name,
+    rateLimiter: buildInfraRateLimiter(),
+    sleep: (milliseconds) => Bun.sleep(milliseconds),
+  },
+});
+
+export const infraSchedules = buildInfraSchedulesTask(infraModule.useCases.runInfraSchedules);
+export const recoverInterruptedInfraOperations = infraModule.useCases.recoverInterruptedOperations;
 
 export const authenticateAgent = new AuthenticateAgentUseCase({
   agents: agentRepository,
@@ -329,12 +442,30 @@ export const userModule = await createUserModule({
   },
   providers: {
     refreshTokenStore: new RedisUserRefreshTokenStore(),
-    // Espalhado em vez de `email: undefined`: com `exactOptionalPropertyTypes`, a chave presente
-    // com `undefined` nao e a mesma coisa que a chave ausente, e e a ausencia que desliga.
-    ...(emailDriver ? { email: emailDriver } : {}),
+    /**
+     * **Sem `email` de proposito.** O `RequestPasswordResetUseCase` envia por conta propria sempre
+     * que este provider existe, e SO DEPOIS dispara `onPasswordResetRequested` — com os dois
+     * ligados, a pessoa recebia dois e-mails: o texto fixo do pacote e o template do painel.
+     *
+     * A capacidade e por ausencia: tirando o provider, o `user-module` responde `hasEmail: false`,
+     * para de enviar, e o unico caminho passa a ser o hook (ver `passwordResetNotifier.ts`). O
+     * driver continua existindo — ele agora e do `notification-module`, e do fallback de
+     * recuperacao de conta.
+     */
     logger: userLogger,
   },
   hooks: {
+    /**
+     * So trilha de auditoria. O AVISO de acesso sai do `agent.controller.ts`, no login de verdade.
+     *
+     * O painel autentica por `authenticateAgent` direto — nada passa por aqui nesta fase, entao um
+     * aviso ligado neste hook ficaria dormente. E ligar nos DOIS lugares, para o dia em que o
+     * `user-module` assumir o login, faria a pessoa receber dois e-mails do mesmo acesso: e a mesma
+     * duplicacao que o `providers.email` ja causou uma vez (ADR 0003).
+     *
+     * Quando o login migrar para o `user-module`, o disparo volta para ca e sai do controller — um
+     * lugar de cada vez.
+     */
     onLoginSucceeded: (event) =>
       recordAuditLog.execute({
         actorType: ACTOR_TYPE.AGENT,
@@ -353,13 +484,200 @@ export const userModule = await createUserModule({
         targetType: AUDIT_TARGET.AGENT,
         ipAddress: event.ipAddress,
       }),
+    /**
+     * O e-mail de redefinicao passa a sair pelo `notification-module`, para a copy ser editavel
+     * pelo painel. A funcao e declarada depois de `notificationModule` (mais abaixo neste arquivo)
+     * e chega ate aqui por hoisting: o corpo dela so roda quando alguem pede o reset, muito depois
+     * do boot terminar.
+     */
+    onPasswordResetRequested: (event) => notifyPasswordResetRequested(event),
   },
 });
+
+/**
+ * Notificacao multicanal, montada ainda sem consumidor: nada no produto chama `sendNotification`
+ * nesta entrega — o reset de senha continua saindo pelo `user-module`. O modulo sobe agora para as
+ * rotas de template e de preferencia existirem antes de o fluxo migrar para elas.
+ *
+ * Fila em processo EXPLICITA, e nao a implicita do modulo: o `ada-technology` nao tem app de
+ * worker, e um broker so acumularia job que ninguem consome. Mas a fila em processo tambem nao
+ * entrega sozinha — ela guarda os jobs num backlog ate alguem registrar o consumidor. Por isso a
+ * instancia e criada aqui e passada NAS DUAS pontas: para o modulo produzir, e para
+ * `notificationWorker` consumir, logo abaixo. Deixar o modulo criar a dele internamente esconderia
+ * a fila do host, e todo e-mail ficaria enfileirado para sempre.
+ *
+ * So o canal de e-mail, e ele e o mesmo objeto que o `user-module` recebe (ver
+ * `infra/email/emailDriver.ts`): `EMAIL_DRIVER` vazio devolve `undefined` e o canal some por
+ * ausencia, em vez de existir quebrado.
+ */
+/**
+ * BullMQ sobre o Redis que ja existe, e nao a fila em memoria de antes.
+ *
+ * A fila em memoria perdia TODA entrega enfileirada em deploy, restart ou crash — em silencio. Com
+ * o job no Redis ele sobrevive ao processo, e o consumidor o encontra ao subir. Com anexo isso
+ * pesa mais: o envio passa a incluir um download, e a janela de perda aumenta.
+ *
+ * O `Worker` ganha conexao PROPRIA: ele bloqueia esperando job (`BRPOPLPUSH`), e uma conexao
+ * bloqueada nao atende mais nenhum comando — reusar a de cima deixaria cache e rate limit mudos.
+ *
+ * Retencao, `attempts` e backoff sao do adaptador do pacote, que ja segue o `security.md` §6.
+ */
+const notificationQueueName = `${environment.PROJECT_NAME}-${environment.ENV}-${NOTIFICATION_QUEUE_NAME}`;
+
+/** Exportada para o painel operacional montar em cima da MESMA fila que o modulo produz. */
+export const notificationBullQueue = new Queue(notificationQueueName, { connection: redis });
+
+/**
+ * Fecha a fila. Obrigatorio em TODO comando de linha que importa este container.
+ *
+ * A `Queue` do BullMQ abre conexao propria com o Redis e segura o event loop — o mesmo problema que
+ * o `SseHub` ja causava, e que o `closeRedis()` resolvia para ele. Sem fechar aqui, `flow:republish`
+ * e o seed publicam o que tinham que publicar e NUNCA SAEM: o `deploy:pre` fica esperando, e o
+ * deploy inteiro pendura sem erro nenhum no log.
+ */
+export function closeNotificationQueue(): Promise<void> {
+  return notificationBullQueue.close();
+}
+
+const notificationQueue = createBullMqQueue({
+  queue: notificationBullQueue,
+  createWorker: (handler) =>
+    new Worker(notificationQueueName, async (job) => handler(job.data), { connection: redis.duplicate() }),
+});
+
+/**
+ * Entrega que falha precisa aparecer no log, e nao so numa coluna do banco.
+ *
+ * O modulo converte recusa do provedor em `delivery.status` e segue calado — o worker so loga
+ * excecao de infraestrutura. Para aviso de pedido isso e aceitavel; para redefinicao de senha
+ * significou uma pessoa sem receber nada e nenhuma linha explicando, com a unica evidencia numa
+ * tabela que nao tem rota de leitura.
+ *
+ * O contrato ja previa esta ponta (`DeliveryFailedEvent.willRetry` existe para "alerta do host"):
+ * o que faltava era o host registrar o gancho.
+ *
+ * Nada de PII: id de notificacao, id de entrega, canal e codigo de erro. O endereco nem chega
+ * aqui, e e por isso que o `targetMasked` do modulo existe.
+ */
+const notificationDeliveryHooks: NotificationHooks = {
+  onDeliveryFailed: ({ notificationId, deliveryId, channel, errorCode, attempt, willRetry }) => {
+    /*
+      Canal e codigo de erro vao na MENSAGEM, e nao so no `meta`.
+
+      O agregador de log da hospedagem exibe e indexa a `message`; o `meta` viaja no JSON e nao
+      aparece nem na busca. "Entrega de notificacao falhou", sozinha, diz que falhou e esconde a
+      unica parte que responde por que — que e a pergunta inteira.
+    */
+    const outcome = willRetry ? 'falhou e sera retentada' : 'falhou';
+    const message = `Entrega de notificacao ${outcome} [${channel}: ${errorCode}]`;
+    const meta = { notificationId, deliveryId, channel, errorCode, attempt };
+
+    // Retry ainda pode dar certo; esgotado, ninguem recebeu — e so o segundo caso e um defeito.
+    if (willRetry) notificationLogger.warn(message, meta);
+    else notificationLogger.error(message, meta);
+  },
+  onDeliveryBounced: ({ notificationId, deliveryId, channel, reason }) => {
+    // Bounce suprime o endereco: os proximos envios somem em silencio ate alguem limpar a supressao.
+    notificationLogger.error(`Endereco suprimido por bounce [${channel}: ${reason}]`, {
+      notificationId,
+      deliveryId,
+      channel,
+      reason,
+    });
+  },
+};
+
+export const notificationModule = createNotificationModule({
+  db: database as never,
+  config: {
+    defaultLocale: NOTIFICATION_DEFAULT_LOCALE,
+    defaultTimezone: NOTIFICATION_DEFAULT_TIMEZONE,
+    suppressionHmacKey: environment.NOTIFICATION_SUPPRESSION_KEY,
+    // O que o editor de template oferece como variavel, e o que o `upsert` aceita.
+    templateVariables: NOTIFICATION_TEMPLATE_VARIABLES,
+  },
+  providers: {
+    recipientResolver: notificationRecipientResolver,
+    queue: notificationQueue,
+    ...(emailDriver ? { channels: { email: emailDriver } } : {}),
+    authContextResolver: notificationAuthResolver,
+    logger: notificationLogger,
+  },
+  hooks: notificationDeliveryHooks,
+});
+
+/**
+ * Quem tira o job da fila e chama o driver. Sem `start()`, a entrega nasce `queued` e morre ali.
+ * O ciclo de vida (start/stop) e amarrado ao boot da API em `infra/index.ts`.
+ */
+export const notificationWorker = createNotificationWorker({
+  module: notificationModule,
+  queue: notificationQueue,
+  logger: notificationLogger,
+});
+
+/**
+ * Aviso de acesso a conta. Sem `PANEL_PASSWORD_CHANGE_URL` ele nao existe: capacidade por ausencia,
+ * porque o texto termina mandando trocar a senha e precisa dizer onde.
+ */
+export const loginAlertNotifier = environment.PANEL_PASSWORD_CHANGE_URL
+  ? createLoginAlertNotifier({
+      module: notificationModule,
+      companyId: environment.ADA_COMPANY_ID,
+      passwordChangeUrl: environment.PANEL_PASSWORD_CHANGE_URL,
+      logger: userLogger,
+    })
+  : undefined;
+
+const passwordResetNotifier = createPasswordResetNotifier({
+  module: notificationModule,
+  companyId: environment.ADA_COMPANY_ID,
+  ...(emailDriver ? { emailDriver } : {}),
+  logger: userLogger,
+});
+
+/**
+ * O mesmo notificador, apontado para `agents` em vez de `users`.
+ *
+ * A tela de usuarios do painel administra quem entra NESTE painel, que vive em `agents`. Um segundo
+ * fluxo de redefinicao — token, expiracao, template, fallback — seria copia do que o `user-module`
+ * ja resolve; o que muda de verdade e so onde a pessoa e encontrada pelo e-mail.
+ */
+const agentPasswordResetNotifier = createPasswordResetNotifier({
+  module: notificationModule,
+  companyId: environment.ADA_COMPANY_ID,
+  ...(emailDriver ? { emailDriver } : {}),
+  logger: userLogger,
+  findUser: async (email: string) => {
+    const found = await agentRepository.findByEmail(email);
+
+    return found ? { id: found.id } : undefined;
+  },
+});
+
+export const sendAgentPasswordReset = new SendAgentPasswordResetUseCase({
+  agents: agentRepository,
+  resetUrlTemplate: environment.PANEL_RESET_URL_TEMPLATE,
+  notify: agentPasswordResetNotifier,
+});
+
+export const seedNotificationTemplates = new SeedNotificationTemplatesUseCase(
+  notificationModule,
+  environment.ADA_COMPANY_ID,
+);
+
+/** Ponte para o hook do `user-module`, que e declarado antes deste ponto no arquivo. */
+function notifyPasswordResetRequested(event: PasswordResetRequestedEvent): Promise<void> {
+  return passwordResetNotifier(event);
+}
 
 /**
  * Config validada do `@ada/user-sdk`, hoje so com o provedor local — ponto de extensao para quando
  * um segundo provedor (OAuth2/OIDC) for implementado.
  */
+/** Cadastro de atendente pelo painel — a alternativa ao seed por SSH. */
+export const createAgent = new CreateAgentUseCase({ agents: agentRepository });
+
 export const authProvidersConfig = authProvidersConfigSchema.parse(buildLocalOnlyAuthProvidersConfig());
 
 /**
@@ -524,6 +842,51 @@ export const productImageBucket = environment.OBJECT_STORAGE_BUCKET
     }
   : undefined;
 
+/**
+ * Bucket dos anexos, PRIVADO e separado do de imagem de produto (ADR 0002).
+ *
+ * Reusa endpoint, regiao e credencial; so o bucket muda. `maxObjectSizeBytes` e o teto do contrato,
+ * e nao o da imagem: o provider recusa antes de subir, e um teto de 5MB aqui reprovaria uma nota
+ * fiscal legitima.
+ */
+/**
+ * Um provider para o bucket privado, compartilhado por anexo de e-mail e foto de perfil.
+ *
+ * Separar por prefixo de chave, e nao por bucket: os dois sao privados, tem a mesma politica de
+ * acesso e a mesma credencial. Um bucket a mais significaria mais uma variavel por ambiente para
+ * alguem esquecer de setar.
+ */
+const privateBucket = environment.OBJECT_STORAGE_ATTACHMENT_BUCKET
+  ? {
+      name: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
+      storage: createObjectStorageProvider({
+        // Credencial propria quando o provedor emite uma por bucket (Railway); a compartilhada
+        // quando ele usa uma so para todos (MinIO do compose).
+        endpoint: new URL(environment.OBJECT_STORAGE_ATTACHMENT_ENDPOINT || environment.OBJECT_STORAGE_ENDPOINT),
+        region: environment.OBJECT_STORAGE_REGION,
+        accessKeyId:
+          environment.OBJECT_STORAGE_ATTACHMENT_ACCESS_KEY_ID || environment.OBJECT_STORAGE_ACCESS_KEY_ID,
+        secretAccessKey:
+          environment.OBJECT_STORAGE_ATTACHMENT_SECRET_ACCESS_KEY || environment.OBJECT_STORAGE_SECRET_ACCESS_KEY,
+        forcePathStyle: environment.OBJECT_STORAGE_FORCE_PATH_STYLE,
+        healthCheckBucket: environment.OBJECT_STORAGE_ATTACHMENT_BUCKET,
+        maxObjectSizeBytes: EMAIL_ATTACHMENT_MAX_BYTES,
+      }),
+    }
+  : undefined;
+
+/**
+ * Bucket dos anexos, PRIVADO e separado do de imagem de produto (ADR 0002).
+ */
+export const notificationAttachmentUpload = privateBucket
+  ? new UploadNotificationAttachmentUseCase({ bucket: privateBucket.name, storage: privateBucket.storage })
+  : undefined;
+
+/** Sem bucket nao ha foto de perfil — o `user-module` nem publica as rotas. */
+export const agentAvatarStorage = privateBucket
+  ? createAgentAvatarStorage({ bucket: privateBucket.name, storage: privateBucket.storage })
+  : undefined;
+
 export const productImageStorage = productImageBucket
   ? createS3ProductImageStorage({
       storage: productImageBucket.storage,
@@ -617,6 +980,7 @@ export const container = {
   schedulingModule,
   provisionSchedulingResources,
   schedulingAgenda,
+  notificationModule,
 } as const;
 
 export type Container = typeof container;
