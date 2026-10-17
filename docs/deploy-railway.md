@@ -2,7 +2,8 @@
 
 Um projeto (`ada-technology`) com **dois ambientes**. Cada ambiente tem os seus proprios cinco
 recursos: dois plugins gerenciados (Postgres e Redis) e tres servicos buildados por Dockerfile a
-partir deste repositorio.
+partir deste repositorio. O `staging` tem um sexto, `mailpit`, que segura o e-mail de saida ali
+dentro.
 
 | Ambiente | Branch | Banco e Redis | Segredos |
 |---|---|---|---|
@@ -17,6 +18,7 @@ divide banco ou segredo com producao e producao com outro nome.
 | `api` | `apps/api-ada/Dockerfile` | `apps/api-ada/railway.json` | sim, dominio proprio |
 | `panel` | `apps/frontend-panel/Dockerfile` | `apps/frontend-panel/railway.json` | sim |
 | `site` | `apps/frontend-site/Dockerfile` | `apps/frontend-site/railway.json` | sim |
+| `mailpit` | imagem publica, so em `staging` | — | sim, protegido por senha |
 
 > **Divergencia consciente do `INFRASTRUCTURE_ECOSYSTEM_RULES.md`.** Aquele documento descreve
 > Kong + Keycloak + Kubernetes. Aqui o alvo e Railway, escolhido para este produto: o TLS e o
@@ -39,6 +41,8 @@ railway login                                # uma vez por maquina
 
 ./scripts/railway-provision.sh staging
 ./scripts/railway-secrets.sh   staging
+./scripts/railway-secrets.sh   staging mailpit-ui   # senha da caixa de entrada; libera o dominio dela
+./scripts/railway-provision.sh staging              # de novo: e a rodada que cria o dominio do mailpit
 
 ./scripts/railway-domains.py                 # dominios proprios e o estado do DNS (secao 5)
 ./scripts/railway-redeploy.py production     # as variaveis so valem na proxima build
@@ -49,9 +53,13 @@ O que cada um faz e por que existe:
 
 - **`railway-provision.sh <ambiente>`** — garante Postgres, Redis e os servicos `api`, `panel` e
   `site`; gera o dominio de cada um; e deriva as variaveis **dos dominios recem-criados**, para
-  que `CORS_ALLOWED_ORIGINS`, `WIDGET_ALLOWED_ORIGINS`, `VITE_API_BASE_URL` e `API_ORIGIN` nunca
-  fiquem apontando para o ambiente errado.
-- **`railway-secrets.sh <ambiente>`** — le 48 bytes de `/dev/urandom` e escreve em
+  que `CORS_ALLOWED_ORIGINS`, `WIDGET_ALLOWED_ORIGINS`, `VITE_API_BASE_URL`, `API_ORIGIN` e
+  `PANEL_RESET_URL_TEMPLATE` nunca fiquem apontando para o ambiente errado. Em `staging` tambem
+  garante o servico `mailpit` — mas o dominio publico dele so nasce depois que `MP_UI_AUTH` existe,
+  senao a primeira rodada deixaria a caixa aberta ate alguem lembrar do outro script.
+- **`railway-secrets.sh <ambiente> [segredo]`** — `panel-jwt` (padrao), `whatsapp` e `mailpit-ui`
+  sao gerados aqui; `groq` e `resend` sao emitidos por terceiro e entram pelo pipe
+  (`pbpaste | ./scripts/railway-secrets.sh production resend`), nunca como argumento. Le 48 bytes de `/dev/urandom` e escreve em
   `railway variable set --stdin`. O valor nunca vira argumento de linha de comando (visivel no
   `ps`), nunca e ecoado, nunca entra no historico do shell. Rodar de novo **rotaciona**: os tokens
   em circulacao caem e todo mundo faz login outra vez.
