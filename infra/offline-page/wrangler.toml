@@ -1,0 +1,17 @@
+# Worker do Cloudflare que troca o 502 do Railway (serviço parado) pela página de ambiente desligado.
+# Cada ambiente com domínio próprio vira uma rota; o nome mostrado na página vem de ENVIRONMENT_NAME.
+name = "ada-offline-page"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+# Importar o HTML como texto.
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true
+
+[vars]
+ENVIRONMENT_NAME = "cbni-staging"
+
+# Preencher com o domínio real antes de publicar (zona que está no Cloudflare):
+# routes = [{ pattern = "cbni-staging.exemplo.com.br/*", zone_name = "exemplo.com.br" }]
