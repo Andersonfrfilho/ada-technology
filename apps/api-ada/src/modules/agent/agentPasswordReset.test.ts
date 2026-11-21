@@ -21,6 +21,10 @@ mock.module('@/infra/cache/redisClient', () => ({
       return value ?? null;
     },
   },
+  // O mock vaza para os demais arquivos de teste (mock.module e global no processo do Bun), e
+  // varios modulos importam `redisSubscriber` deste mesmo caminho: sem ele o import quebra.
+  redisSubscriber: { subscribe: async () => undefined, unsubscribe: async () => undefined, on: () => undefined },
+  closeRedis: async () => undefined,
 }));
 
 const { consumeAgentResetToken, issueAgentResetToken, resetKeyOf } = await import(
