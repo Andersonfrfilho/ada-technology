@@ -26,7 +26,7 @@ const DEV_PORT = 5176;
  * endereco que a Meta exige no cadastro do app, entao um build silencioso sem ela derruba o
  * WhatsApp na proxima revisao deles.
  */
-const pages = ['index', 'privacidade'] as const;
+const pages = ['index', 'privacidade', 'termos', 'exclusao-dados'] as const;
 
 export default defineConfig({
   resolve: {
