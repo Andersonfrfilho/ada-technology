@@ -13,6 +13,16 @@
 
 @import './base.css';
 
+/*
+ * Azul da marca sobre a superficie escura fica abaixo do contraste minimo para texto; nos links do
+ * corpo o escuro usa um azul mais claro. O azul cheio continua nos botoes e na aba ativa.
+ */
+:root { --legal-link: var(--blue); }
+:root[data-theme="dark"] { --legal-link: #7fa6ff; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --legal-link: #7fa6ff; }
+}
+
 /* ── NAV ──────────────────────────────────────── */
 .legal-nav {
   position: sticky;
@@ -49,7 +59,7 @@
 }
 
 .legal-back {
-  color: var(--blue);
+  color: var(--legal-link);
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 500;
@@ -113,7 +123,7 @@
 
 .legal p { margin-bottom: 14px; }
 
-.legal a { color: var(--blue); }
+.legal a { color: var(--legal-link); overflow-wrap: anywhere; }
 
 .legal ul, .legal ol { margin: 0 0 16px 22px; }
 .legal li { margin-bottom: 9px; }
@@ -188,21 +198,129 @@
 
 .legal-table tbody tr:nth-child(even) { background: rgb(var(--bg-rgb) / 0.6); }
 
-/* ── RODAPE ───────────────────────────────────── */
-.legal-footer {
+/* ── ABAS ENTRE DOCUMENTOS ────────────────────── */
+/* Privacidade, termos e exclusao sao lidos juntos (a Meta pede os tres); as abas evitam voltar ao site. */
+.legal-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 24px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24px 6%;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.85rem;
+  gap: 8px;
+  max-width: 760px;
+  margin: 28px auto 0;
+  padding: 0 6%;
 }
 
-.legal-footer a { color: var(--muted); text-decoration: none; }
-.legal-footer a:hover { color: var(--blue); }
+.legal-tabs a {
+  font-size: 0.86rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--muted);
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.legal-tabs a:hover { color: var(--blue); border-color: var(--blue); }
+
+.legal-tabs a[aria-current="page"] {
+  color: var(--on-dark);
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+/* ── RODAPE ───────────────────────────────────── */
+/*
+ * Mesmo desenho do rodape da landing (faixa escura, logo invertido, colunas), reescrito aqui porque
+ * as paginas legais nao carregam `landing.css`. Mudou la, muda aqui.
+ */
+.legal-footer {
+  background: var(--band-dark);
+  color: rgb(var(--on-dark-rgb) / 0.55);
+  padding: 56px 6% 32px;
+}
+
+.legal-footer-grid {
+  max-width: 1100px;
+  margin: 0 auto 48px;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 48px;
+}
+
+.legal-footer-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  margin-bottom: 12px;
+}
+
+.legal-footer-logo img { height: 34px; width: auto; filter: brightness(0) invert(1); opacity: 0.85; }
+
+.legal-footer-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgb(var(--on-dark-rgb) / 0.8);
+  letter-spacing: -0.01em;
+}
+
+.legal-footer-brand p { font-size: 0.86rem; line-height: 1.65; max-width: 280px; }
+
+.legal-footer-contact,
+.legal-footer-col ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.legal-footer-contact { gap: 6px; margin-top: 14px; }
+.legal-footer-col ul { gap: 11px; }
+
+.legal-footer-contact a,
+.legal-footer-col a {
+  color: rgb(var(--on-dark-rgb) / 0.5);
+  font-size: 0.87rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.legal-footer-contact a:hover,
+.legal-footer-col a:hover { color: rgb(var(--on-dark-rgb) / 0.9); }
+
+.legal-footer-col h4 {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(var(--on-dark-rgb) / 0.35);
+  margin-bottom: 18px;
+}
+
+.legal-footer-bottom {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-top: 28px;
+  border-top: 1px solid rgb(var(--on-dark-rgb) / 0.08);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: rgb(var(--on-dark-rgb) / 0.32);
+}
+
+.legal-footer-bottom a { color: inherit; text-decoration: none; }
+.legal-footer-bottom a:hover { color: rgb(var(--on-dark-rgb) / 0.8); }
+
+@media (max-width: 900px) {
+  .legal-footer-grid { grid-template-columns: 1fr 1fr; }
+  .legal-footer-brand { grid-column: 1 / -1; }
+}
+
+@media (max-width: 520px) {
+  .legal-footer-grid { grid-template-columns: 1fr; }
+}
 
 @media (min-width: 640px) {
   .legal { padding: 72px 6% 96px; }
